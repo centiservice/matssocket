@@ -1,0 +1,7 @@
+// MatsSocket Server API
+
+dependencies {
+    // Uses the mats-lib project
+    api "io.mats3:mats-api:$matsVersion"
+    api "javax.websocket:javax.websocket-api:$javaxWebsocketsVersion"
+}

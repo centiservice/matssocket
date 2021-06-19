@@ -1,0 +1,45 @@
+// MatsSocket Server Implementation
+
+dependencies {
+    // Implements the 'matssocket-server-api'
+    implementation project(':matssocket-server-api')
+
+    // Jackson JSON library, which is the serialization mechanism in use for MatsSockets comms
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+
+    // Flyway, for DB preparation and migration for 'ClusterStoreAndForward_SQL'. This is decidedly optional, and
+    // users of the API should add this themselves if they want it.
+    compileOnly "org.flywaydb:flyway-core:$flywayVersion"
+
+    // The SFL4J API. Since you should provide the SLF4J implementation yourself, we use compileOnly.
+    compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+
+    // :: TEST
+
+    // We need an implementation of the MatsSerializer, the MatsSerializerJson
+    testImplementation "io.mats3:mats-serial-json:$matsVersion"
+
+    // Testing tools for Mats
+    testImplementation "io.mats3:mats-test-junit:$matsVersion"
+
+    // Base Jetty Server
+    testImplementation "org.eclipse.jetty:jetty-server:$jettyVersion"
+    // .. Jetty Servlets
+    testImplementation "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+    // .. Jetty: To get the @WebListener etc. annotation scanning.
+    testImplementation "org.eclipse.jetty:jetty-annotations:$jettyVersion"
+    // .. Jetty: JSR-356 javax.websocket implementation for Jetty
+    testImplementation "org.eclipse.jetty.websocket:javax-websocket-server-impl:$jettyVersion"
+
+    // H2 Database
+    testImplementation "com.h2database:h2:$h2Version"
+
+    // Add flyway, since it is not transitive from the lib.
+    testImplementation "org.flywaydb:flyway-core:$flywayVersion"
+
+    // Logging
+    testImplementation "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+    testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
+}

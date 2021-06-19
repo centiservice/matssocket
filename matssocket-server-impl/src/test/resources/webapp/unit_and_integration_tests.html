@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MatsSocket Tests</title>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.css">
+</head>
+<body>
+<div id="mocha"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sinon.js/8.1.0/sinon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.2.0/chai.js"></script>
+<script>mocha.setup('bdd')</script>
+
+<script src="mats/lib/MatsSocket.js"></script>
+
+<script src="mats/test/integration_basic.js"></script>
+<script src="mats/test/integration_listeners.js"></script>
+<script src="mats/test/integration_push.js"></script>
+<script src="mats/test/integration_pubsub.js"></script>
+<script src="mats/test/integration_authentication.js"></script>
+<script src="mats/test/integration_connect.js"></script>
+<script src="mats/test/unit.js"></script>
+
+<script>
+    mocha.run();
+</script>
+</body>
+</html>

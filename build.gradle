@@ -1,0 +1,239 @@
+import java.nio.charset.StandardCharsets
+import java.time.LocalDateTime
+
+// mats-websockets
+plugins {
+    id 'com.github.node-gradle.node' version '3.1.0'
+    id 'java-library'
+    id 'signing'
+    id 'maven-publish'
+}
+
+// Specify Gradle version, run update by './gradlew wrapper'
+wrapper {
+    gradleVersion = "7.1"
+    // Use "-all"-version of distribution, since IntelliJ works better then..
+    setDistributionType(Wrapper.DistributionType.ALL)
+}
+
+allprojects {
+    group = 'io.mats3'
+    version = '0.17.0-SNAPSHOT'
+    buildDir = 'gradlebuild'
+}
+
+// Versions for all libraries used throughout the subprojects
+ext {
+    // MatsSocketServer API dependencies
+    matsVersion = '0.17.0'
+    // MatsSocketServer Implementation dependencies
+    javaxWebsocketsVersion = '1.0'
+    jacksonVersion = '2.11.4'
+    slf4jVersion = '1.7.30'
+
+    // optional for DB setup/migration
+    flywayVersion = '6.1.4'
+
+    // For testing
+    logbackVersion = '1.2.3'
+    h2Version = '1.4.200'
+    jettyVersion = '9.4.41.v20210516'
+}
+
+configure ([project('matssocket-server-api'), project('matssocket-server-impl')]) {
+    apply plugin: 'java-library'
+    apply plugin: 'signing'
+    apply plugin: 'maven-publish'
+
+    repositories { mavenCentral() }
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
+    compileJava {
+        options.encoding = 'UTF-8'
+        options.deprecation = true
+        options.incremental = true
+        options.compilerArgs += ['-Werror', '-Xlint:all', '-Xlint:-serial']
+    }
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    javadoc {
+        // without the -quiet option, the build fails due to errors&warns
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+
+    jar {
+        manifest {
+            attributes 'Implementation-Title': 'MatsSocket',
+                    'Implementation-Version': archiveVersion
+        }
+    }
+
+    signing {
+        // "configurations.archives" didn't sign anything, while this even signs the MDS5s and SHAs..
+        sign publishing.publications
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                pom {
+                    name = 'MatsSockets'
+                    description = 'WebSocket-based server and client libs for asynchronous, bidirectional interaction with Mats3 from end-user clients'
+                    url = 'https://github.com/centiservice/mats3'
+                    licenses {
+                        license {
+                            name = 'PolyForm Perimeter License 1.0.0 with examples'
+                            url = 'https://github.com/centiservice/matssocket/blob/main/LICENSE.md'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'stolsvik'
+                            name = 'Endre Stølsvik'
+                            email = 'endre@stolsvik.com'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:https://github.com/centiservice/matssocket.git'
+                        developerConnection = 'scm:git:ssh://github.com:centiservice/matssocket.git'
+                        url = 'https://github.com/centiservice/matssocket'
+                    }
+                }
+                from components.java
+            }
+        }
+        repositories {
+            maven {
+                name 'SonatypeOSSRHSnapshot'
+                url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+                credentials {
+                    username sonatypeUsername
+                    password sonatypePassword
+                }
+            }
+            maven {
+                name 'SonatypeOSSRHStaging'
+                url 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2'
+                credentials {
+                    username sonatypeUsername
+                    password sonatypePassword
+                }
+            }
+        }
+    }
+
+    // Tasks to publish to Sonatype's OSSRH (OSS Repository Hosting), Snapshot and Staging
+    task matsPublishStaging(dependsOn: [publishAllPublicationsToSonatypeOSSRHStagingRepository])
+    task matsPublishSnapshot(dependsOn: [publishAllPublicationsToSonatypeOSSRHSnapshotRepository])
+
+    // Define dependency report task that all subprojects gets. Invoke with "./gradlew allDeps | less"
+    task allDeps(type: DependencyReportTask) {}
+
+}
+
+// Task to start a MatsSocketTestServer for integration tests. We will monitor the log until we get the expected number
+// of ws urls, that other tasks can then depend on
+task startMatsSocketTestServer(dependsOn: [configurations.testRuntimeClasspath, 'matssocket-server-impl:compileTestJava', 'matssocket-server-impl:processTestResources']) {
+    ext {
+        wsUrls = []
+    }
+
+    doLast {
+        int numberOfServers = 3
+        String serverClassname = "io.mats3.matssocket.MatsSocketTestServer"
+        logger.info("Starting MatsSocketTestServer");
+
+//        println "Test this shit A: "+(project(':matssocket-server-api').sourceSets.test.runtimeClasspath).plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath))
+//        println "Test this shit B: "+(project(':matssocket-server-api').sourceSets.test.runtimeClasspath).plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath)).asPath
+//
+        List<String> cmd = [
+                "${System.getenv("JAVA_HOME")}/bin/java",
+                "-classpath", (project(':matssocket-server-api').sourceSets.test.runtimeClasspath)
+                        .plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath)).asPath,
+                serverClassname,
+                numberOfServers.toString()
+        ]
+        Process server = cmd.execute()
+
+        // Keep a log file of the server output
+        File log = new File("$buildDir/logs/matsSocketServer-${LocalDateTime.now().withNano(0)}.log")
+        log.parentFile.mkdirs();
+
+        Reader reader = new InputStreamReader(server.inputStream, StandardCharsets.UTF_8)
+        log.withWriterAppend { out ->
+            String line;
+            while (wsUrls.size < numberOfServers && (line = reader.readLine()) != null) {
+                out.writeLine(line)
+                logger.info("TestServer: $line")
+                if (line.contains('HOOK_FOR_GRADLE_WEBSOCKET_URL')) {
+                    int urlStart = line.indexOf("#[")
+                    int urlEnd = line.indexOf("]#")
+                    if (urlStart > -1 && urlEnd > urlStart) {
+                        String url = line.substring(urlStart + 2, urlEnd)
+                        wsUrls.add(url)
+                        logger.info("!! Registering WS URL: $url");
+                    }
+                }
+            }
+        }
+        if (wsUrls.isEmpty()) {
+            server.errorStream.eachLine { logger.error(it) }
+            logger.error("Failed to execute: [${cmd.join(" ")}]")
+            throw new GradleException("Failed to start $serverClassname, check log above for command.")
+        }
+        logger.info("$serverClassname started");
+
+        // Fork a new thread to just keep reading and logging the MatsSocketTestServer
+        new Thread({
+            log.withWriterAppend { out ->
+                reader.eachLine { line ->
+                    out.writeLine(line)
+                }
+            }
+        }, "MatsSocketTestServer-logprinter").start()
+    }
+}
+
+// Stop the MatsSocketTestServer, this is done by inspecting the wsUrls field on the start task,
+// and creating a url to the shutdown page based on the first websocket url. The shutdown page is
+// a servlet that will do System.exit(0) to shutdown the server.
+task stopMatsSocketTestServer(dependsOn: startMatsSocketTestServer) {
+    doLast {
+        String shutdownUrl = startMatsSocketTestServer.wsUrls[0]
+                .replace("ws://", "http://")
+                .replace("/matssocket", "/shutdown");
+        logger.info("Shutting down MatsSocketTestServer by invoking '$shutdownUrl")
+        String response = new URL(shutdownUrl).text
+        logger.info("Response: [${response.trim()}]")
+    }
+}
+
+// Make sure that the startMatsSocketTestServer is finalized and shut down.
+startMatsSocketTestServer.finalizedBy(stopMatsSocketTestServer)
+
+// ------------------------------------------------
+// -- Simple tools
+
+task systemInformation {
+    doLast {
+        println "\n** Java properties [System.getProperties()], sorted:\n"
+        System.properties.sort().each { k, v ->
+            println("$k = $v")
+        }
+        println "\n** Environment [System.getenv()], sorted:\n"
+        System.env.sort().each { k, v ->
+            println("$k = $v")
+        }
+        println ''
+        println "** Java Version:   " + System.getProperty("java.version")
+        println "** Groovy Version: " + GroovySystem.getVersion()
+        println "** Gradle Version: " + gradle.gradleVersion
+    }
+}
+

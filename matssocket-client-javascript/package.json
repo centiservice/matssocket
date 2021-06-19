@@ -1,0 +1,24 @@
+{
+  "name": "matssocket",
+  "version": "0.17.0-SNAPSHOT",
+  "description": "MatsSocket JavaScript client library",
+  "main": "lib/MatsSocket.js",
+  "repository": "https://github.com/centiservice/matssocket",
+  "author": "Endre Stølsvik",
+  "license": "Polyform Perimeter 1.0.0",
+  "private": false,
+  "scripts": {
+    "serve": "node pub/server.js",
+    "test": "mocha test/unit.js",
+    "testAll": "mocha test/unit.js test/integration_basic.js test/integration_listeners.js test/integration_authentication.js test/integration_push.js test/integration_pubsub.js test/integration_connect.js"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^7.0.0",
+    "opn": "^6.0.0",
+    "sinon": "^8.0.4"
+  },
+  "dependencies": {
+    "ws": "^7.2.1"
+  }
+}

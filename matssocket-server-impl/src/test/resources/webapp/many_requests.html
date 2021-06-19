@@ -1,0 +1,114 @@
+<html>
+<meta charset="UTF-8"/>
+<head>
+    <style>
+        #request_table, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            font-size: 8px;
+            table-layout: fixed;
+            width: 2000px;
+        }
+
+        td {
+            width: 40px;
+            overflow: hidden;
+        }
+
+    </style>
+</head>
+<body>
+<h1 id="title_heading">Many requests</h1>
+Sends off a couple of thousand requests, each being fired off in its own "event" using <code>setTimeout(..., 0)</code>.
+This gives a semi-parallel execution, which is visualised below.<br>
+Each Request is passed onto the MatsSocket directly, no pipelining. Each Request uses
+its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the round-trip by updating
+the specific cell with its timing information.<br>
+<i id="statistics">Here will be statistics...</i>
+
+<script src="mats/lib/MatsSocket.js"></script>
+
+<script>
+    function tableCreate(rows, columns) {
+        let body = document.body;
+        let table = document.createElement('table');
+        table.id = "request_table";
+
+        for (let i = 0; i < rows; i++) {
+            let tr = table.insertRow();
+            for (let j = 0; j < columns; j++) {
+                let cellNum = j * rows + i;
+                let td = tr.insertCell();
+                td.id = "request_" + cellNum;
+                td.innerHTML = "x";
+            }
+        }
+        body.appendChild(table);
+    }
+
+    let rows = 80;
+    let columns = 50;
+
+    tableCreate(rows, columns);
+    let total = rows * columns;
+
+    document.getElementById("title_heading").innerText = total + " requests";
+
+    let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
+        ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
+    matsSocket.setCurrentAuthorization("DummyAuth:standard:-1", -1);
+
+    let receivedCount = 0; // Number of received messages
+    let sumTimeMillis = 0; // Sum of millis per message, to get average.
+
+    let startMillis = Date.now();
+
+    // Fire off a request for each of the Table's cells.
+    for (let i = 0; i < total; i++) {
+        // Rant: Goddamn scopes of JS. Cool, but a bit too magic. (Problem: the "i" is closed-over in the setTimeout function closure)
+        setTimeout((function (innerI) {
+            // .. this "return function" here is to get a separately-scoped "i", called "innerI".
+            return function () {
+                let requestId = "request_" + innerI;
+                let requestCell = document.getElementById(requestId);
+                requestCell.innerHTML = "Req " + innerI;
+
+                // Fire off the MatsSocket request
+                matsSocket.request("Test.single", requestId + ":" + matsSocket.id(6),
+                    // The Request DTO
+                    {
+                        string: "Request String:" + requestId,
+                        number: Math.E * innerI
+                    })
+                    .then(function (event) {
+                        // Setting data in Table's cell
+                        let timeTakenMs = event.roundTripMillis;
+                        sumTimeMillis += timeTakenMs;
+                        let displayMs = Math.round(timeTakenMs * 100) / 100;
+                        requestCell.innerHTML = "<b>" + displayMs + "</b>";
+                        receivedCount++;
+
+                        // ?: Is this the last reply coming in?
+                        if (receivedCount === total) {
+                            // -> Yes, last reply - so update the stats message at top.
+                            let totalMillis = Date.now() - startMillis;
+                            let averagePerMessage = sumTimeMillis / total;
+                            let throughputPerSecond = (total / totalMillis) * 1000;
+                            document.getElementById("statistics").innerHTML =
+                                "Total time for " + total + " requests: " + totalMillis
+                                + " ms, average per message: " + averagePerMessage
+                                + " ms, throughput: " + throughputPerSecond + " msg/sec";
+                        }
+                    });
+                if (i % 200 === 0) {
+                    matsSocket.flush();
+                }
+
+            }
+        })(i), 0);
+    }
+</script>
+
+
+</body>
+</html>

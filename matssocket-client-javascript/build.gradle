@@ -1,0 +1,69 @@
+// MatsSocket-Client-JavaScript
+
+apply plugin: 'com.github.node-gradle.node'
+
+node {
+    // Version of node to use.
+    version = '12.14.0'
+
+    // Version of Yarn to use.
+    yarnVersion = '1.21.1'
+
+    // Download node rather than using global
+    download = true
+
+    nodeModulesDir = file(projectDir)
+
+    // Set the work directories
+    workDir = file("$projectDir/node_download/nodejs")
+    npmWorkDir = file("$projectDir/node_download/npm")
+    yarnWorkDir = file("$projectDir/node_download/yarn")
+}
+
+// Execute the integration tests against a test MatsSocketTestServer
+task test(type: YarnTask, dependsOn: [yarn, ':startMatsSocketTestServer']) {
+    args = ['testAll']
+
+    doFirst {
+        execOverrides {
+            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+        }
+    }
+}
+
+// We need to ensure that javascript tests are run before stop
+rootProject.stopMatsSocketTestServer.mustRunAfter(test)
+
+// :: Helper methods for people too lazy to figure out node and run these from the javascript client folder.
+
+// Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
+// a server listening on ws://localhost:8080/matssocket
+task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
+    args = ['testAll', '--watch']
+}
+
+// Start a server to host sample html files along with the MatsSocket.js library
+task serveHtml(type: YarnTask, dependsOn: yarn) {
+    args = ['run', 'serve']
+}
+
+// Package up the JavaScript library
+task archiveLib(type: Zip) {
+    from "$projectDir/lib"
+    into "mats_socket-${project.version}-js"
+    archiveFileName = "mats_socket-${project.version}-js.zip"
+    destinationDirectory = file("$buildDir/dist")
+}
+
+// Include the packaging of the lib into the main build
+rootProject.build.dependsOn(archiveLib)
+
+task clean(type: Delete) {
+    delete buildDir
+}
+
+// Clean out the downloaded node & yarn
+task distclean(type: Delete, dependsOn: [clean]) {
+    delete "$projectDir/node_download/"
+    delete "$projectDir/node_modules/"
+}

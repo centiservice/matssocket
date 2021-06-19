@@ -1,0 +1,16 @@
+# Gradle/build
+.gradle/
+gradlebuild/
+out/
+
+# ActiveMQ KahaDB
+kahadb/
+
+# Idea
+.idea/
+
+# H2 test database
+matsTestH2DB.mv.db
+
+# Might contain secrets
+gradle.properties

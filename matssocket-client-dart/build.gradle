@@ -1,0 +1,104 @@
+// MatsSocket-Client-Dart
+
+repositories {
+    // Create a custom ivy repository that represents the dart sdk download, so that we
+    // can download the SDK using gradles download mechanisms and cache.
+    ivy {
+        url "https://storage.googleapis.com/dart-archive/channels/stable/release/"
+        patternLayout {
+            artifact "[revision]/sdk/[artifact]-[classifier]-release.[ext]"
+        }
+        metadataSources {
+            artifact()
+        }
+    }
+}
+configurations {
+    dartSdk
+}
+
+ext {
+    dartVersion = '2.7.0'
+}
+
+dependencies {
+    def os = org.gradle.internal.os.OperatingSystem.current();
+    if (os.isWindows()) {
+        dartSdk "com.google.dart:dartsdk:${dartVersion}:windows-x64@zip"
+    }
+    else if (os.isMacOsX()) {
+        dartSdk "com.google.dart:dartsdk:${dartVersion}:macos-x64@zip"
+    }
+    else if (os.isLinux()) {
+        dartSdk "com.google.dart:dartsdk:${dartVersion}:linux-x64@zip"
+    }
+}
+
+task test(dependsOn: [':startMatsSocketTestServer']) {
+    ext {
+        dartSdkPath = file("$projectDir/dartsdk_download/dart-sdk")
+    }
+
+    doLast {
+        copy {
+            from zipTree(configurations.dartSdk.asPath)
+            into "$projectDir/dartsdk_download"
+        }
+
+        // Update dart dependencies
+        exec {
+            def os = org.gradle.internal.os.OperatingSystem.current();
+            executable os.getScriptName("$dartSdkPath/bin/pub")
+            workingDir projectDir
+            args = ['get']
+        }
+
+        exec {
+            def os = org.gradle.internal.os.OperatingSystem.current();
+            executable os.getScriptName("$dartSdkPath/bin/pub")
+            workingDir projectDir
+            environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+
+            // logging.level returns null, so we need to check which log level is enabled to pass
+            // on to the tests, so that they log if needed.
+            if (logger.isEnabled(LogLevel.DEBUG)) {
+                environment("LOG_LEVEL", "DEBUG")
+            }
+            else if (logger.isEnabled(LogLevel.INFO)) {
+                environment("LOG_LEVEL", "INFO")
+            }
+            else {
+                environment("LOG_LEVEL", "SEVERE")
+            }
+            def platform = "vm"
+            if (project.hasProperty('platform')) {
+                platform = project.getProperties()['platform']
+            }
+            def testFiles = file("$projectDir/test").listFiles().findAll { it.name.endsWith(".dart") }
+            args = ['run', 'test'] + testFiles + ['-p', platform, '--reporter=expanded', '-j', '1']
+        }
+    }
+}
+
+// We need to ensure that dart tests are run before stopping the test MatsSocketServer.
+rootProject.stopMatsSocketTestServer.mustRunAfter(test)
+
+// Package up the Dart library
+task archiveLib(type: Zip) {
+    from "$projectDir/lib"
+    into "mats_socket-${project.version}-dart"
+    archiveFileName = "mats_socket-${project.version}-dart.zip"
+    destinationDirectory = file("$buildDir/dist")
+}
+
+// Include the packaging of the lib into the main build
+rootProject.build.dependsOn(archiveLib)
+
+task clean(type: Delete) {
+    delete buildDir
+}
+
+// Clean out the downloaded Dart SDK
+task distclean(type: Delete, dependsOn: [clean]) {
+    delete "$projectDir/dartsdk_download"
+}
