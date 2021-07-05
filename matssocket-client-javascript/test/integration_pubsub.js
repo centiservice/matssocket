@@ -8,7 +8,7 @@
         const chai = require('chai');
         const sinon = require('sinon');
         const ws = require('ws');
-        const mats = require('../lib/MatsSocket');
+        const mats = require('matssocket');
 
         factory(chai, sinon, ws, mats, process.env);
     } else {
@@ -23,7 +23,7 @@
     let matsSocket;
 
     function createMatsSocket() {
-        matsSocket = new MatsSocket("TestApp", "1.2.3", availableUrls);
+        matsSocket = new MatsSocket("TestApp", "1.2.3", availableUrls, {webSocket: ws});
         matsSocket.logging = logging;
     }
 

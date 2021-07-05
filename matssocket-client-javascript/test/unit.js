@@ -8,7 +8,7 @@
         const chai = require('chai');
         const sinon = require('sinon');
         const ws = require('ws');
-        const mats = require('../lib/MatsSocket');
+        const mats = require('matssocket');
 
         factory(chai, sinon, ws, mats);
     } else {
@@ -68,7 +68,7 @@
             });
             it('Should not invoke the WebSocket constructor', function () {
                 const callback = sinon.spy(ws);
-                new MatsSocket("Test", "1.0", ["ws://localhost:8080/"]);
+                new MatsSocket("Test", "1.0", ["ws://localhost:8080/"], config);
                 chai.assert(!callback.called);
                 sinon.reset();
             });

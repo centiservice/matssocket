@@ -4,7 +4,7 @@ apply plugin: 'com.github.node-gradle.node'
 
 node {
     // Version of node to use.
-    version = '12.14.0'
+    version = '14.17.1'
 
     // Version of Yarn to use.
     yarnVersion = '1.21.1'
@@ -20,10 +20,48 @@ node {
     yarnWorkDir = file("$projectDir/node_download/yarn")
 }
 
-// Execute the integration tests against a test MatsSocketTestServer
-task test(type: YarnTask, dependsOn: [yarn, ':startMatsSocketTestServer']) {
-    args = ['testAll']
+// :: Versions of node tools
+task nodeVersion(type: NodeTask) {
+    script = file('./dummy.js')
+    options = ['--version']
+}
+task versions(dependsOn: [nodeVersion, npm_version, yarn_version]) {
+}
 
+
+/*
+ * Runs Rollup - via Yarn - to create the different distributions:
+ * 1. Native EcmaScript Modules (ESM) - just use the files directly
+ * 2. Native EcmaScript Modules (EMS) - bundled
+ * 3. Native EcmaScript Modules (EMS) - bundled, minified
+ * 4. Universal Module Definition (UMD) - bundled ("by definition")
+ * 5. Universal Module Definition (UMD) - bundled, minified
+ *
+ * Using this blog post as reference:
+ * https://dev.to/remshams/rolling-up-a-multi-module-system-esm-cjs-compatible-npm-library-with-typescript-and-babel-3gjg
+ */
+task build(type: YarnTask, dependsOn: yarn) {
+    args = ['build']
+}
+
+// Execute only the unit tests
+task testUnit(type: YarnTask, dependsOn: build) {
+    args = ['testUnit']
+}
+
+// Execute only the basic tests
+task testBasic(type: YarnTask, dependsOn: [yarn, build, ':startMatsSocketTestServer']) {
+    args = ['testBasic']
+    doFirst {
+        execOverrides {
+            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+        }
+    }
+}
+
+// Execute the both unit and integration tests against a test MatsSocketTestServer
+task test(type: YarnTask, dependsOn: [yarn, build, ':startMatsSocketTestServer']) {
+    args = ['test']
     doFirst {
         execOverrides {
             it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
@@ -33,18 +71,12 @@ task test(type: YarnTask, dependsOn: [yarn, ':startMatsSocketTestServer']) {
 
 // We need to ensure that javascript tests are run before stop
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
-
-// :: Helper methods for people too lazy to figure out node and run these from the javascript client folder.
+rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
 
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
 task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
-    args = ['testAll', '--watch']
-}
-
-// Start a server to host sample html files along with the MatsSocket.js library
-task serveHtml(type: YarnTask, dependsOn: yarn) {
-    args = ['run', 'serve']
+    args = ['test', '--watch']
 }
 
 // Package up the JavaScript library
@@ -60,6 +92,7 @@ rootProject.build.dependsOn(archiveLib)
 
 task clean(type: Delete) {
     delete buildDir
+    delete "$projectDir/bundles/"
 }
 
 // Clean out the downloaded node & yarn

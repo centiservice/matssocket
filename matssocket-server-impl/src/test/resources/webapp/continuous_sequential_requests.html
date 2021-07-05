@@ -24,9 +24,9 @@ After one "screenful", timings are calculated, and we start over. The memory sit
 Tools.<br>
 <i id="statistics">Here will be information...</i>
 
-<script src="mats/lib/MatsSocket.js"></script>
+<script type="module">
+    import * as mats from './mats/lib/MatsSocket.js';
 
-<script>
     function tableCreate(rows, columns) {
         let body = document.body;
         let table = document.createElement('table');

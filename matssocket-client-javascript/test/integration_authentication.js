@@ -8,7 +8,7 @@
         const chai = require('chai');
         const sinon = require('sinon');
         const ws = require('ws');
-        const mats = require('../lib/MatsSocket');
+        const mats = require('matssocket');
 
         factory(chai, sinon, ws, mats, process.env);
     } else {
@@ -25,7 +25,7 @@
     const urls = env.MATS_SOCKET_URLS || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
     function createMatsSocket(urlsToUse = urls) {
-        matsSocket = new MatsSocket("TestApp", "1.2.3", urlsToUse.split(","));
+        matsSocket = new MatsSocket("TestApp", "1.2.3", urlsToUse.split(","), {webSocket: ws});
         matsSocket.logging = logging;
     }
 

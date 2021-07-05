@@ -8,7 +8,7 @@
         const chai = require('chai');
         const sinon = require('sinon');
         const ws = require('ws');
-        const mats = require('../lib/MatsSocket');
+        const mats = require('matssocket');
 
         factory(chai, sinon, ws, mats, process.env);
     } else {
@@ -23,7 +23,7 @@
     let matsSocket;
 
     function createMatsSocket() {
-        matsSocket = new MatsSocket("TestApp", "1.2.3", availableUrls);
+        matsSocket = new MatsSocket("TestApp", "1.2.3", availableUrls, {webSocket: ws});
         matsSocket.logging = logging;
     }
 
@@ -71,7 +71,7 @@
 
             function connectTwice(url1, url2, done) {
                 // Create the first MatsSocket
-                let matsSocket_A = new MatsSocket("TestApp", "1.2.3", url1);
+                let matsSocket_A = new MatsSocket("TestApp", "1.2.3", url1, {webSocket: ws});
                 matsSocket_A.logging = logging;
                 const now = Date.now();
                 const expiry = now + 20000;
@@ -93,7 +93,7 @@
 
 
                 // Create a second MatsSocket, that will get the same MatsSocketSessionId as the first.
-                let matsSocket_B = new MatsSocket("TestApp", "1.2.3", url2);
+                let matsSocket_B = new MatsSocket("TestApp", "1.2.3", url2, {webSocket: ws});
                 matsSocket_B.logging = matsSocket_A.logging;
                 matsSocket_B.setCurrentAuthorization("DummyAuth:standard:" + expiry, expiry, 5000);
 

@@ -26,9 +26,9 @@ its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") th
 the specific cell with its timing information.<br>
 <i id="statistics">Here will be statistics...</i>
 
-<script src="mats/lib/MatsSocket.js"></script>
+<script type="module">
+    import * as mats from './mats/lib/MatsSocket.js';
 
-<script>
     function tableCreate(rows, columns) {
         let body = document.body;
         let table = document.createElement('table');
