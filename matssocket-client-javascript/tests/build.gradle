@@ -1,0 +1,50 @@
+// MatsSocket-Client-JavaScript TESTS
+
+apply from: '../node.gradle'
+
+// Execute only the unit tests
+task testUnit(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn]) {
+    args = ['testUnit']
+}
+
+// Execute only the basic tests
+task testBasic(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn, ':startMatsSocketTestServer']) {
+    args = ['testBasic']
+    doFirst {
+        execOverrides {
+            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+        }
+    }
+}
+
+// Execute both unit and integration tests against a test MatsSocketTestServer
+task test(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn, ':startMatsSocketTestServer']) {
+    args = ['test']
+    doFirst {
+        execOverrides {
+            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+        }
+    }
+}
+
+// We need to ensure that javascript tests are run before stop
+rootProject.stopMatsSocketTestServer.mustRunAfter(test)
+rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
+
+// Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
+// a server listening on ws://localhost:8080/matssocket
+task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
+    args = ['test', '--watch']
+    workingDir = file('./tests')
+}
+
+task clean(type: Delete) {
+    delete buildDir
+    delete "$projectDir/bundles/"
+}
+
+// Clean out the downloaded node & yarn
+task distclean(type: Delete, dependsOn: [clean]) {
+    delete "$projectDir/node_download/"
+    delete "$projectDir/node_modules/"
+}

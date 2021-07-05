@@ -1,0 +1,31 @@
+{
+  "name": "matssocket",
+  "version": "0.17.0-SNAPSHOT",
+  "description": "MatsSocket JavaScript client library",
+  "repository": "https://github.com/centiservice/matssocket",
+  "author": "Endre Stølsvik",
+  "license": "Polyform Perimeter 1.0.0",
+  "private": false,
+
+  "type": "module",
+
+  "main": "bundles/MatsSocket.umd.cjs",
+  "module": "lib/MatsSocket.js",
+  "exports": {
+    "import": "./lib/MatsSocket.js",
+    "require": "./bundles/MatsSocket.umd.cjs",
+    "script": "./bundles/MatsSocket.umd.cjs"
+  },
+
+  "scripts": {
+    "build": "rollup --config"
+  },
+
+  "devDependencies": {
+    "rollup": "^2.52.7",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "dependencies": {
+    "ws": "^7.2.1"
+  }
+}

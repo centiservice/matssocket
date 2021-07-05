@@ -1,4 +1,4 @@
-node_modules
-node_download
+node_modules/
+node_download/
 yarn-error.log
 bundles/

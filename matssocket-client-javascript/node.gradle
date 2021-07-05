@@ -1,0 +1,27 @@
+apply plugin: 'com.github.node-gradle.node'
+
+node {
+    // Version of node to use.
+    version = '14.17.1'
+
+    // Version of Yarn to use.
+    yarnVersion = '1.22.5'
+
+    // Download node rather than using global
+    download = true
+
+    nodeModulesDir = file(projectDir)
+
+    // Set the work directories
+    workDir = file("$projectDir/node_download/nodejs")
+    npmWorkDir = file("$projectDir/node_download/npm")
+    yarnWorkDir = file("$projectDir/node_download/yarn")
+}
+
+// :: Versions of node tools
+task node_version(type: NodeTask) {
+    script = file('./dummy_empty.js')
+    options = ['--version']
+}
+task versions(dependsOn: [node_version, yarn_version]) {
+}

@@ -1,0 +1,50 @@
+// MatsSocket-Client-JavaScript CLIENT LIBRARY
+
+apply from: '../node.gradle'
+
+/*
+ * Runs Rollup - via Yarn - to create the different distributions:
+ * 1. Native EcmaScript Modules (ESM) - just use the files directly
+ * 2. Native EcmaScript Modules (EMS) - bundled
+ * 3. Native EcmaScript Modules (EMS) - bundled, minified
+ * 4. Universal Module Definition (UMD) - bundled ("by definition")
+ * 5. Universal Module Definition (UMD) - bundled, minified
+ *
+ * Using this blog post as reference:
+ * https://dev.to/remshams/rolling-up-a-multi-module-system-esm-cjs-compatible-npm-library-with-typescript-and-babel-3gjg
+ */
+task build(type: YarnTask, dependsOn: yarn) {
+    args = ['build']
+    inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
+    inputs.dir('lib')
+    outputs.dir('bundles')
+}
+
+// Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
+// a server listening on ws://localhost:8080/matssocket
+task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
+    args = ['test', '--watch']
+    workingDir = file('./tests')
+}
+
+// Package up the JavaScript library
+task archiveLib(type: Zip) {
+    from "$projectDir/client/lib"
+    into "mats_socket-${project.version}-js"
+    archiveFileName = "mats_socket-${project.version}-js.zip"
+    destinationDirectory = file("$buildDir/dist")
+}
+
+// Include the packaging of the lib into the main build
+rootProject.build.dependsOn(archiveLib)
+
+task clean(type: Delete) {
+    delete buildDir
+    delete "$projectDir/bundles/"
+}
+
+// Clean out the downloaded node & yarn
+task distclean(type: Delete, dependsOn: [clean]) {
+    delete "$projectDir/node_download/"
+    delete "$projectDir/node_modules/"
+}

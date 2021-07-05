@@ -1,0 +1,1 @@
+/* Only so that we can run npm --version from 'build.gradle', where gradle-node requires a file */

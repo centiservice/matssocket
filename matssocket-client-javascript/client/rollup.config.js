@@ -15,13 +15,13 @@ export default {
             sourcemap: true
         },
         {
-            file: 'bundles/MatsSocket.umd.js',
+            file: 'bundles/MatsSocket.umd.cjs',
             format: 'umd',
             name: 'mats',
             sourcemap: true
         },
         {
-            file: 'bundles/MatsSocket.umd.min.js',
+            file: 'bundles/MatsSocket.umd.min.cjs',
             format: 'umd',
             plugins: [terser()],
             name: 'mats',
