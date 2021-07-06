@@ -25,6 +25,11 @@ Damn strange, chai does not have an ESM bundle! Fixt: https://github.com/esm-bun
   }
 }
 </script>
+<!-- Note that the "matssocket" ref above can be changed from "/mats/client/lib/MatsSocket.js" to
+1. "/mats/client/bundles/MatsSocket.esm.js"
+2. "/mats/client/bundles/MatsSocket.esm.min.js"
+.. and run just as well - assuming that they have been built, of course. (run './gradlew build')
+ -->
 
 <script type="module">
     mocha.setup('bdd');
@@ -36,13 +41,7 @@ Good article: https://medium.com/dailyjs/running-mocha-tests-as-native-es6-modul
 Found "Import maps" to handle the bare imports, and then 'es-module-shim' since Firefox is f... slow.
 -->
 
-<script type="module" src="mats/tests_esm/src/integration_basic.js"></script>
-<script type="module" src="mats/tests_esm/src/integration_listeners.js"></script>
-<script type="module" src="mats/tests_esm/src/integration_push.js"></script>
-<script type="module" src="mats/tests_esm/src/integration_pubsub.js"></script>
-<script type="module" src="mats/tests_esm/src/integration_authentication.js"></script>
-<script type="module" src="mats/tests_esm/src/integration_connect.js"></script>
-<script type="module" src="mats/tests_esm/src/unit.js"></script>
+<script type="module" src="mats/tests_esm/src/all_tests.js"></script>
 
 <script type="module">
     // This import is just to force the 'es-module-shim' to kick in here, and thus ensure that mocha.run() is executed

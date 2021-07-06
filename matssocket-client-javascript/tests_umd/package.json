@@ -8,17 +8,15 @@
   "private": false,
 
   "scripts": {
-    "testUnit": "mocha src/unit.js",
-    "testBasic": "mocha src/integration_basic.js",
-    "test": "mocha src/unit.js src/integration_basic.js src/integration_listeners.js src/integration_authentication.js src/integration_push.js src/integration_pubsub.js src/integration_connect.js"
+    "build": "rollup --config",
+    "test": "mocha bundles/all_tests.umd.js"
   },
 
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^7.0.0",
     "sinon": "^8.0.4",
-    "rollup": "^2.52.7",
-    "rollup-plugin-terser": "^7.0.2"
+    "rollup": "^2.52.7"
   },
   "dependencies": {
     "matssocket": "file:../client",

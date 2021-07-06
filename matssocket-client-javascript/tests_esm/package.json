@@ -12,7 +12,7 @@
   "scripts": {
     "testUnit": "mocha src/unit.js",
     "testBasic": "mocha src/integration_basic.js",
-    "test": "mocha src/unit.js src/integration_basic.js src/integration_listeners.js src/integration_authentication.js src/integration_push.js src/integration_pubsub.js src/integration_connect.js"
+    "test": "mocha src/all_tests.js"
   },
 
   "devDependencies": {

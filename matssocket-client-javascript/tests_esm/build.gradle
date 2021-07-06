@@ -31,7 +31,7 @@ task test(type: YarnTask, dependsOn: [cleanNodeModules, yarn, ':startMatsSocketT
     }
 }
 
-// We need to ensure that javascript tests are run before stop
+// We need to ensure that javascript tests are run before MatsSocketTestServer stops!
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
 
@@ -39,7 +39,6 @@ rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
 // a server listening on ws://localhost:8080/matssocket
 task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
     args = ['test', '--watch']
-    workingDir = file('./tests')
 }
 
 task clean(type: Delete) {

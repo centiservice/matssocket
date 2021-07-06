@@ -21,14 +21,14 @@ export default {
         {
             file: 'bundles/MatsSocket.umd.cjs',
             format: 'umd',
-            name: 'mats',
+            name: 'matssocket',
             sourcemap: true
         },
         {
             file: 'bundles/MatsSocket.umd.min.cjs',
             format: 'umd',
             plugins: [terser()],
-            name: 'mats',
+            name: 'matssocket',
             sourcemap: true
         }
     ]

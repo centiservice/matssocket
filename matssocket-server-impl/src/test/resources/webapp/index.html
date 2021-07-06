@@ -19,12 +19,13 @@
 
     <h3>Unit and Integration tests, run in browser</h3>
     <ul>
-        <li><a href="unit_and_integration_tests_esm.html">ESM Unit and Integration tests</a> - runs tests natively from the EcmaScript Modules.</li>
-        <li><a href="unit_and_integration_tests_umd.html">UMD Unit and Integration tests</a> - runs UMDified tests.</li>
+        <li><a href="unit_and_integration_tests_esm.html">ESM Unit and Integration tests</a> - runs source ES Module files directly, both tests and MatsSocket.js, as <code>type="module"</code>.</li>
+        <li><a href="unit_and_integration_tests_umd.html">UMD Unit and Integration tests</a> - runs UMDified tests and <code>MatsSocket.umd.cjs</code>, thus the project must be built first:
+            <code>./gradlew build</code> (or <code>./gradlew test</code>)</li>
     </ul>
 
     <h3>Some pure HTML+JavaScript tests:</h3>
-    Note: These directly load from the source <code>MatsSocket.js</code> as EcmaScript Modules (ESM).
+    Note: All these directly load from the source <code>MatsSocket.js</code> as EcmaScript Modules (ESM).
     <ul>
         <li><a href="simple_tests.html">Simple tests</a> - assumes that you have the JavaScript Console open.</li>
         <li><a href="many_requests.html">4000 requests</a> - a table-full of request-replies, timings.</li>

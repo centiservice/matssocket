@@ -4,23 +4,33 @@
     <title>MatsSocket Tests</title>
     <meta charset="utf-8"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.js"></script>
 </head>
 <body>
 <div id="mocha"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sinon.js/8.1.0/sinon.min.js"></script>
+<script src="/mats/client/bundles/MatsSocket.umd.cjs"></script>
+<!-- Note that the "matssocket" ref above can both be
+1. "/mats/client/bundles/MatsSocket.umd.cjs"
+2. "/mats/client/bundles/MatsSocket.umd.min.cjs"
+.. assuming that they have been built, of course. (run './gradlew build')
+ -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.2.0/chai.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sinon.js/8.1.0/sinon.min.js"></script>
+
 <script>mocha.setup('bdd')</script>
 
-<script src="mats/client/bundles/MatsSocket.umd.cjs"></script>
+<script src="mats/tests_umd/bundles/all_tests.umd.js"></script>
 
-<script src="mats/tests_umd/src/integration_basic.js"></script>
-<script src="mats/tests_umd/src/integration_listeners.js"></script>
-<script src="mats/tests_umd/src/integration_push.js"></script>
-<script src="mats/tests_umd/src/integration_pubsub.js"></script>
-<script src="mats/tests_umd/src/integration_authentication.js"></script>
-<script src="mats/tests_umd/src/integration_connect.js"></script>
-<script src="mats/tests_umd/src/unit.js"></script>
+<script>
+    console.log("XXX: From HTML:");
+    console.log("matssocket:");
+    console.log(matssocket);
+    console.log("chai:");
+    console.log(chai);
+    console.log("sinon:");
+    console.log(sinon);
+</script>
 
 <script>
     mocha.run();

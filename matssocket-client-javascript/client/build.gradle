@@ -15,7 +15,7 @@ apply from: '../node.gradle'
  */
 task build(type: YarnTask, dependsOn: yarn) {
     args = ['build']
-    inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
+    inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('bundles')
 }
