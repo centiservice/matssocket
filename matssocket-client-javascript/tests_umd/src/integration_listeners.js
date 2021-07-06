@@ -7,15 +7,14 @@
         // CommonJS
         const chai = require('chai');
         const sinon = require('sinon');
-        const ws = require('ws');
         const mats = require('matssocket');
 
-        factory(chai, sinon, ws, mats, process.env);
+        factory(chai, sinon, mats, process.env);
     } else {
         // Browser globals
-        factory(chai, sinon, WebSocket, mats, {});
+        factory(chai, sinon, mats, {});
     }
-}(typeof self !== 'undefined' ? self : this, function (chai, sinon, ws, mats, env) {
+}(typeof self !== 'undefined' ? self : this, function (chai, sinon, mats, env) {
     const MatsSocket = mats.MatsSocket;
 
     describe('MatsSocket integration tests, listeners', function () {
@@ -30,7 +29,7 @@
         const urls = env.MATS_SOCKET_URLS || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
         beforeEach(() => {
-            matsSocket = new MatsSocket("TestApp", "1.2.3", urls.split(","), {webSocket: ws});
+            matsSocket = new MatsSocket("TestApp", "1.2.3", urls.split(","));
             matsSocket.logging = false;
         });
 

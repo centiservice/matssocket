@@ -1,7 +1,8 @@
 rootProject.name = 'matssocket'
 
 include 'matssocket-server-api', 'matssocket-server-impl',
-        'matssocket-client-javascript', 'matssocket-client-javascript:client', 'matssocket-client-javascript:tests',
+        'matssocket-client-javascript',
+        'matssocket-client-javascript:client', 'matssocket-client-javascript:tests_esm', 'matssocket-client-javascript:tests_umd',
         'matssocket-client-dart'
 
 println "** Java: ${ System.getProperty('java.version') }, Groovy: $GroovySystem.version," +

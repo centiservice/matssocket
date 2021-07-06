@@ -7,23 +7,24 @@
         // CommonJS
         const chai = require('chai');
         const sinon = require('sinon');
-        const ws = require('ws');
         const mats = require('matssocket');
 
-        factory(chai, sinon, ws, mats, process.env);
+        factory(chai, sinon, mats, process.env);
     } else {
         // Browser globals
-        factory(chai, sinon, WebSocket, mats, {});
+        factory(chai, sinon, mats, {});
     }
-}(typeof self !== 'undefined' ? self : this, function (chai, sinon, ws, mats, env) {
+}(typeof self !== 'undefined' ? self : this, function (chai, sinon, mats, env) {
     const MatsSocket = mats.MatsSocket;
 
     let logging = false;
 
     let matsSocket;
 
+    const availableUrls = (env.MATS_SOCKET_URLS || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket").split(",");
+
     function createMatsSocket() {
-        matsSocket = new MatsSocket("TestApp", "1.2.3", availableUrls, {webSocket: ws});
+        matsSocket = new MatsSocket("TestApp", "1.2.3", availableUrls);
         matsSocket.logging = logging;
     }
 
@@ -41,9 +42,6 @@
         const expiry = now + duration;
         matsSocket.setCurrentAuthorization("DummyAuth:" + userId + ":" + expiry, expiry, roomForLatencyMillis);
     }
-
-    const availableUrls = (env.MATS_SOCKET_URLS || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket").split(",");
-
 
     describe('MatsSocket integration tests of connect, reconnect and close', function () {
         /*
@@ -71,7 +69,7 @@
 
             function connectTwice(url1, url2, done) {
                 // Create the first MatsSocket
-                let matsSocket_A = new MatsSocket("TestApp", "1.2.3", url1, {webSocket: ws});
+                let matsSocket_A = new MatsSocket("TestApp", "1.2.3", url1);
                 matsSocket_A.logging = logging;
                 const now = Date.now();
                 const expiry = now + 20000;
@@ -93,7 +91,7 @@
 
 
                 // Create a second MatsSocket, that will get the same MatsSocketSessionId as the first.
-                let matsSocket_B = new MatsSocket("TestApp", "1.2.3", url2, {webSocket: ws});
+                let matsSocket_B = new MatsSocket("TestApp", "1.2.3", url2);
                 matsSocket_B.logging = matsSocket_A.logging;
                 matsSocket_B.setCurrentAuthorization("DummyAuth:standard:" + expiry, expiry, 5000);
 

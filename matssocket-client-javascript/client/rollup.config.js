@@ -2,6 +2,10 @@ import { terser } from "rollup-plugin-terser";
 
 export default {
     input: 'lib/MatsSocket.js',
+    // Suppress warning about dynamic loading of 'ws' module inside MatsSocket.js.
+    // The 'ws' module is only for Node.js, and it shall not be bundled.
+    // https://rollupjs.org/guide/en/#warning-treating-module-as-external-dependency
+    external: [ 'ws' ],
     output: [
         {
             file: 'bundles/MatsSocket.esm.js',

@@ -883,27 +883,6 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
         }
 
         @Override
-        @Deprecated
-        public void forwardInteractiveUnreliable(Object matsMessage) {
-            // Old logic, with "default forward", now deprecated.
-            forwardNonessential(getMatsSocketEndpointId(), matsMessage);
-        }
-
-        @Override
-        @Deprecated
-        public void forwardInteractivePersistent(Object matsMessage) {
-            // Old logic, with "default forward", now deprecated.
-            forwardEssential(getMatsSocketEndpointId(), matsMessage);
-        }
-
-        @Override
-        @Deprecated
-        public void forwardCustom(Object matsMessage, InitiateLambda customInit) {
-            // Old logic, with "default forward", now deprecated.
-            forward(getMatsSocketEndpointId(), matsMessage, customInit);
-        }
-
-        @Override
         public MatsInitiate getMatsInitiate() {
             return _matsInitiate;
         }

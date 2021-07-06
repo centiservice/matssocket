@@ -27,6 +27,7 @@ export {
     DebugOption, DebugInformation
 }
 
+
 /**
  * Creates a MatsSocket, requiring the using Application's name and version, and which URLs to connect to.
  *
@@ -55,6 +56,13 @@ function MatsSocket(appName, appVersion, urls, config) {
         throw new Error("urls must have at least 1 url set, got: [" + urls + "]");
     }
 
+    // If we haven't gotten 'webSocketFactory', and we're in Node.js env, this field is set to true, and an attempt to
+    // import('ws') is performed. When the import has gone either OK or not OK, this field is set to false, and the the
+    // next field's value will be invoked.
+    let _nodeJsTryingToImportWebSocketModule = false;
+    // If !undefined, will be invoked once import of WebSocket module is either OK or Not OK.
+    // If the 'webSocketFactory' is !undefined, it went OK. If the above field is false, it went to hell.
+    let _nodeJsCallbackOnceWebSocketModuleResolved = undefined;
 
     // :: Provide default for socket factory if not defined.
     let webSocketFactory = undefined;
@@ -73,18 +81,47 @@ function MatsSocket(appName, appVersion, urls, config) {
             };
         }
     }
-
-    // ?: Did we get it on 'config'?
+    // ?: Did we get webSocketFactory from 'config'?
     if (!webSocketFactory) {
         // -> No, so try for global WebSocket
         if (typeof WebSocket === "function") {
             webSocketFactory = function (url, protocol) {
                 return new WebSocket(url, protocol);
             };
-        } else throw new Error("Missing config.webSocket, config.webSocketFactory and global WebSocket (window.WebSocket) - cannot create MatsSocket.");
+        } else if (_isNodeJs()) {
+            _nodeJsTryingToImportWebSocketModule = true;
+            // -> Seemingly Node.js environment, try to dynamically import the 'ws' library.
+            // NOTE: Such import is specified as an asynchronous operation, albeit it seems synchronous when running in Node.
+            // However, we'll have to treat it as async, so a bit of handling both here and in the WebSocket creation
+            // code below, by means of "stop process and restart once import resolved" logic.
+            import('ws')
+                .then((ws) => {
+                    log("Constructor: NodeJs import('ws') went OK: Got WebSocket module");
+                    const {default: WebSocket} = ws;
+                    setTimeout(() => {
+                        webSocketFactory = function (url, protocol) {
+                            return new WebSocket(url, protocol);
+                        };
+                        log("Constructor: 'webSocketFactory' is now set.");
+                        _nodeJsTryingToImportWebSocketModule = false;
+                        if (typeof _nodeJsCallbackOnceWebSocketModuleResolved === 'function') {
+                            log("Constructor: Invoking callback-method to restart WebSocket creation attempt.");
+                            _nodeJsCallbackOnceWebSocketModuleResolved();
+                        }
+                    }, 0)
+                })
+                .catch(reason => {
+                    _nodeJsTryingToImportWebSocketModule = false;
+                    error("Import of WebSocket module failed", "In Node.js environment, the import('ws') failed", reason);
+                });
+        }
+        else {
+            throw new Error("Missing config.webSocket, config.webSocketFactory, global WebSocket (window.WebSocket)," +
+                " and seemingly not Node.js so cannot dynamically import 'ws' module: Cannot create MatsSocket.");
+        }
     }
 
-    // :: Polyfill performance.now() for Node.js
+    // :: Polyfill performance.now() for Node.js: if window.performance is present, use this.
     let performance = ((typeof (window) === "object" && window.performance) || {
         now: function now() {
             return Date.now();
@@ -1372,6 +1409,10 @@ function MatsSocket(appName, appVersion, urls, config) {
 
     // ==== Implementation ====
 
+    function _isNodeJs() {
+        return process && process.versions && (typeof process.versions.node !== 'undefined');
+    }
+
     function _invokeLater(that) {
         setTimeout(that, 0);
     }
@@ -1901,6 +1942,21 @@ function MatsSocket(appName, appVersion, urls, config) {
         }
 
         // ------ We have a valid, unexpired authorization token ready to use for connection
+
+        if (! webSocketFactory) {
+            if (_nodeJsTryingToImportWebSocketModule) {
+                log("InitiateWebSocketCreation: Missing matsSocketFactory, but import in progress! Wait for result of import attempt.")
+                _nodeJsCallbackOnceWebSocketModuleResolved = function() {
+                    log("InitiateWebSocketCreation: Was missing matsSocketFactory, but matsSocketFactory should now be in place. Attempting again.")
+                    _initiateWebSocketCreation();
+                }
+                return;
+            }
+            else {
+                error("Missing WebSocket implementation", "InitiateWebSocketCreation: Missing matsSocketFactory, and there is no attempt in progress to get it. Fatal.")
+                throw new Error("Missing matsSocketFactory!");
+            }
+        }
 
         // :: We are currently trying to connect! (This will be set to true repeatedly while in the process of opening)
         _webSocketConnecting = true;

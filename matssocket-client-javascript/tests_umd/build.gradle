@@ -7,8 +7,12 @@ task testUnit(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:
     args = ['testUnit']
 }
 
+task cleanNodeModules(type: Delete) {
+    delete "$projectDir/node_modules/"
+}
+
 // Execute only the basic tests
-task testBasic(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn, ':startMatsSocketTestServer']) {
+task testBasic(type: YarnTask, dependsOn: [cleanNodeModules, ':matssocket-client-javascript:client:build', yarn]) {
     args = ['testBasic']
     doFirst {
         execOverrides {
@@ -16,7 +20,6 @@ task testBasic(type: YarnTask, dependsOn: [':matssocket-client-javascript:client
         }
     }
 }
-
 // Execute both unit and integration tests against a test MatsSocketTestServer
 task test(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn, ':startMatsSocketTestServer']) {
     args = ['test']
