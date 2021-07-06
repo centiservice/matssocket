@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MatsSocket Tests</title>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mocha@9.0.2/mocha.css">
+    <script src="https://cdn.jsdelivr.net/npm/mocha@9.0.2/mocha.js"></script>
+</head>
+<body>
+<div id="mocha"></div>
+<!-- Polyfilling "Import maps", since Firefox is lacking support.
+Can I use: https://caniuse.com/import-maps
+Import maps: https://blog.logrocket.com/es-modules-in-browsers-with-import-maps/
+Polyfill: https://github.com/guybedford/es-module-shims
+
+Damn strange, chai does not have an ESM bundle! Fixt: https://github.com/esm-bundle/chai
+-->
+<script defer src="https://cdn.jsdelivr.net/npm/es-module-shims@0.12.1/dist/es-module-shims.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "matssocket": "/mats/client/lib/MatsSocket.js",
+    "sinon": "https://cdn.jsdelivr.net/npm/sinon@11.1.1/pkg/sinon-esm.js",
+    "chai": "https://cdn.jsdelivr.net/npm/@esm-bundle/chai@4.3.4/esm/chai.js"
+  }
+}
+</script>
+
+<script type="module">
+    mocha.setup('bdd');
+</script>
+
+<!--
+Getting testing to work in browser with Mocha while using same ESM test files as when running tests in Node.js CLI.
+Good article: https://medium.com/dailyjs/running-mocha-tests-as-native-es6-modules-in-a-browser-882373f2ecb0
+Found "Import maps" to handle the bare imports, and then 'es-module-shim' since Firefox is f... slow.
+-->
+
+<script type="module" src="mats/tests_esm/src/integration_basic.js"></script>
+<script type="module" src="mats/tests_esm/src/integration_listeners.js"></script>
+<script type="module" src="mats/tests_esm/src/integration_push.js"></script>
+<script type="module" src="mats/tests_esm/src/integration_pubsub.js"></script>
+<script type="module" src="mats/tests_esm/src/integration_authentication.js"></script>
+<script type="module" src="mats/tests_esm/src/integration_connect.js"></script>
+<script type="module" src="mats/tests_esm/src/unit.js"></script>
+
+<script type="module">
+    // This import is just to force the 'es-module-shim' to kick in here, and thus ensure that mocha.run() is executed
+    // after all the tests have been loaded and registered (i.e. the "describe(..)" methods in the included tests files
+    // above have run).
+    import * as chai from "chai"
+    // This is just to actually use the imported chai, so that IntellJ doesn't complain..
+    chai.assert(true === true, "Nå står ikke verden til påske!");
+    mocha.run();
+</script>
+</body>
+</html>

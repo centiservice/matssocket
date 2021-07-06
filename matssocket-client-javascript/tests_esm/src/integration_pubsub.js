@@ -4,7 +4,8 @@ let logging = false;
 
 let matsSocket;
 
-const urls = process && process.env && process.env.MATS_SOCKET_URLS || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
+    || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
 function createMatsSocket() {
     matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urls.split(","));

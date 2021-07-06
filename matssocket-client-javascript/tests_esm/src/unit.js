@@ -39,7 +39,9 @@ let config = {webSocketFactory: () => webSocket};
 
 describe('MatsSocket unit tests', function () {
     describe('constructor', function () {
+
         it('Should fail on no arg invocation', function () {
+            console.log("XXX inside unit.js describe-describe-specify")
             chai.assert.throws(() => new mats.MatsSocket());
         });
 

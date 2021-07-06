@@ -10,7 +10,8 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
         matsSocket.setCurrentAuthorization("DummyAuth:" + userId + ":" + expiry, expiry, roomForLatencyMillis);
     }
 
-    const urls = process && process.env && process.env.MATS_SOCKET_URLS || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
+        || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
     beforeEach(() => {
         matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urls.split(","));

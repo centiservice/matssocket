@@ -63,6 +63,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     // If !undefined, will be invoked once import of WebSocket module is either OK or Not OK.
     // If the 'webSocketFactory' is !undefined, it went OK. If the above field is false, it went to hell.
     let _nodeJsCallbackOnceWebSocketModuleResolved = undefined;
+    // Note: Alternative would be main vs. browser in package.json, e.g. here: https://stackoverflow.com/a/67393553/39334
 
     // :: Provide default for socket factory if not defined.
     let webSocketFactory = undefined;
