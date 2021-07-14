@@ -20,6 +20,23 @@ task build(type: YarnTask, dependsOn: yarn) {
     outputs.dir('bundles')
 }
 
+task publishDryRun(type: NpmTask, dependsOn: build) {
+    args = ['publish', '--dry-run']
+}
+
+task publishExperimental(type: NpmTask, dependsOn: build) {
+    // Remember to update version in package.json, it shall read "0.0.0-experimental-<iso datetime>" (e.g. 2021-07-14T18-06)
+    // TODO: Also update in clients and build.gradle files.
+    args = ['publish', '--tag', 'experimental']
+}
+
+task publish(type: NpmTask, dependsOn: build) {
+    // Remember to update version in package.json, it shall read "x.y.z"
+    // TODO: Also update in clients and build.gradle files.
+    // 'publish' by default uses '--tag latest'
+    args = ['publish']
+}
+
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
 task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {

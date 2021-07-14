@@ -1,6 +1,6 @@
 {
   "name": "matssocket",
-  "version": "0.17.0-SNAPSHOT",
+  "version": "0.0.0-experimental-2021-07-14T18-06",
   "description": "MatsSocket JavaScript client library",
   "repository": "https://github.com/centiservice/matssocket",
   "author": "Endre Stølsvik",
@@ -17,6 +17,12 @@
     "script": "./bundles/MatsSocket.umd.cjs"
   },
 
+  "files": ["lib/", "bundles/", "build.gradle", "rollup.config.js"],
+
+  "dependencies": {
+    "ws": "^7.2.1"
+  },
+
   "scripts": {
     "build": "rollup --config"
   },
@@ -24,8 +30,5 @@
   "devDependencies": {
     "rollup": "^2.52.7",
     "rollup-plugin-terser": "^7.0.2"
-  },
-  "dependencies": {
-    "ws": "^7.2.1"
   }
 }
