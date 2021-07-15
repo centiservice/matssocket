@@ -6,27 +6,26 @@
   "author": "Endre Stølsvik",
   "license": "Polyform Perimeter 1.0.0",
   "private": false,
-
   "type": "module",
-
   "main": "bundles/MatsSocket.umd.cjs",
-  "module": "lib/MatsSocket.js",
+  "module": "bundles/MatsSocket.esm.js",
   "exports": {
-    "import": "./lib/MatsSocket.js",
+    "import": "./bundles/MatsSocket.esm.js",
     "require": "./bundles/MatsSocket.umd.cjs",
     "script": "./bundles/MatsSocket.umd.cjs"
   },
-
-  "files": ["lib/", "bundles/", "build.gradle", "rollup.config.js"],
-
+  "files": [
+    "lib/",
+    "bundles/",
+    "build.gradle",
+    "rollup.config.js"
+  ],
   "dependencies": {
     "ws": "^7.2.1"
   },
-
   "scripts": {
     "build": "rollup --config"
   },
-
   "devDependencies": {
     "@babel/core": "^7.14.6",
     "@babel/preset-env": "^7.14.7",
