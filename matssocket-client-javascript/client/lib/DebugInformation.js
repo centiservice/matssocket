@@ -45,12 +45,12 @@ const DebugOption = Object.freeze({
     /**
      * Timing info of the separate phases. Note that time-skew between different nodes must be taken into account.
      */
-    TIMESTAMPS: 0b0000_0001,
+    TIMESTAMPS: 1, // was 0b0000_0001 (changed due to underscores and possibly binary being a bit too edgy for JS in 2021)
 
     /**
      * Node-name of the handling nodes of the separate phases.
      */
-    NODES: 0b0000_0010,
+    NODES: 2, // was 0b0000_0010
 
     /**
      * <code>AuthenticationPlugin</code>-specific "Option A" - this is not used by MatsSocket itself, but can be employed
@@ -60,7 +60,7 @@ const DebugOption = Object.freeze({
      * the <code>AuthenticationPlugin</code> ("this user is allowed to request these things") - and on the request DTOs
      * from the Client ("I would like to request these things").
      */
-    CUSTOM_A: 0b0100_0000,
+    CUSTOM_A: 64, // was 0b0100_0000
 
     /**
      * <code>AuthenticationPlugin</code>-specific "Option B" - this is not used by MatsSocket itself, but can be employed
@@ -70,5 +70,5 @@ const DebugOption = Object.freeze({
      * the <code>AuthenticationPlugin</code> ("this user is allowed to request these things") - and on the request DTOs
      * from the Client ("I would like to request these things").
      */
-    CUSTOM_B: 0b1000_0000
+    CUSTOM_B: 128 // was 0b1000_0000
 });
