@@ -7,7 +7,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.js"></script>
 </head>
 <body>
+
+<h1>Unit and Integration tests, bundled UMD</h1>
+You must have built the code, '<code>./gradlew build</code>', to have the UMD files available.
+
 <div id="mocha"></div>
+
 <script src="/mats/client/bundles/MatsSocket.umd.cjs"></script>
 <!-- Note that the "matssocket" ref above can both be
 1. "/mats/client/bundles/MatsSocket.umd.cjs"
@@ -21,16 +26,6 @@
 <script>mocha.setup('bdd')</script>
 
 <script src="mats/tests_umd/bundles/all_tests.umd.js"></script>
-
-<script>
-    console.log("XXX: From HTML:");
-    console.log("matssocket:");
-    console.log(matssocket);
-    console.log("chai:");
-    console.log(chai);
-    console.log("sinon:");
-    console.log(sinon);
-</script>
 
 <script>
     mocha.run();

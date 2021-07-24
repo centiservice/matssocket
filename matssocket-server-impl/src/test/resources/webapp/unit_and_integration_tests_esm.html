@@ -7,8 +7,14 @@
     <script src="https://cdn.jsdelivr.net/npm/mocha@9.0.2/mocha.js"></script>
 </head>
 <body>
+
+<h1>Unit and Integration tests, directly from EcmaScript Module files</h1>
+Both the MatsSocket.js code, and the unit/integration tests code, is accessed and run directly from the source.
+
 <div id="mocha"></div>
-<!-- Polyfilling "Import maps", since Firefox is lacking support.
+<!--
+- Employing "Import maps" to handle Module Loading in browser using "bare references", e.g. "chai" and "matssocket".
+- Polyfilling Import Maps", since Firefox is lacking support.
 Can I use: https://caniuse.com/import-maps
 Import maps: https://blog.logrocket.com/es-modules-in-browsers-with-import-maps/
 Polyfill: https://github.com/guybedford/es-module-shims
@@ -38,7 +44,7 @@ Damn strange, chai does not have an ESM bundle! Fixt: https://github.com/esm-bun
 <!--
 Getting testing to work in browser with Mocha while using same ESM test files as when running tests in Node.js CLI.
 Good article: https://medium.com/dailyjs/running-mocha-tests-as-native-es6-modules-in-a-browser-882373f2ecb0
-Found "Import maps" to handle the bare imports, and then 'es-module-shim' since Firefox is f... slow.
+Found "Import maps" to handle the bare imports, and then 'es-module-shim' since Firefox is f... slow to implement this.
 -->
 
 <script type="module" src="mats/tests_esm/src/all_tests.js"></script>
