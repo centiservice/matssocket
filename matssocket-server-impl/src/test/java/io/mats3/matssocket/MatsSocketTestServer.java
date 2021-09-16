@@ -22,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.jms.ConnectionFactory;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletOutputStream;
@@ -75,7 +76,7 @@ import io.mats3.matssocket.impl.ClusterStoreAndForward_SQL_DbMigrations.Database
 import io.mats3.matssocket.impl.DefaultMatsSocketServer;
 import io.mats3.serial.MatsSerializer;
 import io.mats3.serial.json.MatsSerializerJson;
-import io.mats3.util_activemq.MatsLocalVmActiveMq;
+import io.mats3.test.broker.MatsTestBroker;
 
 /**
  * A main class that fires up an ActiveMQ in-mem instances, and then two instances of a testing Servlet WebApp by
@@ -101,8 +102,6 @@ public class MatsSocketTestServer {
 
     private static final String WEBSOCKET_PATH = "/matssocket";
 
-    private static final String COMMON_AMQ_NAME = "CommonAMQ";
-
     private static final Logger log = LoggerFactory.getLogger(MatsSocketTestServer.class);
 
     @WebListener
@@ -114,7 +113,8 @@ public class MatsSocketTestServer {
         @Override
         public void contextInitialized(ServletContextEvent sce) {
             log.info("ServletContextListener.contextInitialized(...): " + sce);
-            log.info("  \\- ServletContext: " + sce.getServletContext());
+            ServletContext sc = sce.getServletContext();
+            log.info("  \\- ServletContext: " + sc);
 
             // ## Create backing DataSource for MatsFactory and MatsSocketServer using H2
             // NOTICE: This will be created MULTIPLE TIMES (since the entire Jetty server is created multiple times,
@@ -134,21 +134,21 @@ public class MatsSocketTestServer {
             dataSource.setMaxConnections(5);
 
             // ## Create MatsFactory
-            // ActiveMQ ConnectionFactory
-            ConnectionFactory connectionFactory = MatsLocalVmActiveMq.createConnectionFactory(COMMON_AMQ_NAME);
+            // Get JMS ConnectionFactory from ServletContext
+            ConnectionFactory connFactory = (ConnectionFactory) sc.getAttribute(ConnectionFactory.class.getName());
             // MatsSerializer
             MatsSerializer<String> matsSerializer = MatsSerializerJson.create();
             // Create the MatsFactory
             _matsFactory = JmsMatsFactory.createMatsFactory_JmsAndJdbcTransactions(
                     MatsSocketTestServer.class.getSimpleName(), "*testing*",
-                    JmsMatsJmsSessionHandler_Pooling.create(connectionFactory),
+                    JmsMatsJmsSessionHandler_Pooling.create(connFactory),
                     dataSource,
                     matsSerializer);
             // Configure the MatsFactory for testing (remember, we're running two instances in same JVM)
             // .. Concurrency of only 2
             _matsFactory.getFactoryConfig().setConcurrency(2);
             // .. Use port number of current server as postfix for name of MatsFactory, and of nodename
-            Integer portNumber = (Integer) sce.getServletContext().getAttribute(CONTEXT_ATTRIBUTE_PORTNUMBER);
+            Integer portNumber = (Integer) sc.getAttribute(CONTEXT_ATTRIBUTE_PORTNUMBER);
             _matsFactory.getFactoryConfig().setName("MF_Server_" + portNumber);
             _matsFactory.getFactoryConfig().setNodename("EndreBox_" + portNumber);
 
@@ -164,7 +164,7 @@ public class MatsSocketTestServer {
             AuthenticationPlugin authenticationPlugin = DummySessionAuthenticator::new;
 
             // Fetch the WebSocket ServerContainer from the ServletContainer (JSR 356 specific tie-in to Servlets)
-            ServerContainer wsServerContainer = (ServerContainer) sce.getServletContext()
+            ServerContainer wsServerContainer = (ServerContainer) sc
                     .getAttribute(ServerContainer.class.getName());
 
             // Create the MatsSocketServer, piecing together the four needed elements + websocket mount point
@@ -173,7 +173,7 @@ public class MatsSocketTestServer {
 
             // Set back the MatsSocketServer into ServletContext, to be able to shut it down properly.
             // (Hack for Jetty's specific shutdown procedure)
-            sce.getServletContext().setAttribute(MatsSocketServer.class.getName(), _matsSocketServer);
+            sc.setAttribute(MatsSocketServer.class.getName(), _matsSocketServer);
 
             // Set up all the Mats and MatsSocket Test Endpoints (used for integration tests, and the HTML test pages)
             SetupTestMatsAndMatsSocketEndpoints.setupMatsAndMatsSocketEndpoints(_matsFactory, _matsSocketServer);
@@ -553,7 +553,7 @@ public class MatsSocketTestServer {
         }
     }
 
-    public static Server createServer(int port) {
+    public static Server createServer(ConnectionFactory jmsConnectionFactory, int port) {
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
         webAppContext.setBaseResource(Resource.newClassPathResource("webapp"));
@@ -561,6 +561,8 @@ public class MatsSocketTestServer {
         webAppContext.setThrowUnavailableOnStartupException(true);
         // Store the port number this server shall run under in the ServletContext.
         webAppContext.getServletContext().setAttribute(CONTEXT_ATTRIBUTE_PORTNUMBER, port);
+        // Store the JMS ConnectionFactory in the ServletContext
+        webAppContext.getServletContext().setAttribute(ConnectionFactory.class.getName(), jmsConnectionFactory);
 
         // Override the default configurations, stripping down and adding AnnotationConfiguration.
         // https://www.eclipse.org/jetty/documentation/9.4.x/configuring-webapps.html
@@ -623,7 +625,8 @@ public class MatsSocketTestServer {
         System.setProperty(CoreConstants.DISABLE_SERVLET_CONTAINER_INITIALIZER_KEY, "true");
 
         // Create common AMQ
-        MatsLocalVmActiveMq.createInVmActiveMq(COMMON_AMQ_NAME);
+        MatsTestBroker matsTestBroker = MatsTestBroker.create();
+        ConnectionFactory jmsConnectionFactory = matsTestBroker.getConnectionFactory();
 
         // Read in the server count as an argument, or assume 2
         int serverCount = (args.length > 0) ? Integer.parseInt(args[0]) : 2;
@@ -638,7 +641,7 @@ public class MatsSocketTestServer {
             // Keep looping until we have found a free port that the server was able to start on
             while (true) {
                 int port = nextPort;
-                servers[i] = createServer(port);
+                servers[i] = createServer(jmsConnectionFactory, port);
                 log.info("######### Starting server [" + serverId + "] on [" + port + "]");
 
                 // Add a life cycle hook to log when the server has started

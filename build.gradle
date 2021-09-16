@@ -11,7 +11,7 @@ plugins {
 
 // Specify Gradle version, run update by './gradlew wrapper'
 wrapper {
-    gradleVersion = "7.1"
+    gradleVersion = "7.2"
     // Use "-all"-version of distribution, since IntelliJ works better then..
     setDistributionType(Wrapper.DistributionType.ALL)
 }
@@ -25,7 +25,7 @@ allprojects {
 // Versions for all libraries used throughout the subprojects
 ext {
     // MatsSocketServer API dependencies
-    matsVersion = '0.17.0'
+    matsVersion = '0.18.0-2021-09-14'
     // MatsSocketServer Implementation dependencies
     javaxWebsocketsVersion = '1.0'
     jacksonVersion = '2.11.4'
@@ -72,6 +72,31 @@ configure ([project('matssocket-server-api'), project('matssocket-server-impl')]
             attributes 'Implementation-Title': 'MatsSocket',
                     'Implementation-Version': archiveVersion
         }
+    }
+
+    test {
+        /*
+         * All tests employ MatsTestBroker to get hold of a JMS ConnectionFactory to use for its MatsFactory creation.
+         * This per default starts an in-vm ActiveMQ broker, and connects an ActiveMQConnectionFactory to this.
+         * However, via system properties, you may choose which client to use (activemq, artemis or rabbitmq - and
+         * you may also specify the class name of a MatsTestBroker implementation).
+         * For ActiveMQ and Artemis, it supports in-vm creation of the broker (server) - which is the default.
+         *
+         * Run all tests with in-vm ActiveMQ brokers (ActiveMQ is default, in-vm is default)
+         * ./gradlew clean test
+         *
+         * Run all tests with in-vm Artemis MQ brokers (Apache ActiveMQ Artemis, formerly JBoss HornetQ,
+         * and what Red Hat AMQ is based upon):
+         * ./gradlew -Pmats.test.broker=artemis clean test
+         *
+         * Run all tests against an external ActiveMQ MQ broker on localhost (ActiveMQ is default).
+         * ./gradlew -Pmats.test.brokerurl=localhost clean test
+         *
+         * Run all tests against an external Artemis MQ broker on localhost:
+         * ./gradlew -Pmats.test.broker=artemis -Pmats.test.brokerurl=localhost clean test
+         */
+        // NOTICE: Currently no Java tests. These properties are also forwarded to the MatsSocketTestServer exec below.
+        systemProperties project.properties.subMap(["mats.test.brokerurl", "mats.test.broker"])
     }
 
     signing {
@@ -131,8 +156,8 @@ configure ([project('matssocket-server-api'), project('matssocket-server-impl')]
     }
 
     // Tasks to publish to Sonatype's OSSRH (OSS Repository Hosting), Snapshot and Staging
-    task matsPublishStaging(dependsOn: [publishAllPublicationsToSonatypeOSSRHStagingRepository])
     task matsPublishSnapshot(dependsOn: [publishAllPublicationsToSonatypeOSSRHSnapshotRepository])
+    task matsPublishStaging(dependsOn: [publishAllPublicationsToSonatypeOSSRHStagingRepository])
 
     // Define dependency report task that all subprojects gets. Invoke with "./gradlew allDeps | less"
     task allDeps(type: DependencyReportTask) {}
@@ -151,24 +176,25 @@ task startMatsSocketTestServer(dependsOn: [configurations.testRuntimeClasspath, 
         String serverClassname = "io.mats3.matssocket.MatsSocketTestServer"
         logger.info("Starting MatsSocketTestServer");
 
-//        println "Test this shit A: "+(project(':matssocket-server-api').sourceSets.test.runtimeClasspath).plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath))
-//        println "Test this shit B: "+(project(':matssocket-server-api').sourceSets.test.runtimeClasspath).plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath)).asPath
-//
-        List<String> cmd = [
-                "${System.getenv("JAVA_HOME")}/bin/java",
-                "-classpath", (project(':matssocket-server-api').sourceSets.test.runtimeClasspath)
-                        .plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath)).asPath,
-                serverClassname,
-                numberOfServers.toString()
-        ]
+        // :: Create cmd-line for MatsSocketTestServer Java-process to execute
+        List<String> cmd = ["${System.getenv("JAVA_HOME")}/bin/java"]
+        // Add the MatsTestBroker -P properties from Gradle-invocation as -D properties to the JVM, if set
+        project.properties.subMap(["mats.test.brokerurl", "mats.test.broker"]).each {k, v -> cmd << "-D$k=$v"}
+        // Add classpath, from test's runtimeClasspath for both server-api and server-impl projects
+        cmd << "-classpath" << (project(':matssocket-server-api').sourceSets.test.runtimeClasspath)
+                        .plus((project(':matssocket-server-impl').sourceSets.test.runtimeClasspath)).asPath
+        // The classname to execute, with argument which is the number of servers to start
+        cmd << serverClassname << numberOfServers.toString()
+        // Execute!
         Process server = cmd.execute()
 
         // Keep a log file of the server output
-        File log = new File("$buildDir/logs/matsSocketServer-${LocalDateTime.now().withNano(0)}.log")
-        log.parentFile.mkdirs();
+        File logFile = new File("$buildDir/logs/matsSocketServer-${LocalDateTime.now().withNano(0)}.log".replace(':', '.'))
+        logFile.parentFile.mkdirs();
 
+        // :: Find the WebSocket URLs from the output, via magic hook-line in log output
         Reader reader = new InputStreamReader(server.inputStream, StandardCharsets.UTF_8)
-        log.withWriterAppend { out ->
+        logFile.withWriterAppend { out ->
             String line;
             while (wsUrls.size < numberOfServers && (line = reader.readLine()) != null) {
                 out.writeLine(line)
@@ -189,15 +215,18 @@ task startMatsSocketTestServer(dependsOn: [configurations.testRuntimeClasspath, 
             logger.error("Failed to execute: [${cmd.join(" ")}]")
             throw new GradleException("Failed to start $serverClassname, check log above for command.")
         }
-        logger.info("$serverClassname started");
+        println "MatsSocketTestServer started"
+        logger.info "$serverClassname started"
 
         // Fork a new thread to just keep reading and logging the MatsSocketTestServer
+        // Notice: It will exit once the process exits, as the reader will then be done.
         new Thread({
-            log.withWriterAppend { out ->
+            logFile.withWriterAppend { out ->
                 reader.eachLine { line ->
                     out.writeLine(line)
                 }
             }
+            println "MatsSocketTestServer: std.out -> logfile thread exiting, logfile: ${logFile.path}"
         }, "MatsSocketTestServer-logprinter").start()
     }
 }
@@ -213,6 +242,8 @@ task stopMatsSocketTestServer(dependsOn: startMatsSocketTestServer) {
         logger.info("Shutting down MatsSocketTestServer by invoking '$shutdownUrl")
         String response = new URL(shutdownUrl).text
         logger.info("Response: [${response.trim()}]")
+        println "MatsSocketTestServer shut down"
+        Thread.sleep(500)
     }
 }
 

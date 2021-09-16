@@ -378,7 +378,7 @@ public class SetupTestMatsAndMatsSocketEndpoints {
                 (ctx, principal, msg) -> {
                     new Thread(() -> {
                         try {
-                            Thread.sleep(100);
+                            Thread.sleep(250);
                         }
                         catch (InterruptedException e) {
                             throw new RuntimeException(e);
