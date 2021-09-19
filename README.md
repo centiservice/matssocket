@@ -1,6 +1,6 @@
 # MatsSocket - Mats<sup>3</sup> to the client over WebSocket
 
-MatsSocket is a client-server solution, which bridges the asynchronous message based nature of Mats<sup>3</sup> all the way out to your end user client applications, with bidirectional communication. It consists of a small MatsSocketServer API which is implemented on top of the _Mats<sup>3</sup> API_ and _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client libraries - for which there currently exists JavaScript and Dart/Flutter implementations.
+MatsSocket is a WebSocket-based client-server solution, which bridges the asynchronous message based nature of Mats<sup>3</sup> all the way out to your end user client applications, featuring bidirectional communication. It consists of a small MatsSocketServer API which is implemented on top of the _Mats<sup>3</sup> API_ and _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client libraries - for which there currently exists JavaScript and Dart/Flutter implementations.
 
 To get a gist of how this works on the client, here is a small JavaScript client code example:
 ```javascript
@@ -126,7 +126,7 @@ Authorization is handled programmatically by the MatsSocket developer upon recep
 
 * **Persistent session-based setup, no per-request headers**: WebSockets are by their nature persistent, so each message does not need a heap of headers - the authentication and thus identification of the user is only done at session setup (and when reauthenticating if using authentication with expiry).
 
-* **Low overhead protocol, small envelopes**: The system messages are compact, and the envelopes which carries the data messages are tiny.
+* **Low overhead protocol, small envelopes**: The system messages are few and compact, and the envelopes which carries the data messages are tiny.
 
 * **Compression by default**: All browsers implement the compression extension of WebSockets, thus the wire size is as short as can be. 
 

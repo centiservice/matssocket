@@ -13,46 +13,49 @@ repositories {
         }
     }
 }
+
 configurations {
     dartSdk
 }
 
 ext {
-    dartVersion = '2.7.0'
+    dartSdkVersion = '2.14.2'
+    dartSdkPath = file("$projectDir/dartsdk_download/dart-sdk")
 }
 
 dependencies {
     def os = org.gradle.internal.os.OperatingSystem.current();
     if (os.isWindows()) {
-        dartSdk "com.google.dart:dartsdk:${dartVersion}:windows-x64@zip"
+        dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:windows-x64@zip"
     }
     else if (os.isMacOsX()) {
-        dartSdk "com.google.dart:dartsdk:${dartVersion}:macos-x64@zip"
+        dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:macos-x64@zip"
     }
     else if (os.isLinux()) {
-        dartSdk "com.google.dart:dartsdk:${dartVersion}:linux-x64@zip"
+        dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:linux-x64@zip"
     }
 }
 
-task test(dependsOn: [':startMatsSocketTestServer']) {
-    ext {
-        dartSdkPath = file("$projectDir/dartsdk_download/dart-sdk")
-    }
-
+task updateDartDependencies() {
     doLast {
+        // Fetch the Dart SDK from "custom ivy repo" set up above
         copy {
             from zipTree(configurations.dartSdk.asPath)
             into "$projectDir/dartsdk_download"
         }
 
-        // Update dart dependencies
+        // Update dart dependencies by executing 'pub get'
         exec {
             def os = org.gradle.internal.os.OperatingSystem.current();
             executable os.getScriptName("$dartSdkPath/bin/pub")
             workingDir projectDir
             args = ['get']
         }
+    }
+}
 
+task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
+    doLast {
         exec {
             def os = org.gradle.internal.os.OperatingSystem.current();
             executable os.getScriptName("$dartSdkPath/bin/pub")
@@ -79,9 +82,33 @@ task test(dependsOn: [':startMatsSocketTestServer']) {
         }
     }
 }
-
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
+
+// 'pub publish --dry-run'
+task publishDryRun(dependsOn:  updateDartDependencies) {
+    doLast {
+        exec {
+            def os = org.gradle.internal.os.OperatingSystem.current();
+            executable os.getScriptName("$dartSdkPath/bin/pub")
+            workingDir projectDir
+            args = ['publish', '--dry-run']
+        }
+    }
+}
+
+// 'pub publish --force'
+task publish(dependsOn:  updateDartDependencies) {
+    doLast {
+        exec {
+            def os = org.gradle.internal.os.OperatingSystem.current();
+            executable os.getScriptName("$dartSdkPath/bin/pub")
+            workingDir projectDir
+            args = ['publish', '--force']
+        }
+    }
+}
+
 
 // Package up the Dart library
 task archiveLib(type: Zip) {
@@ -98,7 +125,13 @@ task clean(type: Delete) {
     delete buildDir
 }
 
-// Clean out the downloaded Dart SDK
+// "distclean": Clean out the downloaded Dart SDK and dependencies
 task distclean(type: Delete, dependsOn: [clean]) {
     delete "$projectDir/dartsdk_download"
+    delete "$projectDir/.dart_tool"
+    delete "$projectDir/.packages" // Old-style .dart_tool/package_config.json
+    delete "$projectDir/pubspec.lock"
+    doLast {
+        println "NOTICE: Not deleting '~/.pub-cache'"
+    }
 }

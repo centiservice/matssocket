@@ -1,0 +1,8 @@
+# The gradle build file
+build.gradle
+
+# Download of the Dart SDK
+dartsdk_download
+
+# Directory created by dartdoc
+doc/api/
