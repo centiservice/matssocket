@@ -6,3 +6,6 @@ dartsdk_download
 
 # Directory created by dartdoc
 doc/api/
+
+# Gradle build
+gradlebuild/
