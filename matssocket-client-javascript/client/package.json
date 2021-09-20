@@ -1,6 +1,6 @@
 {
   "name": "matssocket",
-  "version": "0.0.0-experimental-2021-07-24T11-46",
+  "version": "0.18.0-2021-09-20",
   "description": "MatsSocket JavaScript client library",
   "repository": "https://github.com/centiservice/matssocket",
   "author": "Endre Stølsvik",

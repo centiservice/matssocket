@@ -22,7 +22,7 @@ final Logger _logger = Logger('MatsSocket');
 const String ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // JSON-non-quoted and visible Alphabet: 92 chars.
 const String JSON_ALPHABET = '!#\$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
-const String CLIENT_LIB_NAME_AND_VERSION = 'MatsSocket.dart,0.0.0-experimental-2021-07-24T11-46';
+const String CLIENT_LIB_NAME_AND_VERSION = 'MatsSocket.dart,0.18.0+2021-09-20';
 
 typedef SessionClosedEventListener = Function(MatsSocketCloseEvent);
 typedef PingPongListener = Function(PingPong);

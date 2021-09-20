@@ -1,3 +1,5 @@
+// MatsSocket
+
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 
@@ -17,8 +19,8 @@ wrapper {
 }
 
 allprojects {
-    group = 'io.mats3'
-    version = '0.0.0-experimental-2021-07-24T11-46'
+    group = 'io.mats3.matssocket'
+    version = '0.18.0-2021-09-20'
     buildDir = 'gradlebuild'
 }
 
@@ -156,10 +158,10 @@ configure ([project('matssocket-server-api'), project('matssocket-server-impl')]
     }
 
     // Tasks to publish to Sonatype's OSSRH (OSS Repository Hosting), Snapshot and Staging
-    task matsPublishSnapshot(dependsOn: [publishAllPublicationsToSonatypeOSSRHSnapshotRepository])
-    task matsPublishStaging(dependsOn: [publishAllPublicationsToSonatypeOSSRHStagingRepository])
+    task matssocketPublishSnapshot(dependsOn: [publishAllPublicationsToSonatypeOSSRHSnapshotRepository])
+    task matssocketPublishStaging(dependsOn: [publishAllPublicationsToSonatypeOSSRHStagingRepository])
 
-    // Define dependency report task that all subprojects gets. Invoke with "./gradlew allDeps | less"
+    // Define dependency report task that the Java subprojects gets. Invoke with "./gradlew allDeps | less"
     task allDeps(type: DependencyReportTask) {}
 
 }
