@@ -1,7 +1,7 @@
 {
   "name": "matssocket",
   "version": "0.18.0-2021-09-20",
-  "description": "MatsSocket JavaScript client library",
+  "description": "MatsSocket client library",
   "repository": "https://github.com/centiservice/matssocket",
   "author": "Endre Stølsvik",
   "license": "Polyform Perimeter 1.0.0",

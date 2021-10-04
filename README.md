@@ -2,6 +2,10 @@
 
 MatsSocket is a WebSocket-based client-server solution which bridges the asynchronous message based nature of [Mats<sup>3</sup>](https://github.com/centiservice/mats3) all the way out to your end user client applications, featuring bidirectional communication. It consists of a small MatsSocketServer API which is implemented on top of the _Mats<sup>3</sup> API_ and _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client libraries - for which there currently exists JavaScript and Dart/Flutter implementations.
 
+Java server API and implementation: [Maven Repository](https://mvnrepository.com/artifact/io.mats3.matssocket)  
+JavaScript client: [npm](https://www.npmjs.com/package/matssocket)  
+Dart/Flutter client: [pub.dev](https://pub.dev/packages/matssocket)
+
 To get a gist of how this works on the client, here is a small JavaScript client code example:
 ```javascript
 // Set up the MatsSocket.
