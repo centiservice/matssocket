@@ -1,6 +1,7 @@
 # Gradle/build
 .gradle/
 gradlebuild/
+build/
 out/
 
 # ActiveMQ KahaDB
