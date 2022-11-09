@@ -2,7 +2,7 @@
 
 dependencies {
     // Implements the 'matssocket-server-api'
-    implementation project(':matssocket-server-api')
+    api project(':matssocket-server-api')
 
     // Jackson JSON library, which is the serialization mechanism in use for MatsSockets comms
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
@@ -18,11 +18,15 @@ dependencies {
 
     // :: TEST
 
+    // Need an implementation of Mats; JMS
+    testImplementation "io.mats3:mats-impl-jms:$matsVersion"
+
     // We need an implementation of the MatsSerializer, the MatsSerializerJson
     testImplementation "io.mats3:mats-serial-json:$matsVersion"
 
     // Testing tools for Mats
     testImplementation "io.mats3:mats-test-junit:$matsVersion"
+    testImplementation "io.mats3:mats-test-broker:$matsVersion"
 
     // Base Jetty Server
     testImplementation "org.eclipse.jetty:jetty-server:$jettyVersion"

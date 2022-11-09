@@ -13,7 +13,7 @@ plugins {
 
 // Specify Gradle version, run update by './gradlew wrapper'
 wrapper {
-    gradleVersion = "7.2"
+    gradleVersion = "7.5.1"
     // Use "-all"-version of distribution, since IntelliJ works better then..
     setDistributionType(Wrapper.DistributionType.ALL)
 }
@@ -27,19 +27,19 @@ allprojects {
 // Versions for all libraries used throughout the subprojects
 ext {
     // MatsSocketServer API dependencies
-    matsVersion = '0.18.0-2021-09-14'
+    matsVersion = '0.19.0-2022-11-05'
     // MatsSocketServer Implementation dependencies
     javaxWebsocketsVersion = '1.0'
-    jacksonVersion = '2.11.4'
-    slf4jVersion = '1.7.30'
+    jacksonVersion = '2.13.4'
+    slf4jVersion = '1.7.36'
 
     // optional for DB setup/migration
-    flywayVersion = '6.1.4'
+    flywayVersion = '9.7.0'
 
     // For testing
-    logbackVersion = '1.2.3'
-    h2Version = '1.4.200'
-    jettyVersion = '9.4.41.v20210516'
+    logbackVersion = '1.2.11'
+    h2Version = '2.1.214'
+    jettyVersion = '9.4.49.v20220914'
 }
 
 configure ([project('matssocket-server-api'), project('matssocket-server-impl')]) {
