@@ -1,0 +1,20 @@
+Copyright (c) 2015-2022 Endre Stølsvik, licensed under Polyform Perimeter 1.0.0 with examples
+
+# Examples of what is NOT allowed to do with the software under this license
+
+As any type of service provider, for example cloud service providers, offering paid or free
+services to customers or clients, you or your company may not:
+
+* Offer any kind of MatsSocket-as-a-Service
+* Use the software to offer a similar solution.
+* Use the software to offer any kind of MatsSocket metrics, introspection, tracing,
+  logging, visualization or debugging tools or solutions.
+
+These examples do not preclude a company-internal service provider to provide such services
+to their own systems and developers as long as the license is adhered to.
+
+# PolyForm Perimeter License 1.0.0
+
+https://polyformproject.org/licenses/perimeter/1.0.0
+
+(Note: The included file LICENSE.md has the entire text).
