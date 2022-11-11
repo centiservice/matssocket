@@ -18,7 +18,6 @@ import io.mats3.MatsEndpoint.DetachedProcessContext;
 import io.mats3.MatsEndpoint.MatsObject;
 import io.mats3.MatsEndpoint.ProcessContext;
 import io.mats3.MatsFactory;
-import io.mats3.MatsInitiator;
 import io.mats3.MatsInitiator.InitiateLambda;
 import io.mats3.MatsInitiator.MatsBackendRuntimeException;
 import io.mats3.MatsInitiator.MatsInitiate;
@@ -268,7 +267,7 @@ public interface MatsSocketServer {
      * MatsSocket terminator} - which includes a String "correlationString" and byte array "correlationBinary" which can
      * be used to correlate the reply to the request (available
      * {@link MatsSocketEndpointIncomingContext#getCorrelationString() here} and
-     * {@link MatsSocketEndpointIncomingContext#getCorrelationString() here} for the reply processing). Do note that
+     * {@link MatsSocketEndpointIncomingContext#getCorrelationBinary() here} for the reply processing). Do note that
      * since you have no control of when the Client decides to close the browser or terminate the app, you have no
      * guarantee that a reply will ever come - so code accordingly.
      * <p/>
@@ -276,8 +275,8 @@ public interface MatsSocketServer {
      * server side in the {@link ClusterStoreAndForward}. This both means that you do not need to be afraid of size (but
      * storing megabytes is silly anyway), but more importantly, this data cannot be tampered with client side - you can
      * be safe that what you gave in here is what you get out in the
-     * {@link MatsSocketEndpointIncomingContext#getCorrelationString()} and
-     * {@link MatsSocketEndpointIncomingContext#getCorrelationBinary()}.
+     * {@link MatsSocketEndpointIncomingContext#getCorrelationString() context.getCorrelationString()} and
+     * {@link MatsSocketEndpointIncomingContext#getCorrelationBinary() context.getCorrelationBinary()}.
      * <p/>
      * Note: To check whether the client Resolved or Rejected the request, use
      * {@link MatsSocketEndpointIncomingContext#getMessageType()}.
@@ -1050,8 +1049,8 @@ public interface MatsSocketServer {
         EnumSet<DebugOption> getAllowedDebugOptions();
 
         /**
-         * @return a "frozen in time" copy of the this LiveMatsSocketSession as an {@link ActiveMatsSocketSessionDto}.
-         *         Do observe that due to the concurrency of these live sessions, you may get a copy of when the session
+         * @return a "frozen in time" copy of this LiveMatsSocketSession as an {@link ActiveMatsSocketSessionDto}. Do
+         *         observe that due to the concurrency of these live sessions, you may get a copy of when the session
          *         had become ({@link #getState() state}) {@link MatsSocketSessionState#DEREGISTERED DEREGISTERED} or
          *         {@link MatsSocketSessionState#CLOSED CLOSED}, and where some of the Optional-returning methods then
          *         returns Optional.empty(). If you do not want to handle such instances, then you might want to check
