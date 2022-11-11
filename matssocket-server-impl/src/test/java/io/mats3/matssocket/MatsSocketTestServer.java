@@ -35,6 +35,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
 
+import io.mats3.matssocket.SetupTestMatsAndMatsSocketEndpoints.MatsDataTO;
+import io.mats3.test.MatsTestHelp;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -364,6 +366,70 @@ public class MatsSocketTestServer {
     }
 
     /**
+     * "CORS Servlet" - handles CORS when MatsSocket is connected to the other instance, but HTTP connects to this.
+     */
+    public static class CorsServlet extends HttpServlet {
+
+        // Based on https://stackoverflow.com/a/20204811/39334, "EDIT 2", without the ^ and $ and length restriction.
+        private String regex = "^https?://(?<domain>((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9]\\.)*[a-zA-Z]{2,63})(?<port>:\\d{1,5})?$";
+        private Pattern pattern = Pattern.compile(regex);
+
+        /**
+         * "Pre-flight" handling, i.e. browser sending OPTIONS to see what is ok.
+         */
+        @Override
+        protected void doOptions(HttpServletRequest req, HttpServletResponse resp) {
+            log.info("PreConnectOperation - OPTIONS: Authorization header: "
+                    + (null != req.getHeader("Authorization") ? "present" : "NOT present!")
+                    + ", Origin: " + req.getHeader("Origin")
+                    + ", path: " + req.getContextPath() + req.getServletPath());
+            // Check CORS
+            if (!cors(req.getHeader("Origin"), resp)) return;
+
+            // Ok, return
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+
+        protected boolean cors(String originHeader, HttpServletResponse resp) {
+            // ?: Do we have an Origin header, indicating that web browser feels this is a CORS request?
+            if (originHeader == null) {
+                // -> No, no Origin header, so act normal, just add a little header to point out that we evaluated it.
+                resp.addHeader("X-MatsSocketServer-CORS", "NoOriginHeaderInRequest_Ok");
+                return true;
+            }
+            Matcher matches = pattern.matcher(originHeader);
+            boolean match = matches.matches();
+            if (!match) {
+                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return false;
+            }
+            String domain = matches.group("domain");
+            String port = matches.group("port");
+
+            boolean ok = domain.equals("localhost")
+                    || domain.endsWith("mats3.io")
+                    || domain.endsWith("mats3.org");
+            if (!ok) {
+                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return false;
+            }
+
+            // # Yeah, we allow this Origin
+            resp.addHeader("Access-Control-Allow-Origin", originHeader);
+            // # Need to add "Vary" header when the Origin varies.. God knows..
+            resp.addHeader("Vary", "Origin");
+            // # Cookies and auth are allowed as headers
+            resp.addHeader("Access-Control-Allow-Credentials", "true");
+            // # .. specifically, the "Authorization" header
+            resp.addHeader("Access-Control-Allow-Headers", "authorization");
+            // NOTICE: For production: When you get things to work, you can add this header.
+            // # This response can be cached for quite some time - i.e. don't do OPTIONS for next requests.
+            // resp.addHeader("Access-Control-Max-Age", "86400"); // 24 hours, might be capped by browser.
+            return true;
+        }
+    }
+
+    /**
      * PreConnectOperation: Servlet mounted on the same path as the WebSocket, picking up any "Authorization:" header
      * and putting it in a Cookie named {@link DummySessionAuthenticator#AUTHORIZATION_COOKIE_NAME}. The point here is
      * that it is not possible to add an "Authorization" header to a WebSocket connection from a web browser, so if you
@@ -375,7 +441,7 @@ public class MatsSocketTestServer {
      * header to a cookie.
      */
     @WebServlet(WEBSOCKET_PATH)
-    public static class PreConnectAuthorizationHeaderToCookieServlet extends HttpServlet {
+    public static class PreConnectAuthorizationHeaderToCookieServlet extends CorsServlet {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
             log.info("PreConnectOperation - GET: Authorization header: "
@@ -425,63 +491,28 @@ public class MatsSocketTestServer {
             resp.addCookie(authCookie);
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
         }
+    }
 
-        // Based on https://stackoverflow.com/a/20204811/39334, "EDIT 2", without the ^ and $ and length restriction.
-        private String regex = "^https?://(?<domain>((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9]\\.)*[a-zA-Z]{2,63})(?<port>:\\d{1,5})?$";
-        private Pattern pattern = Pattern.compile(regex);
-
-        /**
-         * "Pre-flight" handling, i.e. browser sending OPTIONS to see what is ok.
-         */
+    /**
+     * For the unit tests, this instructs us to send a message on a topic. This is needed for a bug that showed up
+     * whereby if only a subscribe was done, and no other message sending operations (send, request), then the
+     * subscribe-message would not be sent over. This Servlet allows for testing this, as the test only performs a subscribe
+     * and then uses this "side channel" to publsh a message on the test topic. 2022-11-11.
+     */
+    @WebServlet(WEBSOCKET_PATH + "/sendMessageOnTestTopic")
+    public static class SendMessageOnTestTopic extends CorsServlet {
         @Override
-        protected void doOptions(HttpServletRequest req, HttpServletResponse resp) {
-            log.info("PreConnectOperation - OPTIONS: Authorization header: "
-                    + (null != req.getHeader("Authorization") ? "present" : "NOT present!")
-                    + ", Origin: " + req.getHeader("Origin")
-                    + ", path: " + req.getContextPath() + req.getServletPath());
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
             // Check CORS
             if (!cors(req.getHeader("Origin"), resp)) return;
 
-            // Ok, return
+            String topic = req.getParameter("topic");
+
+            log.info("Requested to publish a message to Topic ["+topic+"], so that we do.");
+            MatsSocketServer matsSocketServer = (MatsSocketServer) req.getServletContext()
+                    .getAttribute(MatsSocketServer.class.getName());
+            matsSocketServer.publish(MatsTestHelp.traceId(), topic, new MatsDataTO(Math.PI, "Publish to "+topic));
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        }
-
-        private boolean cors(String originHeader, HttpServletResponse resp) {
-            // ?: Do we have an Origin header, indicating that web browser feels this is a CORS request?
-            if (originHeader == null) {
-                // -> No, no Origin header, so act normal, just add a little header to point out that we evaluated it.
-                resp.addHeader("X-MatsSocketServer-CORS", "NoOriginHeaderInRequest_Ok");
-                return true;
-            }
-            Matcher matches = pattern.matcher(originHeader);
-            boolean match = matches.matches();
-            if (!match) {
-                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                return false;
-            }
-            String domain = matches.group("domain");
-            String port = matches.group("port");
-
-            boolean ok = domain.equals("localhost")
-                    || domain.endsWith("mats3.io")
-                    || domain.endsWith("mats3.org");
-            if (!ok) {
-                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                return false;
-            }
-
-            // # Yeah, we allow this Origin
-            resp.addHeader("Access-Control-Allow-Origin", originHeader);
-            // # Need to add "Vary" header when the Origin varies.. God knows..
-            resp.addHeader("Vary", "Origin");
-            // # Cookies and auth are allowed as headers
-            resp.addHeader("Access-Control-Allow-Credentials", "true");
-            // # .. specifically, the "Authorization" header
-            resp.addHeader("Access-Control-Allow-Headers", "authorization");
-            // NOTICE: For production: When you get things to work, you can add this header.
-            // # This response can be cached for quite some time - i.e. don't do OPTIONS for next requests.
-            // resp.addHeader("Access-Control-Max-Age", "86400"); // 24 hours, might be capped by browser.
-            return true;
         }
     }
 

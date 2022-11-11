@@ -798,20 +798,32 @@ function MatsSocket(appName, appVersion, urls, config) {
         // Add the present messageCallback to the subscription holder
         subs.listeners.push(messageCallback);
 
-        // :: Handle dynamic subscription
-
-        // ?: Have we NOT already subscribed with Server, AND 'HELLO' is sent?
-        if ((!subs.subscriptionSentToServer) && _helloSent) {
-            // -> Yes, so do stuff dynamic (Handling of Topics with HELLO-handling won't help us..!)
-            // Subscribe this TopicId with the server - using PRE-pipeline to get it done ASAP
-            _addEnvelopeToPipeline_EvaluatePipelineLater({
-                t: MessageType.SUB,
-                eid: topicId
-            }, true);
-            // Flush to get it over ASAP.
-            that.flush();
-            // The subscription is now sent to Server
-            subs.subscriptionSentToServer = true;
+        // ?: Have we NOT already subscribed with Server?
+        if (!subs.subscriptionSentToServer) {
+            // ?: Has HELLO already been sent?
+            // (If socket is NOT hello'ed, subs will be done when doing HELLO.)
+            if (_helloSent) {
+                // -> Yes, HELLO sent, so handle "dynamic subscription", i.e. subscribing while the socket is open.
+                // Send message to subscribe this TopicId with the server
+                // - using PRE-pipeline to get it done in front of any e.g send or request that potentially could
+                // trigger a publish (on the server side) which we should now get.
+                _addEnvelopeToPipeline_EvaluatePipelineLater({
+                    t: MessageType.SUB,
+                    eid: topicId
+                }, true);
+                // The subscription must now be assumed sent to the server (ref unsubscription)
+                subs.subscriptionSentToServer = true;
+            }
+            else {
+                // -> No, HELLO not yet sent. Make it happen Real Soon Now.
+                // HELLO handling will do the subscription
+                // We must however force pipeline processing since there might be nothing in the pipelines.
+                _forcePipelineProcessing = true;
+                // We must also "force open" the MatsSocket, i.e. "emulate" that an information bearing message is enqueued.
+                _matsSocketOpen = true;
+                // Run the pipeline (use "later", there might be more subs or messages to come from client)
+                _evaluatePipelineLater();
+            }
         }
     };
 
@@ -841,12 +853,13 @@ function MatsSocket(appName, appVersion, urls, config) {
             return;
         }
 
-        // :: Handle dynamic de-subscription
+        // :: Only need to send unsubscription if we already are subscribed
 
-        // ?: Are we empty of listeners, AND we are already subscribed with Server, AND 'HELLO' is sent?
-        if ((subs.listeners.length === 0) && subs.subscriptionSentToServer && _helloSent) {
-            // -> Yes, so do stuff dynamic (Handling of Topic subscriptions at HELLO-handling won't help us..!)
-            // De-subscribe this TopicId with the server - using PRE-pipeline since subscriptions are using that, and we need subs and de-subs in sequential correct order
+        // ?: Are we empty of listeners, AND we are already subscribed with Server?
+        if ((subs.listeners.length === 0) && subs.subscriptionSentToServer) {
+            // -> Yes, we are empty of listeners, and the subscription is already sent
+            // Send message to unsubscribe this TopicId with the server
+            // - using PRE-pipeline since subscriptions are using that, and we need subs and de-subs in sequential correct order
             _addEnvelopeToPipeline_EvaluatePipelineLater({
                 t: MessageType.UNSUB,
                 eid: topicId
@@ -1650,7 +1663,8 @@ function MatsSocket(appName, appVersion, urls, config) {
      * Sends pipelined messages
      */
     function _evaluatePipelineSend() {
-        // ?: Are there any messages in pipeline or PRE-pipeline, or should we force pipeline processing (either to get AUTH or HELLO over)
+        // ?: Are there any messages in pipeline or PRE-pipeline,
+        // or should we force pipeline processing (either to get HELLO, SUB or AUTH over)
         if ((_pipeline.length === 0) && (_prePipeline.length === 0) && !_forcePipelineProcessing) {
             // -> No, no message in pipeline, and we should not force processing to get HELLO or AUTH over
             // Nothing to do, drop out.
