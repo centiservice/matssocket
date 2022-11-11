@@ -1,5 +1,5 @@
 name: matssocket
-version: 0.18.0+2021-09-20
+version: 0.19.0+2022-11-11
 description: >
   MatsSocket client library employing WebSockets to bridge the asynchronous message
   based nature of server-side Mats^3 out to end user client applications
