@@ -4,6 +4,8 @@ export { ReceivedEvent, ReceivedEventType }
  * Message Received on Server event: "acknowledge" or "negative acknowledge" - these are the events which the
  * returned Promise of a send(..) is settled with (i.e. then() and catch()), and which
  * {@link MatsSocket#request request}'s receivedCallback function are invoked with.
+ *
+ * @class
  */
 function ReceivedEvent(type, traceId, sentTimestamp, receivedTimestamp, roundTripMillis, description) {
     /**

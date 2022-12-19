@@ -20,6 +20,16 @@ task build(type: YarnTask, dependsOn: yarn) {
     outputs.dir('bundles')
 }
 
+task jsdoc(type: YarnTask, dependsOn: yarn) {
+    args = ['jsdoc']
+    inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
+    inputs.dir('lib')
+    outputs.dir('jsdoc')
+}
+
+// Include creation of jsdoc into the build
+project.build.dependsOn(jsdoc)
+
 task publishDryRun(type: NpmTask, dependsOn: build) {
     args = ['publish', '--dry-run']
 }
@@ -52,12 +62,13 @@ task archiveLib(type: Zip) {
     destinationDirectory = file("$buildDir/dist")
 }
 
-// Include the packaging of the lib into the main build
-rootProject.build.dependsOn(archiveLib)
+// Include the packaging of the lib into the build
+project.build.dependsOn(archiveLib)
 
 task clean(type: Delete) {
     delete buildDir
     delete "$projectDir/bundles/"
+    delete "$projectDir/jsdoc/"
 }
 
 // Clean out the downloaded node & yarn

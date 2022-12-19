@@ -9,7 +9,7 @@ export { SubscriptionEvent, SubscriptionEventType }
  *
  * @param type {SubscriptionEventType}
  * @param topicId {string}
- * @constructor
+ * @class
  */
 function SubscriptionEvent(type, topicId) {
     /**

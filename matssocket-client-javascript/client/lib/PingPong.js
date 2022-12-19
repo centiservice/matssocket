@@ -7,7 +7,7 @@ export { PingPong }
  *
  * @param {number} pingId
  * @param {number} sentTimestamp
- * @constructor
+ * @class
  */
 function PingPong(pingId, sentTimestamp) {
     /**

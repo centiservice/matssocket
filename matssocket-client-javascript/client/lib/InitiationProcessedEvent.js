@@ -44,7 +44,7 @@ export { InitiationProcessedEvent, InitiationProcessedEventType }
  * @param {string} replyToTerminatorId
  * @param {float} requestRoundTripMillis
  * @param {MessageEvent} replyMessageEvent
- * @constructor
+ * @class
  */
 function InitiationProcessedEvent(endpointId, clientMessageId, sentTimestamp, sessionEstablishedOffsetMillis, traceId, initiationMessage, acknowledgeRoundTripMillis, replyMessageEventType, replyToTerminatorId, requestRoundTripMillis, replyMessageEvent) {
     /**

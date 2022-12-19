@@ -6,6 +6,8 @@ export { MessageEvent, MessageEventType }
  * rejectCallback functions for replies due to {@link MatsSocket#requestReplyTo() requestReplyTo}, and for Server
  * initiated Sends (to Terminators), and for the event to a {@link MatsSocket#endpoint() Endpoint} upon a Server
  * initiated Request, and for the event sent to a {@link MatsSocket#subscribe() Subscription}.
+ *
+ * @class
  */
 function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
     /**

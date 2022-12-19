@@ -22,7 +22,7 @@ export { ConnectionEvent, ConnectionEventType }
  * @param {number} timeoutSeconds
  * @param {number} countdownSeconds
  * @param {number} connectionAttempt
- * @constructor
+ * @class
  */
 function ConnectionEvent(type, webSocketUrl, webSocketEvent, timeoutSeconds, countdownSeconds, connectionAttempt) {
     /**

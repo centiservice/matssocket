@@ -25,12 +25,14 @@
 
   "scripts": {
     "prebuild": "tsc",
-    "build": "rollup --config"
+    "build": "rollup --config",
+    "jsdoc": "jsdoc --destination jsdoc/ lib/*"
   },
 
   "devDependencies": {
     "rollup": "^2.52.7",
     "rollup-plugin-terser": "^7.0.2",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "jsdoc": "^4.0.0"
   }
 }

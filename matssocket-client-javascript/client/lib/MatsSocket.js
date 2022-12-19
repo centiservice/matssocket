@@ -36,9 +36,9 @@ export {
  * @param {string} appName the name of the application using this MatsSocket.js client library
  * @param {string} appVersion the version of the application using this MatsSocket.js client library
  * @param {array} urls an array of WebSocket URLs speaking 'matssocket' protocol, or a single string URL.
- * @param {object} config-object. Current sole key: 'webSocketFactory': how to make WebSockets, optional in browser
- * setting as it will use window.WebSocket.
- * @constructor
+ * @param {object} config an optional object carrying extra configuration. Current sole key: 'webSocketFactory': how to
+ * make WebSockets, not required in a browser setting as it will use window.WebSocket if not set.
+ * @class
  */
 function MatsSocket(appName, appVersion, urls, config) {
     let clientLibNameAndVersion = "MatsSocket.js,0.19.0-2022-11-11";
@@ -154,7 +154,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     /**
      * "Out-of-band Close" refers to a small hack to notify the server about a MatsSocketSession being Closed even
      * if the WebSocket is not live anymore: When {@link MatsSocket#close} is invoked, an attempt is done to close
-     * the WebSocket with CloseCode {@link MatsSocketCloseCodes#CLOSE_SESSION} - but whether the WebSocket is open
+     * the WebSocket with CloseCode {@link MatsSocketCloseCodes.CLOSE_SESSION} - but whether the WebSocket is open
      * or not, this "Out-of-band Close" will also be invoked if enabled and MatsSocket SessionId is present.
      * <p/>
      * Values:
@@ -205,9 +205,9 @@ function MatsSocket(appName, appVersion, urls, config) {
      *     In the latter case, a new invocation of the 'preconnectoperation' will be performed after a countdown,
      *     possibly with a different 'webSocketUrl' value if the MatsSocket is configured with multiple URLs.</li>
      *     <li>Otherwise "truthy", e.g. <code>true</code>: Performs a <code>XMLHttpRequest</code> to the same URL as
-     *     the WebSocket URL, with "ws" replaced with "http", similar to {@link #outofbandclose}, and the HTTP Header
-     *     "<code>Authorization</code>" set to the current Authorization Value. Expects 200, 202 or 204 as returned
-     *     status code to go on.</li>
+     *     the WebSocket URL, with "ws" replaced with "http", similar to {@link MatsSocket#outofbandclose}, and the HTTP
+     *     Header "<code>Authorization</code>" set to the current Authorization Value. Expects 200, 202 or 204 as
+     *     returned status code to go on.</li>
      * </ul>
      * The default is <code>false</code>.
      * <p/>
@@ -256,22 +256,29 @@ function MatsSocket(appName, appVersion, urls, config) {
 
 
     /**
-     * When performing a {@link #request() Request} and {@link #requestReplyTo() RequestReplyTo}, you may not
-     * always get a (timely) answer: Either you can loose
+     * When performing a {@link MatsSocket#request Request} and {@link MatsSocket#requestReplyTo RequestReplyTo},
+     * you may not always get a (timely) answer: Either you can loose
      * the connection, thus lagging potentially forever - or, depending on the Mats message handling on the server
      * (i.e. using "non-persistent messaging" for blazing fast performance for non-state changing operations),
      * there is a minuscule chance that the message may be lost - or, if there is a massive backlog of messages
      * for the particular Mats endpoint that is interfaced, you might not get an answer for 20 minutes. This setting
      * controls the default timeout in milliseconds for Requests, and is default 45000 milliseconds (45 seconds),
      * but you may override this per Request by specifying a different timeout in the config object for the request.
-     * When the timeout is hit, the Promise of a {@link #request()} - or the specified ReplyTo Terminator for a
-     * {@link #requestReplyTo()} - will be rejected with a {@link MessageEvent} of type
-     * {@link MessageEventType#TIMEOUT}. In addition, if the Received acknowledgement has not gotten in
-     * either, this will also (<i>before</i> the Promise reject!) be NACK'ed with {@link ReceivedEventType#TIMEOUT}
+     * When the timeout is hit, the Promise of a {@link MatsSocket#request} - or the specified ReplyTo Terminator for a
+     * {@link MatsSocket#requestReplyTo} - will be rejected with a {@link MessageEvent} of type
+     * {@link MessageEventType.TIMEOUT}. In addition, if the Received acknowledgement has not gotten in
+     * either, this will also (<i>before</i> the Promise reject!) be NACK'ed with {@link ReceivedEventType.TIMEOUT}
      *
      * @type {number}
      */
     this.requestTimeout = 45000;
+
+    /**
+     * Callback function for {@link MatsSocket#addSessionClosedEventListener}.
+     *
+     * @callback sessionClosedEventCallback
+     * @param {CloseEvent} closeEvent the WebSocket's {@link CloseEvent}.
+     */
 
     /**
      * <b>Note: You <i>should</i> register a SessionClosedEvent listener, as any invocation of this listener by this
@@ -284,21 +291,21 @@ function MatsSocket(appName, appVersion, urls, config) {
      * the client yourself!</b>
      * <p />
      * The event object is the WebSocket's {@link CloseEvent}, adorned with properties 'codeName', giving the
-     * <i>key name</i> of the {@link MatsSocketCloseCodes} (as provided by {@link MatsSocketCloseCodes#nameFor()}),
+     * <i>key name</i> of the {@link MatsSocketCloseCodes} (as provided by {@link MatsSocketCloseCodes#nameFor}),
      * and 'outstandingInitiations', giving the number of outstanding initiations when the session was closed.
      * You can use the 'code' to "enum-compare" to <code>MatsSocketCloseCodes</code>, the enum keys are listed here:
      * <ul>
-     *   <li>{@link MatsSocketCloseCodes#UNEXPECTED_CONDITION UNEXPECTED_CONDITION}: Error on the Server side,
+     *   <li>{@link MatsSocketCloseCodes.UNEXPECTED_CONDITION UNEXPECTED_CONDITION}: Error on the Server side,
      *   typically that the data store (DB) was unavailable, and the MatsSocketServer could not reliably recover
      *   the processing of your message.</li>
-     *   <li>{@link MatsSocketCloseCodes#MATS_SOCKET_PROTOCOL_ERROR MATS_SOCKET_PROTOCOL_ERROR}: This client library
+     *   <li>{@link MatsSocketCloseCodes.MATS_SOCKET_PROTOCOL_ERROR MATS_SOCKET_PROTOCOL_ERROR}: This client library
      *   has a bug!</li>
-     *   <li>{@link MatsSocketCloseCodes#VIOLATED_POLICY VIOLATED_POLICY}: Initial Authorization was wrong. Always
+     *   <li>{@link MatsSocketCloseCodes.VIOLATED_POLICY VIOLATED_POLICY}: Initial Authorization was wrong. Always
      *   supply a correct and non-expired Authorization value, which has sufficient 'roomForLatency' wrt.
      *   the expiry time.</li>
-     *   <li>{@link MatsSocketCloseCodes#CLOSE_SESSION CLOSE_SESSION}:
+     *   <li>{@link MatsSocketCloseCodes.CLOSE_SESSION CLOSE_SESSION}:
      *   <code>MatsSocketServer.closeSession(sessionId)</code> was invoked Server side for this MatsSocketSession</li>
-     *   <li>{@link MatsSocketCloseCodes#SESSION_LOST SESSION_LOST}: A reconnect attempt was performed, but the
+     *   <li>{@link MatsSocketCloseCodes.SESSION_LOST SESSION_LOST}: A reconnect attempt was performed, but the
      *   MatsSocketSession was timed out on the Server. The Session will never time out if the WebSocket connection
      *   is open. Only if the Client has lost connection, the timer will start. The Session timeout is measured in
      *   hours or days. This could conceivably happen if you close the lid of a laptop, and open it again days later
@@ -309,9 +316,9 @@ function MatsSocket(appName, appVersion, urls, config) {
      * problems with its data store.
      * <p />
      * Note that when this event listener is invoked, the MatsSocketSession is just as closed as if you invoked
-     * {@link MatsSocket#close()} on it: All outstanding send/requests are NACK'ed (with
-     * {@link ReceivedEventType#SESSION_CLOSED}), all request Promises are rejected
-     * (with {@link MessageEventType#SESSION_CLOSED}), and the MatsSocket object is as if just constructed and
+     * {@link MatsSocket#close} on it: All outstanding send/requests are NACK'ed (with
+     * {@link ReceivedEventType.SESSION_CLOSED}), all request Promises are rejected
+     * (with {@link MessageEventType.SESSION_CLOSED}), and the MatsSocket object is as if just constructed and
      * configured. You may "boot it up again" by sending a new message where you then will get a new MatsSocket
      * SessionId. However, you should consider restarting the application if this happens, or otherwise "reboot"
      * it as if it just started up (gather all required state and null out any other that uses lazy fetching).
@@ -322,7 +329,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * SENDs or REQUESTs), and could <i>consider</i> to just "act as if nothing happened" - by sending a new message
      * and thus get a new MatsSocket Session going.
      *
-     * @param {function<CloseEvent>} sessionClosedEventListener a function that is invoked when the library gets the current
+     * @param {sessionClosedEventCallback} sessionClosedEventListener a function that is invoked when the library gets the current
      * MatsSocketSession closed from the server. The event object is the WebSocket's {@link CloseEvent}.
      */
     this.addSessionClosedEventListener = function (sessionClosedEventListener) {
@@ -331,6 +338,13 @@ function MatsSocket(appName, appVersion, urls, config) {
         }
         _sessionClosedEventListeners.push(sessionClosedEventListener);
     };
+
+    /**
+     * Callback function for {@link MatsSocket#addConnectionEventListener}.
+     *
+     * @callback connectionEventCallback
+     * @param {ConnectionEvent} connectionEvent giving information about what happened.
+     */
 
     /**
      * <b>Note: You <i>could</i> register a ConnectionEvent listener, as these are only informational messages
@@ -346,7 +360,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * <p />
      * Read more at {@link ConnectionEvent} and {@link ConnectionEventType}.
      *
-     * @param {function<ConnectionEvent>} connectionEventListener a function that is invoked when the library issues
+     * @param {connectionEventCallback} connectionEventListener a function that is invoked when the library issues
      * {@link ConnectionEvent}s.
      */
     this.addConnectionEventListener = function (connectionEventListener) {
@@ -357,13 +371,21 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
-     * <b>Note: If you use {@link #subscribe() subscriptions}, you <i>should</i> register a
-     * {@link SubscriptionEvent} listener, as you should be concerned about {@link SubscriptionEventType#NOT_AUTHORIZED}
-     * and {@link SubscriptionEventType#LOST_MESSAGES}.</b>
+     * Callback function for {@link MatsSocket#addSubscriptionEventListener}.
+     *
+     * @callback subscriptionEventCallback
+     * @param {SubscriptionEvent} subscriptionEvent giving information about what the server had to say about
+     * subscriptions.
+     */
+
+    /**
+     * <b>Note: If you use {@link #subscribe subscriptions}, you <i>should</i> register a
+     * {@link SubscriptionEvent} listener, as you should be concerned about {@link SubscriptionEventType.NOT_AUTHORIZED}
+     * and {@link SubscriptionEventType.LOST_MESSAGES}.</b>
      * <p />
      * Read more at {@link SubscriptionEvent} and {@link SubscriptionEventType}.
      *
-     * @param {function<SubscriptionEvent>} subscriptionEventListener a function that is invoked when the library
+     * @param {subscriptionEventCallback} subscriptionEventListener a function that is invoked when the library
      * gets information from the Server wrt. subscriptions.
      */
     this.addSubscriptionEventListener = function (subscriptionEventListener) {
@@ -374,6 +396,13 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
+     * Callback function for {@link MatsSocket#addErrorEventListener}.
+     *
+     * @callback errorEventCallback
+     * @param {ErrorEvent} errorEvent information about what error happened.
+     */
+
+    /**
      * Some 25 places within the MatsSocket client catches errors of different kinds, typically where listeners
      * cough up errors, or if the library catches mistakes with the protocol, or if the WebSocket emits an error.
      * Add a ErrorEvent listener to get hold of these, and send them back to your server for
@@ -382,7 +411,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * <p />
      * The event object is {@link ErrorEvent}.
      *
-     * @param {function<ErrorEvent>} errorEventListener
+     * @param {errorEventCallback} errorEventListener
      */
     this.addErrorEventListener = function (errorEventListener) {
         if (!(typeof errorEventListener === 'function')) {
@@ -392,16 +421,24 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
+     * Callback function for {@link MatsSocket#setAuthorizationExpiredCallback}.
+     *
+     * @callback authorizationExpiredCallback
+     * @param {AuthorizationRequiredEvent} authorizationRequiredEvent information about why authorization information
+     * is requested.
+     */
+
+    /**
      * If this MatsSockets client realizes that the expiration time (minus the room for latency) of the authorization
      * has passed when about to send a message, it will invoke this callback function. A new authorization must then
      * be provided by invoking the 'setCurrentAuthorization' function - only when this is invoked, the MatsSocket
      * will send messages. The MatsSocket will queue up any messages that are initiated while waiting for new
      * authorization, and send them all at once in a single pipeline when the new authorization is in.
      *
-     * @param {function<AuthorizationRequiredEvent>} authorizationExpiredCallback function which will be invoked
+     * @param {authorizationExpiredCallback} authorizationExpiredCallback function which will be invoked
      * when about to send a new message <i>if</i>
      * '<code>Date.now() > (expirationTimeMillisSinceEpoch - roomForLatencyMillis)</code>' from the paramaters of
-     * the last invocation of {@link #setCurrentAuthorization()}.
+     * the last invocation of {@link MatsSocket#setCurrentAuthorization}.
      */
     this.setAuthorizationExpiredCallback = function (authorizationExpiredCallback) {
         if (!(typeof authorizationExpiredCallback === 'function')) {
@@ -422,8 +459,8 @@ function MatsSocket(appName, appVersion, urls, config) {
      * <p />
      * <b>NOTE: This SHALL NOT be used to CHANGE the user!</b> It should only refresh an existing authorization for the
      * initially authenticated user. One MatsSocket (Session) shall only be used by a single user: If changing
-     * user, you should ditch the existing MatsSocket after invoking {@link #close()} to properly clean up the current
-     * MatsSocketSession on the server side too, and then make a new MatsSocket thus getting a new Session.
+     * user, you should ditch the existing MatsSocket after invoking {@link MatsSocket#close} to properly clean up the
+     * current MatsSocketSession on the server side too, and then make a new MatsSocket thus getting a new Session.
      * <p />
      * Note: If the underlying WebSocket has not been established and HELLO sent, then invoking this method will NOT
      * do that - only the first actual MatsSocket message will start the WebSocket and perform the HELLO/WELCOME
@@ -535,7 +572,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * roundTripMillis set. This is opposed to the {@link #addPingPongListener}, which only gets invoked when
      * the pong has arrived.
      *
-     * @see #addPingPongListener()
+     * @see MatsSocket#addPingPongListener
      *
      * @member {array<PingPong>}
      * @memberOf MatsSocket
@@ -548,6 +585,13 @@ function MatsSocket(appName, appVersion, urls, config) {
     });
 
     /**
+     * Callback function for {@link MatsSocket#addPingPongListener}.
+     *
+     * @callback addPingPongCallback
+     * @param {PingPong} pingPong information about the ping and the pong.
+     */
+
+    /**
      * A {@link PingPong} listener is invoked each time a {@link MessageType#PONG} message comes in, giving you
      * information about the experienced {@link PingPong#roundTripMillis round-trip time}. The PINGs and PONGs are
      * handled slightly special in that they always are handled ASAP with short-path code routes, and should thus
@@ -556,7 +600,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * and thus get a big hit. Thus, you should consider this when interpreting the results - a high outlier should
      * be seen in conjunction with a message that was sent at the same time.
      *
-     * @param {function<PingPong>} pingPongListener a function that is invoked when the library issues
+     * @param {addPingPongCallback} pingPongListener a function that is invoked when the library issues
      */
     this.addPingPongListener = function (pingPongListener) {
         if (!(typeof pingPongListener === 'function')) {
@@ -573,7 +617,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * {@link InitiationProcessedEvent#replyMessageEvent} set, as opposed to the events issued to
      * {@link #addInitiationProcessedEventListener}, which can decide whether to include them.
      *
-     * @see #addInitiationProcessedEventListener()
+     * @see MatsSocket#addInitiationProcessedEventListener
      *
      * @member {InitiationProcessedEvent<InitiationProcessedEvent>}
      * @memberOf MatsSocket
@@ -613,6 +657,13 @@ function MatsSocket(appName, appVersion, urls, config) {
     });
 
     /**
+     * Callback function for {@link MatsSocket#addInitiationProcessedEventListener}.
+     *
+     * @callback initiationProcessedEventCallback
+     * @param {InitiationProcessedEvent} initiationProcessedEvent information about the processing of the initiation.
+     */
+
+    /**
      * Registering an {@link InitiationProcessedEvent} listener will give you meta information about each Send
      * and Request that is performed through the library when it is fully processed, thus also containing
      * information about experienced round-trip times. The idea is that you thus can gather metrics of
@@ -627,7 +678,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * Note: Each listener gets its own instance of {@link InitiationProcessedEvent}, which also is different from
      * the ones in the {@link #initiations} array.
      *
-     * @param {function<InitiationProcessedEvent>} initiationProcessedEventListener a function that is invoked when
+     * @param {initiationProcessedEventCallback} initiationProcessedEventListener a function that is invoked when
      * the library issues {@link InitiationProcessedEvent}s.
      * @param {boolean} includeInitiationMessage whether to include the {@link InitiationProcessedEvent#initiationMessage}
      * @param {boolean} includeReplyMessageEvent whether to include the {@link InitiationProcessedEvent#replyMessageEvent}
@@ -719,15 +770,15 @@ function MatsSocket(appName, appVersion, urls, config) {
 
     /**
      * Subscribes to a Topic. The Server may do an authorization check for the subscription. If you are not allowed,
-     * a {@link SubscriptionEvent} of type {@link SubscriptionEventType#NOT_AUTHORIZED} is issued, and the callback
-     * will not get any messages. Otherwise, the event type is {@link SubscriptionEventType#OK}.
+     * a {@link SubscriptionEvent} of type {@link SubscriptionEventType.NOT_AUTHORIZED} is issued, and the callback
+     * will not get any messages. Otherwise, the event type is {@link SubscriptionEventType.OK}.
      * <p />
      * Note: If the 'messageCallback' was already registered, an error is emitted, but the method otherwise returns
      * silently.
      * <p />
      * Note: You will not get messages that was issued before the subscription initially is registered with the
      * server, which means that you by definition cannot get any messages issued earlier than the initial
-     * {@link ConnectionEventType#SESSION_ESTABLISHED}. Code accordingly. <i>Tip for a "ticker stream" or "cache
+     * {@link ConnectionEventType.SESSION_ESTABLISHED}. Code accordingly. <i>Tip for a "ticker stream" or "cache
      * update stream" or similar: Make sure you have some concept of event sequence number on updates. Do the MatsSocket
      * connect with the Subscription in place, but for now just queue up any updates. Do the request for "full initial load", whose reply
      * contains the last applied sequence number. Now process the queued events that arrived while getting the
@@ -740,12 +791,12 @@ function MatsSocket(appName, appVersion, urls, config) {
      * contain the latest messageId the client has received, and the server will then send along all the messages
      * <i>after</i> this that was lost - up to some limit specified on the server. If the messageId is not known by the server,
      * implying that the client has been gone for too long time, a {@link SubscriptionEvent} of type
-     * {@link SubscriptionEventType#LOST_MESSAGES} is issued. Otherwise, the event type is
-     * {@link SubscriptionEventType#OK}.
+     * {@link SubscriptionEventType.LOST_MESSAGES} is issued. Otherwise, the event type is
+     * {@link SubscriptionEventType.OK}.
      * <p />
      * Note: You should preferably add all "static" subscriptions in the "configuration phase" while setting up
      * your MatsSocket, before starting it (i.e. sending first message). However, dynamic adding and
-     * {@link #deleteSubscription() deleting} is also supported.
+     * {@link MatsSocket#deleteSubscription deleting} is also supported.
      * <p />
      * Note: Pub/sub is not designed to be as reliable as send/request - but it should be pretty ok anyway!
      * <p />
@@ -828,7 +879,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
-     * Removes a previously added {@link #subscribe() subscription}. If there are no more listeners for this topic,
+     * Removes a previously added {@link MatsSocket#subscribe subscription}. If there are no more listeners for this topic,
      * it is de-subscribed from the server. If the 'messageCallback' was not already registered, an error is
      * emitted, but the method otherwise returns silently.
      *
@@ -876,7 +927,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * The config object has a single key - <i>which is optional</i>:
      * <ul>
      *     <li>suppressInitiationProcessedEvent: If <code>true</code>, no event will be sent to listeners added
-     *         using {@link #addInitiationProcessedEventListener()}.</li>
+     *         using {@link MatsSocket#addInitiationProcessedEventListener}.</li>
      * </ul>
      *
      * @param endpointId the Server MatsSocket Endpoint/Terminator that this message should go to.
@@ -921,22 +972,22 @@ function MatsSocket(appName, appVersion, urls, config) {
      * a receivedCallback function (set the 'config' parameter to this function) or set the two config properties
      * 'ackCallback' and 'nackCallback' to functions. If you supply the single function variant, this is equivalent
      * to setting both ack- and nackCallback to the same function. The {@link ReceivedEvent}'s type will distinguish
-     * between {@link ReceivedEventType#ACK ACK} or {@link ReceivedEventType#NACK NACK}.
+     * between {@link ReceivedEventType.ACK ACK} or {@link ReceivedEventType.NACK NACK}.
      * <p/>
      * The config object has keys as such - <i>all are optional</i>:
      * <ul>
      *     <li><b><code>receivedCallback</code></b>: {function} invoked when the Server receives the event and either ACK or NACKs it
-     *         - or when {@link MessageEventType#TIMEOUT} or {@link MessageEventType#SESSION_CLOSED} happens.
+     *         - or when {@link MessageEventType.TIMEOUT} or {@link MessageEventType.SESSION_CLOSED} happens.
      *         This overrides the ack- and nackCallbacks.</li>
      *     <li><b><code>ackCallback</code></b>: {function} invoked when the Server receives the event and ACKs it.</li>
      *     <li><b><code>nackCallback</code></b>: {function} invoked when the Server receives the event and NACKs it
-     *         - or when {@link MessageEventType#TIMEOUT} or {@link MessageEventType#SESSION_CLOSED} happens.</li>
+     *         - or when {@link MessageEventType.TIMEOUT} or {@link MessageEventType.SESSION_CLOSED} happens.</li>
      *     <li><b><code>timeout</code></b>: number of milliseconds before the Client times out the Server reply. When this happens,
      *         the 'nackCallback' (or receivedCallback if this is used) is invoked with a {@link ReceivedEvent} of
-     *         type {@link ReceivedEventType#TIMEOUT}, and the Request's Promise will be <i>rejected</i> with a
-     *         {@link MessageEvent} of type {@link MessageEventType#TIMEOUT}.</li>
+     *         type {@link ReceivedEventType.TIMEOUT}, and the Request's Promise will be <i>rejected</i> with a
+     *         {@link MessageEvent} of type {@link MessageEventType.TIMEOUT}.</li>
      *     <li><b><code>suppressInitiationProcessedEvent</code></b>: if <code>true</code>, no event will be sent to listeners added
-     *         using {@link #addInitiationProcessedEventListener()}.</li>
+     *         using {@link MatsSocket#addInitiationProcessedEventListener}.</li>
      *     <li><b><code>debug</code></b>: If set, this specific call flow overrides the global {@link MatsSocket#debug} setting, read
      *         more about debug and {@link DebugOption}s there.</li>
      * </ul>
@@ -1059,11 +1110,11 @@ function MatsSocket(appName, appVersion, urls, config) {
      * The config object has keys as such - <i>all are optional</i>:
      * <ul>
      *     <li><b><code>timeout</code></b>: number of milliseconds before the Client times out the Server reply. When this happens,
-     *         the returned Promise is <i>rejected</> with a {@link ReceivedEvent} of
-     *         type {@link ReceivedEventType#TIMEOUT}, and the specified Client Terminator will have its
-     *         rejectCallback invoked with a {@link MessageEvent} of type {@link MessageEventType#TIMEOUT}.</li>
+     *         the returned Promise is <i>rejected</i> with a {@link ReceivedEvent} of
+     *         type {@link ReceivedEventType.TIMEOUT}, and the specified Client Terminator will have its
+     *         rejectCallback invoked with a {@link MessageEvent} of type {@link MessageEventType.TIMEOUT}.</li>
      *     <li><b><code>suppressInitiationProcessedEvent</code></b>: if <code>true</code>, no event will be sent to listeners added
-     *         using {@link #addInitiationProcessedEventListener()}.</li>
+     *         using {@link MatsSocket#addInitiationProcessedEventListener}.</li>
      *     <li><b><code>debug</code></b>: If set, this specific call flow overrides the global {@link MatsSocket#debug} setting, read
      *         more about debug and {@link DebugOption}s there.</li>
      * </ul>
@@ -1080,7 +1131,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * @param correlationInformation information that will be available to the Client Terminator
      *        (in {@link MessageEvent#correlationInformation}) when the reply comes back.
      * @param {object} config an optional configuration object - the one parameter you can set is 'timeout', which
-     *        works like it does for {@link #request()}.
+     *        works like it does for {@link MatsSocket#request}.
      * @returns {Promise<ReceivedEvent>}
      */
     this.requestReplyTo = function (endpointId, traceId, message, replyToTerminatorId, correlationInformation, config = undefined) {
@@ -1146,7 +1197,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     /**
      * Synchronously flush any pipelined messages, i.e. when the method exits, webSocket.send(..) has been invoked
      * with the serialized pipelined messages, <i>unless</i> the authorization had expired (read more at
-     * {@link #setCurrentAuthorization()} and {@link #setAuthorizationExpiredCallback()}).
+     * {@link MatsSocket#setCurrentAuthorization} and {@link MatsSocket#setAuthorizationExpiredCallback}).
      */
     this.flush = function () {
         // ?: Are we currently doing "auto-pipelining"?
@@ -1168,8 +1219,8 @@ function MatsSocket(appName, appVersion, urls, config) {
      * The MatsSocket instance's SessionId is made undefined. If there currently is a pipeline,
      * this will be dropped (i.e. messages deleted), any outstanding receiveCallbacks
      * (from Requests) are invoked, and received Promises (from sends) are rejected, with type
-     * {@link ReceivedEventType#SESSION_CLOSED}, outstanding Reply Promises (from Requests)
-     * are rejected with {@link MessageEventType#SESSION_CLOSED}. The effect is to cleanly shut down the
+     * {@link ReceivedEventType.SESSION_CLOSED}, outstanding Reply Promises (from Requests)
+     * are rejected with {@link MessageEventType.SESSION_CLOSED}. The effect is to cleanly shut down the
      * MatsSocketSession (all session data removed from server), and also clean the MatsSocket instance.
      * <p />
      * Afterwards, the MatsSocket can be started up again by sending a message - keeping its configuration wrt.
@@ -1232,13 +1283,13 @@ function MatsSocket(appName, appVersion, urls, config) {
     /**
      * Effectively emulates "lost connection". Used in testing.
      * <p />
-     * If the "disconnect" parameter is true, it will disconnect with {@link MatsSocketCloseCodes#DISCONNECT}
-     * instead of {@link MatsSocketCloseCodes#RECONNECT}, which will result in the MatsSocket not immediately
+     * If the "disconnect" parameter is true, it will disconnect with {@link MatsSocketCloseCodes.DISCONNECT}
+     * instead of {@link MatsSocketCloseCodes.RECONNECT}, which will result in the MatsSocket not immediately
      * starting the reconnection procedure until a new message is added.
      *
      * @param reason {String} a string saying why.
-     * @param disconnect {Boolean} whether to close with {@link MatsSocketCloseCodes#DISCONNECT} instead of
-     * {@link MatsSocketCloseCodes#RECONNECT} - default <code>false</code>. AFAIK, only useful in testing..!
+     * @param disconnect {Boolean} whether to close with {@link MatsSocketCloseCodes.DISCONNECT} instead of
+     * {@link MatsSocketCloseCodes.RECONNECT} - default <code>false</code>. AFAIK, only useful in testing..!
      */
     this.reconnect = function (reason, disconnect = false) {
         let closeCode = disconnect ? MatsSocketCloseCodes.DISCONNECT : MatsSocketCloseCodes.RECONNECT;

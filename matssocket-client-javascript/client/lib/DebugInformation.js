@@ -6,7 +6,7 @@ export { DebugInformation, DebugOption }
  * ideas of what the time is, which means that timestamps comparison between Server and Client must be evaluated
  * with massive interpretation.
  *
- * @constructor
+ * @class
  */
 function DebugInformation(sentTimestamp, requestedDebugOptions, envelope, receivedTimestamp) {
     this.clientMessageSent = sentTimestamp;

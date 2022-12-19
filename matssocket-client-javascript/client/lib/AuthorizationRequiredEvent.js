@@ -3,13 +3,13 @@ export { AuthorizationRequiredEvent, AuthorizationRequiredEventType }
 /**
  * @param {string} type type of the event, one of {@link AuthorizationRequiredEvent}.
  * @param {number} currentExpirationTimestamp millis-from-epoch when the current Authorization expires.
- * @constructor
+ * @class
  */
 function AuthorizationRequiredEvent(type, currentExpirationTimestamp) {
     /**
      * Type of the event, one of {@link AuthorizationRequiredEvent}.
      *
-     * @type {string}.
+     * @type {string}
      */
     this.type = type;
 
