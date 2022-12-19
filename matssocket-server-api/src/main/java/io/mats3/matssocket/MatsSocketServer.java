@@ -1696,7 +1696,7 @@ public interface MatsSocketServer {
     enum MatsSocketCloseCodes implements CloseCode {
         /**
          * Standard code 1008 - From Server side, Client should REJECT all outstanding and "crash"/reboot application:
-         * used when the we cannot authenticate.
+         * used when we cannot authenticate.
          * <p/>
          * May also be used locally from the Client: If the PreConnectOperation return status code 401 or 403 or the
          * WebSocket connect attempt raises error too many times (e.g. total 3x number of URLs), the MatsSocket will be
