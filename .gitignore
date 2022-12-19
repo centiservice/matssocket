@@ -1,6 +1,6 @@
 # Gradle/build
 .gradle/
-gradlebuild/
+build-gradle/
 build/
 out/
 
