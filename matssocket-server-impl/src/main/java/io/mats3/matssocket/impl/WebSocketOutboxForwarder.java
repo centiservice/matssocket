@@ -95,7 +95,7 @@ class WebSocketOutboxForwarder implements MatsSocketStatics {
         String instanceId = matsSocketSessionAndMessageHandler.getInstanceId();
 
         // If we exit out uncontrolled, we must clean up this forwarder from map of currently running forwarders.
-        // (This flag is set to false when we do a controlled exit).
+        // (This flag is set to false when we do a controlled exit, as we then do it inside the loop).
         boolean removeOnExit = true;
 
         try { // try-finally: clear MDC, try-catchAll: Log Exception (should not occur!)
@@ -538,6 +538,7 @@ class WebSocketOutboxForwarder implements MatsSocketStatics {
                                 + " was 1.");
                         // Exit out like if count == 1.
                         shouldExit[0] = true;
+                        // Returning null removes this handler from the Map.
                         return null;
                     }
                     // ?: Is this 1, meaning that we are finishing off our handler rounds?

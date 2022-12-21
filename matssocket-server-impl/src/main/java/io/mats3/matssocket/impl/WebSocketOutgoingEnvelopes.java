@@ -326,23 +326,25 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
             List<String> ack2s = null;
             for (Iterator<MatsSocketEnvelopeWithMetaDto> it = envelopeList.iterator(); it.hasNext();) {
                 MatsSocketEnvelopeWithMetaDto envelope = it.next();
-                if (envelope.t == ACK && envelope.desc == null) {
-                    it.remove();
-                    acks = acks != null ? acks : new ArrayList<>();
-                    acks.add(envelope.cmid);
-                }
-                if (envelope.t == NACK && envelope.desc == null) {
-                    it.remove();
-                    nacks = nacks != null ? nacks : new ArrayList<>();
-                    nacks.add(envelope.cmid);
-                }
-                if (envelope.t == ACK2 && envelope.desc == null) {
-                    it.remove();
-                    ack2s = ack2s != null ? ack2s : new ArrayList<>();
-                    ack2s.add(envelope.smid);
+                if (envelope.desc == null) {
+                    if (envelope.t == ACK) {
+                        it.remove();
+                        acks = acks != null ? acks : new ArrayList<>();
+                        acks.add(envelope.cmid);
+                    }
+                    if (envelope.t == NACK) {
+                        it.remove();
+                        nacks = nacks != null ? nacks : new ArrayList<>();
+                        nacks.add(envelope.cmid);
+                    }
+                    if (envelope.t == ACK2) {
+                        it.remove();
+                        ack2s = ack2s != null ? ack2s : new ArrayList<>();
+                        ack2s.add(envelope.smid);
+                    }
                 }
             }
-            if (acks != null && acks.size() > 0) {
+            if (acks != null) {
                 MatsSocketEnvelopeWithMetaDto e_acks = new MatsSocketEnvelopeWithMetaDto();
                 e_acks.t = ACK;
                 if (acks.size() == 1) {
@@ -353,7 +355,7 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
                 }
                 envelopeList.add(e_acks);
             }
-            if (nacks != null && nacks.size() > 0) {
+            if (nacks != null) {
                 MatsSocketEnvelopeWithMetaDto e_nacks = new MatsSocketEnvelopeWithMetaDto();
                 e_nacks.t = NACK;
                 if (nacks.size() == 1) {
@@ -364,7 +366,7 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
                 }
                 envelopeList.add(e_nacks);
             }
-            if (ack2s != null && ack2s.size() > 0) {
+            if (ack2s != null) {
                 MatsSocketEnvelopeWithMetaDto e_ack2s = new MatsSocketEnvelopeWithMetaDto();
                 e_ack2s.t = ACK2;
                 if (ack2s.size() == 1) {

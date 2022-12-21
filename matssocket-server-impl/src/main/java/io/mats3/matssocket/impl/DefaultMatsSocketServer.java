@@ -535,7 +535,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         long now = System.currentTimeMillis();
         // :: Create ServerMessageId
         /*
-         * NOTE: On 'replyHandler' and S2C Send, we rely on unique constraint violation to to retry if we choose an
+         * NOTE: On 'replyHandler' and S2C Send, we rely on unique constraint violation to retry if we choose an
          * already existing ServerMessageId (and can thus employ rather small ids). Due to the need to store the
          * correlation information /before/ storing the message in the outbox (due to the insanely unlikely situation
          * that otherwise the forwarder would pick up the outgoing message AND the client reply /before/ we had gotten

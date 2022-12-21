@@ -1396,8 +1396,6 @@ public interface MatsSocketServer {
         }
 
         public static class DebugDto {
-            public String d; // Description
-
             public int resd; // Resolved DebugOptions
 
             // :: Timings and Nodenames

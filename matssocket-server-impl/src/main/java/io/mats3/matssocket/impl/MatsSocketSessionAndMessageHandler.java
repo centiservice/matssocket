@@ -475,7 +475,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
                     requestedDebugOptions.retainAll(_authAllowedDebugOptions);
                     // Store the result as new Server-to-Client DebugOptions
                     _currentResolvedServerToClientDebugOptions = requestedDebugOptions;
-                    // NOTE: We do not "skip out" with 'continue', as we want to use the latest in the pipeline if any.
+                    // NOTE: We do not "skip out" with 'break', as we want to use the latest in the pipeline if any.
                 }
             }
 
@@ -542,7 +542,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
 
             for (Iterator<MatsSocketEnvelopeWithMetaDto> it = envelopes.iterator(); it.hasNext();) {
                 MatsSocketEnvelopeWithMetaDto envelope = it.next();
-                // ?: Is this message a PING?
+                // ?: Is this message a PONG?
                 if (envelope.t == PONG) {
                     // -> Yes, so handle it.
                     // Remove it from the pipeline
