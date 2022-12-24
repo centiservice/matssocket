@@ -1,0 +1,57 @@
+<html>
+<meta charset="UTF-8"/>
+<body>
+<h1>Scratchpad</h1>
+
+NOTE! You must open the browser's DevTool Console to get any effect of this!
+
+<script type="module">
+    import * as mats from './mats/client/lib/MatsSocket.js';
+
+    var matsSocket = new mats.MatsSocket("TestApp", "1.2.3", ['ws://localhost:8080/matssocket', 'ws://localhost:8081/matssocket']);
+
+    // ===== Configure the MatsSocket
+
+    matsSocket.logging = true;
+
+    matsSocket.setAuthorizationExpiredCallback(function (event) {
+        console.log("Got AuthorizationExpiredCallback from MatsSocket, regenerating Authorization header.");
+        console.log(event);
+
+        // Emulate that it takes some time to get new auth.
+        setTimeout(function () {
+            var now = Date.now();
+            var expiry = now + 20000;
+            const userId = false ? "enableAllDebugOptions" : "standard";
+            matsSocket.setCurrentAuthorization("DummyAuth:" + userId + ":" + expiry, expiry, 10000);
+        }, 100 + (100 * Math.random()));
+    });
+
+    // Add PingPong listener
+    matsSocket.addPingPongListener(function (pingPong) {
+        console.log("= PingPong listener!", pingPong);
+    });
+
+
+    console.log("XXXXXX SENDING REQUEST!")
+
+    matsSocket.debug = 0;
+
+
+    matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.id(6), {
+            string: "Request String",
+            number: Math.E
+        }, function (event) {
+            console.log("YYYY");
+            console.log(event);
+        }
+    ).then(function (messageEvent) {
+        console.log("REQUEST-with-Promise resolved! (I.e. REPLY from Mats Endpoint) Took "
+            + messageEvent.roundTripMillis + "ms: " + JSON.stringify(messageEvent));
+    });
+    matsSocket.flush();
+
+</script>
+
+</body>
+</html>
