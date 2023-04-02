@@ -156,7 +156,7 @@ function InitiationProcessedEvent(endpointId, clientMessageId, sentTimestamp, se
  * @enum {string}
  * @readonly
  */
-const InitiationProcessedEventType = Object.freeze({
+const InitiationProcessedEventType = {
     /**
      * Flow initiated with {@link MatsSocket#send()}. Fields whose name does not start with "reply" or "request"
      * will be set.
@@ -173,4 +173,5 @@ const InitiationProcessedEventType = Object.freeze({
      * Flow initiated with {@link MatsSocket#requestReplyTo()}. Will have <i>all</i> fields set.
      */
     REQUEST_REPLY_TO: "requestreplyto"
-});
+};
+Object.freeze(InitiationProcessedEventType);

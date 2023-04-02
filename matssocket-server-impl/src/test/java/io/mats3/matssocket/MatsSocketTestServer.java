@@ -615,7 +615,7 @@ public class MatsSocketTestServer {
 
         // :: Find the path to the JavaScript files (JS tests and MatsSocket.js), to provide them via Servlet.
         String pathToClasses = classesLocation.getPath();
-        // .. strip down to the 'mats-websockets' path (i.e. this subproject).
+        // .. strip down to the 'matssocket-server-impl' path (i.e. this subproject).
         int pos = pathToClasses.indexOf("matssocket-server-impl");
 
         String pathToJavaScripts = pos == -1

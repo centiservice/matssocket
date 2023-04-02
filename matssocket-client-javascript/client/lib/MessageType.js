@@ -7,7 +7,7 @@ export { MessageType }
  * @enum {string}
  * @readonly
  */
-const MessageType = Object.freeze({
+const MessageType = {
     /**
      * A HELLO message must be part of the first Pipeline of messages, preferably alone. One of the messages in the
      * first Pipeline must have the "auth" field set, and it might as well be the HELLO.
@@ -141,4 +141,5 @@ const MessageType = Object.freeze({
      * A Reply to a {@link #PING}.
      */
     PONG: "PONG"
-});
+};
+Object.freeze(MessageType);

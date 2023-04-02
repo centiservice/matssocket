@@ -30,8 +30,9 @@ export {
 
 /**
  * Creates a MatsSocket, requiring the using Application's name and version, and which URLs to connect to.
- *
- * Note: Public, Private and Privileged modelled after http://crockford.com/javascript/private.html
+ * <p/>
+ * Note: Public, Private and Privileged modelled after
+ * <a href="http://crockford.com/javascript/private.html">http://crockford.com/javascript/private.html</a>
  *
  * @param {string} appName the name of the application using this MatsSocket.js client library
  * @param {string} appVersion the version of the application using this MatsSocket.js client library
@@ -145,7 +146,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     // (along with _matsSocketOpen = false)
 
     /**
-     * Whether to log via console.log. The logging is quite extensive.
+     * Whether to log via console.log. The logging is quite extensive. <b>Default <code>false</code></b>.
      *
      * @type {boolean}
      */
@@ -164,7 +165,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      *         single parameter being an object with two keys: <code>'webSocketUrl'</code> is the current WebSocket
      *         url, i.e. the URL that the WebSocket was connected to, e.g. "wss://example.com/matssocket".
      *         <code>'sessionId'</code> is the current MatsSocket SessionId - the one we're trying to close.</li>
-     *     <li>Otherwise "truthy", e.g. <code>true</code> <b>(default)</b>: When this MatsSocket library is used in
+     *     <li>"Truthy", e.g. <code>true</code> <b>(default)</b>: When this MatsSocket library is used in
      *         a web browser context, the following code is executed:
      *         <code>navigator.sendBeacon(webSocketUrl.replace('ws', 'http)+"/close_session?sessionId={sessionId}")</code>.
      *         Note that replace is replace-first, and that an extra 's' in 'wss' thus results in 'https'.</li>
@@ -204,7 +205,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      *     be resolved by your code when the request has been successfully performed, or rejected if it didn't go through.
      *     In the latter case, a new invocation of the 'preconnectoperation' will be performed after a countdown,
      *     possibly with a different 'webSocketUrl' value if the MatsSocket is configured with multiple URLs.</li>
-     *     <li>Otherwise "truthy", e.g. <code>true</code>: Performs a <code>XMLHttpRequest</code> to the same URL as
+     *     <li>"Truthy", e.g. <code>true</code>: Performs a <code>XMLHttpRequest</code> to the same URL as
      *     the WebSocket URL, with "ws" replaced with "http", similar to {@link MatsSocket#outofbandclose}, and the HTTP
      *     Header "<code>Authorization</code>" set to the current Authorization Value. Expects 200, 202 or 204 as
      *     returned status code to go on.</li>
@@ -225,49 +226,46 @@ function MatsSocket(appName, appVersion, urls, config) {
     this.preconnectoperation = false;
 
     /**
-     * A bit field requesting different types of debug information, the bits defined in {@link DebugOption}. It is
-     * read each time an information bearing message is added to the pipeline, and if not 'undefined' or 0, the
-     * debug options flags is added to the message. The server may then add {@link DebugInformation} to outgoing
-     * messages depending on whether the authorized user is allowed to ask for it, most obviously on Replies to
-     * Client Requests, but also Server initiated SENDs and REQUESTs.
+     * A bit field requesting different types of debug information from the server - the flags/bits are defined in
+     * {@link DebugOption}. The information concerns timings and which server nodes have handled the messages.
      * <p/>
-     * The debug options on the outgoing Client-to-Server requests are tied to that particular request flow -
-     * but to facilitate debug information also on Server initiated messages, the <i>last set</i> debug options is
+     * This field is used as the default for requests sent to the server, but individual requests may also set
+     * the debug flags explicitly (i.e. override) by use of the optional "config" object on
+     * {@link MatsSocket#requestReplyTo} or {@link MatsSocket#request}.
+     * <p/>
+     * To facilitate debug information also on Server initiated messages, the <i>last sent</i> debug flags is
      * also stored on the server and used when messages originate there (i.e. Server-to-Client SENDs and REQUESTs).
+     * This goes both if the default was used (this flag), or overridden-per-request config: The last flag sent over
+     * is used for any subsequent server-initiated message. This is arguably a pretty annoying way to control the server
+     * initiated debug flags - vote for <a href="https://github.com/centiservice/matssocket/issues/13">Issue 13</a>
+     * if you want something more explicit.
      * <p/>
-     * If you only want debug information on a particular Client-to-Server request, you'll need to first set the
-     * debug flags, then do the request (adding the message to the pipeline), and then reset the debug flags back,
-     * and send some new message to reset the value for Server-initiated messages (Just to be precise: Any message
-     * from Server-to-Client which happens to be performed in the timespan between the request and the subsequent
-     * message which resets the debug flags will therefore also have debug information attached).
-     * <p/>
-     * The value is a bit field (values in {@link DebugOption}, so you bitwise-or (or simply add) together the
-     * different things you want. Difference between <code>undefined</code> and <code>0</code> is that undefined
-     * turns debug totally off (the {@link DebugInformation} instance won't be present in the {@link MessageEvent},
-     * while 0 means that the server is not requested to add debug info - but the Client will still create the
-     * {@link DebugInformation} instance and populate it with what any local debug information.
+     * The value is a bit field (values in {@link DebugOption}), so you bitwise-or (or simply add) together the
+     * different things you want.
      * <p/>
      * The value from the client is bitwise-and'ed together with the debug capabilities the authenticated user has
-     * gotten by the AuthenticationPlugin on the Server side.
+     * gotten by the AuthenticationPlugin on the Server side. This means that the AuthenticationPlugin ultimately
+     * controls how much info the accessing user is allowed to get.
+     * <p/>
+     * Default is <code>0</code>, i.e. no debug.
      *
      * @type {number}
      */
-    this.debug = undefined;
-
+    this.debug = 0;
 
     /**
      * When performing a {@link MatsSocket#request Request} and {@link MatsSocket#requestReplyTo RequestReplyTo},
-     * you may not always get a (timely) answer: Either you can loose
-     * the connection, thus lagging potentially forever - or, depending on the Mats message handling on the server
-     * (i.e. using "non-persistent messaging" for blazing fast performance for non-state changing operations),
-     * there is a minuscule chance that the message may be lost - or, if there is a massive backlog of messages
-     * for the particular Mats endpoint that is interfaced, you might not get an answer for 20 minutes. This setting
-     * controls the default timeout in milliseconds for Requests, and is default 45000 milliseconds (45 seconds),
-     * but you may override this per Request by specifying a different timeout in the config object for the request.
-     * When the timeout is hit, the Promise of a {@link MatsSocket#request} - or the specified ReplyTo Terminator for a
-     * {@link MatsSocket#requestReplyTo} - will be rejected with a {@link MessageEvent} of type
-     * {@link MessageEventType.TIMEOUT}. In addition, if the Received acknowledgement has not gotten in
-     * either, this will also (<i>before</i> the Promise reject!) be NACK'ed with {@link ReceivedEventType.TIMEOUT}
+     * you may not always get a (timely) answer: Either you can lose the connection, thus lagging potentially forever -
+     * or, depending on the Mats message handling on the server (i.e. using "non-persistent messaging" for blazing fast
+     * performance for non-state changing operations), there is a minuscule chance that the message may be lost - or, if
+     * there is a massive backlog of messages for the particular Mats endpoint that is interfaced, you might not get an
+     * answer for 20 minutes. This setting controls the default timeout in milliseconds for Requests, and is default
+     * 45000 milliseconds (45 seconds), but you may override this per Request by specifying a different timeout in the
+     * config object for the request. When the timeout is hit, the Promise of a {@link MatsSocket#request} - or the
+     * specified ReplyTo Terminator for a {@link MatsSocket#requestReplyTo} - will be rejected with a
+     * {@link MessageEvent} of type {@link MessageEventType.TIMEOUT}. In addition, if the Received acknowledgement has
+     * not gotten in either, this will also (<i>before</i> the Promise reject!) be NACK'ed with
+     * {@link ReceivedEventType.TIMEOUT}
      *
      * @type {number}
      */
@@ -407,7 +405,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * cough up errors, or if the library catches mistakes with the protocol, or if the WebSocket emits an error.
      * Add a ErrorEvent listener to get hold of these, and send them back to your server for
      * inspection - it is best to do this via out-of-band means, e.g. via HTTP. For browsers, consider
-     * window.sendBeacon(..).
+     * <code>navigator.sendBeacon(..)</code>.
      * <p />
      * The event object is {@link ErrorEvent}.
      *
@@ -503,16 +501,17 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
-     * This can be used by the mechanism invoking 'setCurrentAuthorization(..)' to decide whether it should keep the
+     * Millis-since-epoch of last message enqueued. This can be used by the mechanism invoking
+     * {@link MatsSocket#setCurrentAuthorization} to decide whether it should keep the
      * authorization fresh (i.e. no latency waiting for new authorization is introduced when a new message is
      * enqueued), or fall back to relying on the 'authorizationExpiredCallback' being invoked when a new message needs
      * it (thus introducing latency while waiting for authorization). One could envision keeping fresh auth for 5
      * minutes, but if the user has not done anything requiring authentication (i.e. sending information bearing
      * messages SEND, REQUEST or Replies) in that timespan, you stop doing continuous authentication refresh, falling
-     * back to the "on demand" based logic, where when the user does something, the 'authorizationExpiredCallback'
-     * is invoked if the authentication is expired.
+     * back to the "on demand" based logic, where when a message is enqueued, the
+     * {@link MatsSocket#setAuthorizationExpiredCallback} is invoked if the authentication is expired.
      *
-     * @member {number} lastMessageEnqueuedTimestamp millis-since-epoch of last message enqueued.
+     * @member {number} lastMessageEnqueuedTimestamp
      * @memberOf MatsSocket
      * @readonly
      */
@@ -525,13 +524,12 @@ function MatsSocket(appName, appVersion, urls, config) {
     /**
      * Returns whether this MatsSocket <i>currently</i> have a WebSocket connection open. It can both go down
      * by lost connection (driving through a tunnel), where it will start to do reconnection attempts, or because
-     * you (the Client) have closed this MatsSocketSession, or because the <i>Server</i> has closed the
-     * MatsSocketSession. In the latter cases, where the MatsSocketSession is closed, the WebSocket connection will
-     * stay down - until you open a new MatsSocketSession.
+     * you (the Client) have {@link MatsSocket#close closed} this MatsSocketSession, or because the <i>Server</i> has
+     * closed the MatsSocketSession.
      * <p/>
-     * Pretty much the same as <code>({@link #state} === {@link ConnectionState#CONNECTED})
-     * || ({@link #state} === {@link ConnectionState#SESSION_ESTABLISHED})</code> - however, in the face of
-     * {@link MessageType#DISCONNECT}, the state will not change, but the connection is dead ('connected' returns
+     * Pretty much the same as <code>({@link MatsSocket.state} === {@link ConnectionState.CONNECTED})
+     * || ({@link MatsSocket.state} === {@link ConnectionState.SESSION_ESTABLISHED})</code> - however, in the face of
+     * {@link MessageType.DISCONNECT}, the state will not change, but the connection is dead ('connected' returns
      * false).
      *
      * @member {string} connected
@@ -676,7 +674,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * and requestReplyTo methods.
      * <p />
      * Note: Each listener gets its own instance of {@link InitiationProcessedEvent}, which also is different from
-     * the ones in the {@link #initiations} array.
+     * the ones in the {@link MatsSocket.initiations} array.
      *
      * @param {initiationProcessedEventCallback} initiationProcessedEventListener a function that is invoked when
      * the library issues {@link InitiationProcessedEvent}s.
@@ -889,7 +887,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     this.deleteSubscription = function (topicId, messageCallback) {
         let subs = _subscriptions[topicId];
         if (!subs) {
-            throw new Error("The topicId [" + topicId + "] had no subscriptions! (thus definitely not this [" + messageCallback + "].");
+            throw new Error("The topicId [" + topicId + "] had no subscriptions! (thus this message callback is not subscribed! [" + messageCallback + "].");
         }
         let found = false;
         for (let i = 0; i < subs.listeners.length; i++) {
@@ -1212,7 +1210,7 @@ function MatsSocket(appName, appVersion, urls, config) {
 
     /**
      * Closes any currently open WebSocket with MatsSocket-specific CloseCode CLOSE_SESSION (4000). Depending
-     * of the value of {@link #outofbandclose}, it <i>also</i> uses <code>navigator.sendBeacon(..)</code>
+     * of the value of {@link MatsSocket#outofbandclose}, it <i>also</i> uses <code>navigator.sendBeacon(..)</code>
      * (if present, i.e. web browser context) to send an out-of-band Close Session HTTP POST, or, if
      * 'outofbancclose' is a function, this is invoked (if 'outofbandclose' is <code>false</code>, this
      * functionality is disabled). Upon receiving the WebSocket close, the server terminates the MatsSocketSession.
@@ -1229,8 +1227,9 @@ function MatsSocket(appName, appVersion, urls, config) {
      * totally clean MatsSocket instance, then just ditch the current instance and make a new one (which then will
      * have to be configured with terminators etc).
      * <p />
-     * <b>Note: A 'beforeunload' event handler is registered on 'window' (if present), which invokes this
-     * method</b>, so that if the user navigates away, the session will be closed.
+     * <b>Note: A 'beforeunload' event handler is automatically registered on 'window' (if present, i.e. MatsSocket is
+     * running in a web browser), which invokes this method</b>, so that if the user navigates away, the session will
+     * be closed.
      *
      * @param {string} reason short descriptive string. Will be supplied with the webSocket close reason string,
      * and must therefore be quite short (max 123 chars).
@@ -1580,17 +1579,17 @@ function MatsSocket(appName, appVersion, urls, config) {
         // :: Debug
         // Set to either specific override, or global default.
         initiation.debug = (initiation.debug !== undefined ? initiation.debug : (that.debug ? that.debug : 0));
-        // ?: Is the debut not 0?
+        // ?: Is the debug not 0?
         if (initiation.debug !== 0) {
             // -> Yes, not 0 - so send it in request.
             envelope.rd = initiation.debug;
         }
-        // ?: If the last transferred was /something/, while now it is 0, then we must sent it over to reset
+        // ?: If the last transferred was /something/, while now it is 0, then we must send it over to reset
         if ((initiation.debug === 0) && (_lastDebugOptionsSentToServer !== 0)) {
             // -> Yes, was reset to 0 - so must send to server.
             envelope.rd = 0;
         }
-        // This is the last known server knows.
+        // This is the last debug option the server knows.
         _lastDebugOptionsSentToServer = initiation.debug;
 
         // Update timestamp of last "information bearing message" sent.
@@ -2595,7 +2594,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                     }
 
                 } else if ((envelope.t === MessageType.SEND) || (envelope.t === MessageType.REQUEST)) {
-                    // -> SEND: Sever-to-Client Send a message to client terminatorOrEndpoint
+                    // -> SEND or REQUEST: Sever-to-Client Send or Request to client terminatorOrEndpoint
 
                     let termOrEndp = envelope.t === MessageType.SEND ? "Terminator" : "Endpoint";
 
@@ -2676,7 +2675,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                 } else if ((envelope.t === MessageType.RESOLVE) || (envelope.t === MessageType.REJECT)) {
                     // -> Reply to REQUEST
                     // ?: Do server want receipt, indicated by the message having 'smid' property?
-                    // (NOTE: Reply (RESOLVE/REJECT) directly in IncomingHandler will not set this, as the message has never been in the outbox, so won't need deletion).
+                    // (NOTE: Reply (RESOLVE/REJECT) directly in IncomingHandler will not set 'smid', as the message has never been in the outbox, so won't need deletion).
                     if (envelope.smid) {
                         // -> Yes, so send ACK to server
                         _sendAckLater(MessageType.ACK, envelope.smid);
@@ -2749,7 +2748,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                         t: MessageType.PONG,
                         x: envelope.x
                     });
-                    // Send it immediately
+                    // Send it immediately, since pings might be used to establish roundtrip timings.
                     that.flush();
 
                 } else if ((envelope.t === MessageType.SUB_OK) || (envelope.t === MessageType.SUB_LOST) || (envelope.t === MessageType.SUB_NO_AUTH)) {

@@ -1,8 +1,11 @@
 export { AuthorizationRequiredEvent, AuthorizationRequiredEventType }
 
 /**
- * @param {string} type type of the event, one of {@link AuthorizationRequiredEvent}.
- * @param {number} currentExpirationTimestamp millis-from-epoch when the current Authorization expires.
+ * Sent by the MatsSocket, via the {@link MatsSocket#setAuthorizationExpiredCallback}, when it requires new or
+ * revalidated authentication by the client.
+ *
+ * @param {string} type - {@link AuthorizationRequiredEvent.type}
+ * @param {number} currentExpirationTimestamp - {@link AuthorizationRequiredEvent.currentExpirationTimestamp}
  * @class
  */
 function AuthorizationRequiredEvent(type, currentExpirationTimestamp) {
@@ -28,7 +31,7 @@ function AuthorizationRequiredEvent(type, currentExpirationTimestamp) {
  * @enum {string}
  * @readonly
  */
-const AuthorizationRequiredEventType = Object.freeze({
+const AuthorizationRequiredEventType = {
     /**
      * Initial state, if auth not already set by app.
      */
@@ -48,4 +51,5 @@ const AuthorizationRequiredEventType = Object.freeze({
      * can still produce new authorizations/tokens).
      */
     REAUTHENTICATE: "reauthenticate"
-});
+};
+Object.freeze(AuthorizationRequiredEventType);

@@ -110,7 +110,7 @@ function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
  * @enum {string}
  * @readonly
  */
-const MessageEventType = Object.freeze({
+const MessageEventType = {
     RESOLVE: "resolve",
 
     REJECT: "reject",
@@ -137,4 +137,5 @@ const MessageEventType = Object.freeze({
      * the {@link MessageEvent#data} value is undefined.
      */
     SESSION_CLOSED: "sessionclosed"
-});
+};
+Object.freeze(MessageEventType);

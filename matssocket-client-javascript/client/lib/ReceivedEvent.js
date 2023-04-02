@@ -67,7 +67,7 @@ function ReceivedEvent(type, traceId, sentTimestamp, receivedTimestamp, roundTri
  * @enum {string}
  * @readonly
  */
-const ReceivedEventType = Object.freeze({
+const ReceivedEventType = {
     /**
      * If the Server-side MatsSocketEndpoint/Terminator accepted the message for handling (and if relevant,
      * forwarded it to the Mats fabric). The returned Promise of send() is <i>resolved</i> with this type of event.
@@ -103,4 +103,5 @@ const ReceivedEventType = Object.freeze({
      * receivedCallback will be invoked with a {@link ReceivedEvent} of this type.
      */
     SESSION_CLOSED: "sessionclosed"
-});
+};
+Object.freeze(ReceivedEventType);

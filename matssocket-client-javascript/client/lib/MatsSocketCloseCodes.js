@@ -10,7 +10,7 @@ export { MatsSocketCloseCodes }
  * @enum {int}
  * @readonly
  */
-const MatsSocketCloseCodes = Object.freeze({
+const MatsSocketCloseCodes = {
     /**
      * Standard code 1008 - From Server side, Client should REJECT all outstanding and "crash"/reboot application:
      * used when the we cannot authenticate.
@@ -113,4 +113,5 @@ const MatsSocketCloseCodes = Object.freeze({
         }
         return "UNKNOWN(" + closeCode + ")";
     }
-});
+};
+Object.freeze(MatsSocketCloseCodes);

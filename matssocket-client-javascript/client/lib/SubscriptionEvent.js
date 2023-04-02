@@ -34,7 +34,7 @@ function SubscriptionEvent(type, topicId) {
  * @enum {string}
  * @readonly
  */
-const SubscriptionEventType = Object.freeze({
+const SubscriptionEventType = {
     /**
      * The subscription on the server side went ok. If reconnect, any missing messages are now being sent.
      */
@@ -52,4 +52,5 @@ const SubscriptionEventType = Object.freeze({
      * has some.
      */
     LOST_MESSAGES: "lostmessages"
-});
+};
+Object.freeze(SubscriptionEventType);

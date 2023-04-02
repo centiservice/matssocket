@@ -8,14 +8,51 @@ export { DebugInformation, DebugOption }
  *
  * @class
  */
-function DebugInformation(sentTimestamp, requestedDebugOptions, envelope, receivedTimestamp) {
-    this.clientMessageSent = sentTimestamp;
+function DebugInformation(clientMessageSent, requestedDebugOptions, envelope, receivedTimestamp) {
+
+    /**
+     * From client: When the message was sent, millis-from-epoch.
+     * @type {number}
+     */
+    this.clientMessageSent = clientMessageSent;
+    /**
+     * From client: What {@link DebugOption}s (bitfield) was requested by the client of when message was sent.
+     * @type {number}
+     */
     this.requestedDebugOptions = requestedDebugOptions;
-    this.resolvedDebugOptions = envelope.debug ? envelope.debug.resd : 0;
+
+    /**
+     * From server: Description if anything didn't go as expected.
+     * @type {string}
+     */
+    this.description = envelope.desc;
+
+    /**
+     * From server: What {@link DebugOption}s (bitfield) was resolved/given by the server, based on the
+     * {@link DebugInformation#requestedDebugOptions} and authorization.
+     * @type {number}
+     */
+    this.resolvedDebugOptions = 0; // default to 0 if no debug object in the envelope
+
+    /**
+     * From server, only if debug:
+     * @type {number}
+     */
+    this.clientMessageReceived = undefined;
+    this.clientMessageReceivedNodename = undefined;
+
+    this.matsMessageSent = undefined;
+    this.matsMessageReplyReceived = undefined;
+    this.matsMessageReplyReceivedNodename = undefined;
+
+    this.serverMessageCreated = undefined;
+    this.serverMessageCreatedNodename = undefined;
+
+    this.messageSentToClient = undefined;
+    this.messageSentToClientNodename = undefined;
 
     if (envelope.debug) {
         this.resolvedDebugOptions = envelope.debug.resd;
-        this.description = envelope.debug.desc;
 
         this.clientMessageReceived = envelope.debug.cmrts;
         this.clientMessageReceivedNodename = envelope.debug.cmrnn;
@@ -41,7 +78,7 @@ function DebugInformation(sentTimestamp, requestedDebugOptions, envelope, receiv
  * @enum {string}
  * @readonly
  */
-const DebugOption = Object.freeze({
+const DebugOption = {
     /**
      * Timing info of the separate phases. Note that time-skew between different nodes must be taken into account.
      */
@@ -71,4 +108,5 @@ const DebugOption = Object.freeze({
      * from the Client ("I would like to request these things").
      */
     CUSTOM_B: 128 // was 0b1000_0000
-});
+};
+Object.freeze(DebugOption);
