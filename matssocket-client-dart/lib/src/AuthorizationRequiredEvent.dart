@@ -13,7 +13,7 @@ class AuthorizationRequiredEvent {
 
   /// When the current Authorization expires - note that this might well still be in the future,
   /// but the "slack" left before expiration is used up.
-  final DateTime currentExpiration;
+  final DateTime? currentExpiration;
 
   /// [type] type type of the event, one of [AuthorizationRequiredEvent].
   /// [currentExpiration] when the current Authorization expires.

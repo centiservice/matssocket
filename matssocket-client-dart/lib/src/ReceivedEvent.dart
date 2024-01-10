@@ -10,10 +10,10 @@ class ReceivedEvent {
   final ReceivedEventType type;
 
   /// TraceId for this call / message.
-  final String traceId;
+  final String? traceId;
 
   /// Millis-since-epoch when the message was sent from the Client.
-  final DateTime sentTimestamp;
+  final DateTime? sentTimestamp;
 
   /// Millis-since-epoch when the ACK or NACK was received on the Client, millis-since-epoch.
   final DateTime receivedTimestamp;
@@ -30,7 +30,7 @@ class ReceivedEvent {
 
   /// Sometimes, typically on Server NACKs (e.g. targetting non-existing Endpoint), the Server supplies a
   /// description to why this was no good.
-  final String description;
+  final String? description;
 
   const ReceivedEvent(this.type, this.traceId, this.sentTimestamp, this.receivedTimestamp,
       this.roundTripMillis, this.description);
@@ -39,7 +39,7 @@ class ReceivedEvent {
     return removeNullValues({
       'type': type.name,
       'traceId': traceId,
-      'sentTimestamp': sentTimestamp.millisecondsSinceEpoch,
+      'sentTimestamp': sentTimestamp!.millisecondsSinceEpoch,
       'receivedTimestamp': receivedTimestamp.millisecondsSinceEpoch,
       'roundTripMillis': roundTripMillis,
       'description': description

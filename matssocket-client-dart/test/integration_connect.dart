@@ -12,7 +12,7 @@ void main() {
   final _logger = Logger('integration_connect');
 
   group('MatsSocket integration tests, basics', () {
-    MatsSocket matsSocket;
+    late MatsSocket matsSocket;
 
     void setAuth([String userId = 'standard',
       Duration duration = const Duration(seconds: 20),
@@ -27,7 +27,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket?.matsSocketInstanceId}] ===========');
+      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     /*
@@ -53,7 +53,7 @@ void main() {
          */
         group('connect twice to same MatsSocketSessionId', () {
 
-            void connectTwice(Uri url1, Uri url2) async {
+            Future<void> connectTwice(Uri url1, Uri url2) async {
                 // Create the first MatsSocket
                 var matsSocket_A = MatsSocket('TestApp', '1.2.3', [url1]);
                 var now = DateTime.now();
@@ -65,7 +65,7 @@ void main() {
                     matsSocket_A_SessionClosed++;
                 });
 
-                ConnectionEvent matsSocket_A_LostConnection;
+                late ConnectionEvent matsSocket_A_LostConnection;
                 var matsSocket_A_LostConnection_Count = 0;
                 matsSocket_A.addConnectionEventListener((connectionEvent) {
                     if (connectionEvent.type == ConnectionEventType.LOST_CONNECTION) {

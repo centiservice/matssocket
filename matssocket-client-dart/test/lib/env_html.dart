@@ -7,11 +7,11 @@ List<Uri> loadServerUris() {
   return [Uri.parse('ws://localhost:8080/matssocket'), Uri.parse('ws://localhost:8081/matssocket')];
 }
 
-int code(ConnectionEvent connectionEvent) {
+int? code(ConnectionEvent connectionEvent) {
   return (connectionEvent.webSocketEvent as CloseEvent).code;
 }
 
-String reason(ConnectionEvent connectionEvent) {
+String? reason(ConnectionEvent connectionEvent) {
   return (connectionEvent.webSocketEvent as CloseEvent).reason;
 }
 

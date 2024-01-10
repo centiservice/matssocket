@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:logging/logging.dart';
 import 'package:matssocket/matssocket.dart';
-import 'package:matssocket/src/InitiationProcessedEvent.dart';
 import 'package:test/test.dart';
 
 import 'lib/env.dart';
@@ -14,7 +13,7 @@ void main() {
   final _logger = Logger('integration_listeners');
 
   group('MatsSocket integration tests, listeners', () {
-    MatsSocket matsSocket;
+    late MatsSocket matsSocket;
 
     void setAuth(
         [String userId = 'standard',
@@ -30,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket?.matsSocketInstanceId}] ===========');
+      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     // TODO: Check ConnectionEventListeners, including matsSocket.state
@@ -163,7 +162,7 @@ void main() {
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST));
           expect(init.endpointId, 'Test.single');
-          expect(init.sentTimestamp.millisecondsSinceEpoch, greaterThan(1585259649178));
+          expect(init.sentTimestamp!.millisecondsSinceEpoch, greaterThan(1585259649178));
           expect(init.sessionEstablishedOffsetMillis, lessThan(0.0),
               reason: 'sessionEstablishedOffsetMillis should be negative since sent before WELCOME, was [${init.sessionEstablishedOffsetMillis}]');
           expect(init.traceId, traceId);
@@ -267,12 +266,12 @@ void main() {
         var traceId = 'InitiationProcessedEvent_requestReplyTo_${id(6)}';
         var msg = {'string': 'The Curious', 'number': math.pi};
 
-        double receivedRoundTripMillisFromReceived;
+        double? receivedRoundTripMillisFromReceived;
 
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST_REPLY_TO));
           expect(init.endpointId, equals('Test.single'));
-          expect(init.sentTimestamp.millisecondsSinceEpoch, greaterThan(1585259649178));
+          expect(init.sentTimestamp!.millisecondsSinceEpoch, greaterThan(1585259649178));
           expect(init.sessionEstablishedOffsetMillis, lessThan(0.0),
               reason: 'sessionEstablishedOffsetMillis should be negative since sent before WELCOME, was [${init.sessionEstablishedOffsetMillis}]');
           expect(init.traceId, equals(traceId));
@@ -373,7 +372,7 @@ void main() {
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST_REPLY_TO));
           expect(init.endpointId, equals('Test.slow'));
-          expect(init.sentTimestamp.millisecondsSinceEpoch, greaterThan(1585259649178));
+          expect(init.sentTimestamp!.millisecondsSinceEpoch, greaterThan(1585259649178));
           // Note: Will be zero if session is not established yet.
           expect(init.sessionEstablishedOffsetMillis, lessThanOrEqualTo(0.0),
               reason: 'sessionEstablishedOffsetMillis should be zero or negative, since sent before WELCOME, was [${init.sessionEstablishedOffsetMillis}]');
@@ -397,7 +396,7 @@ void main() {
         matsSocket.addInitiationProcessedEventListener(initiationProcessedEvent.complete, includeStash, includeStash);
 
         var messageCallbackInvoked = false;
-        await matsSocket.terminator('Test-terminator').listen((messageEvent) {
+        matsSocket.terminator('Test-terminator').listen((messageEvent) {
           fail('TERMINATOR WAS RESOLVED (messageCallback!) - this should NOT happen!');
         }, onError: repliedMessageEvent.complete);
 

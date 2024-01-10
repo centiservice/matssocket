@@ -1,8 +1,8 @@
 import 'package:matssocket/src/mats_socket_util.dart';
 
 class MatsSocketCloseEvent {
-  final int code;
-  final String reason;
+  final int? code;
+  final String? reason;
   final int outstandingInitiations;
   final dynamic nativeEvent;
 
@@ -169,13 +169,13 @@ extension MatsSocketCloseCodesExtension on MatsSocketCloseCodes {
     }
   }
 
-  static String nameFor(final int code) {
+  static String nameFor(final int? code) {
     var matsSocketCloseCode = fromCode(code);
     return (matsSocketCloseCode == MatsSocketCloseCodes.UNKNOWN) ? 'UNKNOWN($code)' : matsSocketCloseCode.name;
   }
 
   /// Convert a close code int to a ClodeCodes enum.
-  static MatsSocketCloseCodes fromCode(final int code) {
+  static MatsSocketCloseCodes fromCode(final int? code) {
     if (code == CloseCodes.VIOLATED_POLICY.code) {
       return MatsSocketCloseCodes.VIOLATED_POLICY;
     }
@@ -365,7 +365,7 @@ extension CloseCodesExtension on CloseCodes {
 
   static
   /// Convert a code int to a CloseCodes enum.
-  CloseCodes fromCode(final int code) {
+  CloseCodes fromCode(final int? code) {
     switch (code) {
       case 1000:
         return CloseCodes.NORMAL_CLOSURE;

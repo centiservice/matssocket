@@ -18,7 +18,7 @@ class SubscriptionEvent {
   /// What TopicIc this relates to.
   ///
   /// @type {string}
-  final String topicId;
+  final String? topicId;
 
   const SubscriptionEvent(this.type, this.topicId);
 

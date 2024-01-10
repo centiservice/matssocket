@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:matssocket/src/MatsSocketEnvelopeDto.dart';
 
 /// Message Event - the event emitted for a {@link MatsSocket#request() Requests}'s Promise resolve() and reject()
@@ -42,15 +40,15 @@ class MessageEvent {
   dynamic correlationInformation;
 
   /// The TraceId for this call / message.
-  final String traceId;
+  final String? traceId;
 
   /// Either the ClientMessageId if this message is a Reply to a Client-initiated Request (i.e. this message is a
   /// RESOLVE or REJECT), or ServerMessageId if this originated from the Server (i.e. SEND or REQUEST);
-  final String messageId;
+  final String? messageId;
 
   /// millis-since-epoch when the Request, for which this message is a Reply, was sent from the
   /// Client. If this message is not a Reply to a Client-initiated Request, it is undefined.
-  DateTime clientRequestTimestamp;
+  DateTime? clientRequestTimestamp;
 
   /// When the message was received on the Client, millis-since-epoch.
   final DateTime receivedTimestamp;
@@ -62,13 +60,13 @@ class MessageEvent {
   /// resolution of <code>performance.now()</code>.
   ///
   /// <b>Note that this number can be a float, not necessarily integer</b>.
-  double roundTripMillis;
+  double? roundTripMillis;
 
   /// If debugging is requested, by means of {@link MatsSocket#debug} or the config object in the send, request and
   /// requestReplyTo, this will contain a {@link DebugInformation} instance. However, the contents of that object
   /// is decided by what you request, and what the authorized user is allowed to get as decided by the
   /// AuthenticationPlugin when authenticating the user.
-  DebugDto debug;
+  DebugDto? debug;
 
   MessageEvent(this.type, this.data, this.traceId, this.messageId, this.receivedTimestamp);
 
@@ -80,7 +78,7 @@ class MessageEvent {
       'data': data,
       'traceId': traceId,
       'messageId': messageId,
-      'receivedTimestamp': receivedTimestamp?.millisecondsSinceEpoch,
+      'receivedTimestamp': receivedTimestamp.millisecondsSinceEpoch,
       'clientRequestTimestamp': clientRequestTimestamp?.millisecondsSinceEpoch,
       // correlationInformation is never sent, so we have no garuantees that its
       // serializable, so we will have to rely on toString.
@@ -113,7 +111,7 @@ enum MessageEventType {
   SESSION_CLOSED
 }
 
-extension MessageEventTypeExtension on MessageEventType {
+extension MessageEventTypeExtension on MessageEventType? {
   String get name {
     switch (this) {
       case MessageEventType.RESOLVE:

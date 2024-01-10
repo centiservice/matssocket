@@ -1,5 +1,3 @@
-import 'package:matssocket/src/mats_socket_util.dart';
-
 /// (Metric) A "holding struct" for pings and their experienced round-trip times - you may "subscribe" to ping results
 /// using {@link MatsSocket#addPingListener()}, and you may get the latest pings from the property
 /// {@link MatsSocket#pings}.
@@ -13,7 +11,7 @@ class PingPong {
   /// The experienced round-trip time for this ping-pong - this is the time back-and-forth.
   ///
   /// <b>Note that this number can be a float, not necessarily integer</b>.
-  double roundTripMillis;
+  double? roundTripMillis;
 
   PingPong(this.pingId, this.sentTimestamp);
 

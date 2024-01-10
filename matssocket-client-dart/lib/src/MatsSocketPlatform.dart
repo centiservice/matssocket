@@ -2,7 +2,7 @@ import 'MatsSocketPlatformStub.dart'
     if (dart.library.io) 'MatsSocketPlatformNative.dart'
     if (dart.library.html) 'MatsSocketPlatformHtml.dart';
 
-typedef PreConnectOperation = ConnectResult Function(Uri, String);
+typedef PreConnectOperation = ConnectResult Function(Uri?, String?);
 
 /// Interface to communicate with the platform that the mats socket runs on.
 ///
@@ -27,11 +27,11 @@ abstract class MatsSocketPlatform {
   /// here.
   Future<bool> closeSession(Uri closeUri, String sessionId);
 
-  WebSocket connect(Uri webSocketUri, String protocol, String authorization);
+  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization);
 
   String get version;
 
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization);
+  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization);
 
   void registerBeforeunload(Function(dynamic) beforeunloadHandler);
 
@@ -46,7 +46,7 @@ class ConnectResult {
 
   ConnectResult(this.abortFunction, this.responseStatusCode);
 
-  ConnectResult.noop() : this(() {}, Future.value());
+  ConnectResult.noop() : this(() {}, Future.value(0));
 }
 
 
@@ -58,50 +58,50 @@ typedef OpenHandler = void Function(WebSocket, dynamic);
 typedef ErrorHandler = void Function(WebSocket, dynamic);
 
 /// Handler for messages, this will get the message string, and the native event, if any.
-typedef MessageHandler = void Function(WebSocket, String, dynamic);
+typedef MessageHandler = void Function(WebSocket, String?, dynamic);
 
 /// Handler for close event, with WebSocket closeCode and reason, and the native event, if any.
-typedef CloseHandler = void Function(WebSocket, int, String, dynamic);
+typedef CloseHandler = void Function(WebSocket, int?, String?, dynamic);
 
 abstract class WebSocket {
-  String webSocketInstanceId;
+  String? webSocketInstanceId;
 
-  String get url;
+  String? get url;
 
-  ErrorHandler _errorHandler;
-  MessageHandler _messageHandler;
-  CloseHandler _closeHandler;
-  OpenHandler _openHandler;
+  ErrorHandler? _errorHandler;
+  MessageHandler? _messageHandler;
+  CloseHandler? _closeHandler;
+  OpenHandler? _openHandler;
 
-  set onClose(CloseHandler onclose) => _closeHandler = onclose;
+  set onClose(CloseHandler? onclose) => _closeHandler = onclose;
 
-  set onError(ErrorHandler errorHandler) => _errorHandler = errorHandler;
+  set onError(ErrorHandler? errorHandler) => _errorHandler = errorHandler;
 
-  set onOpen(OpenHandler openHandler) => _openHandler = openHandler;
+  set onOpen(OpenHandler? openHandler) => _openHandler = openHandler;
 
-  set onMessage(MessageHandler onclose) => _messageHandler = onclose;
+  set onMessage(MessageHandler? onclose) => _messageHandler = onclose;
 
-  void handleClose(int code, String reason, [dynamic nativeEvent]) {
+  void handleClose(int? code, String? reason, [dynamic nativeEvent]) {
     if (_closeHandler != null) {
-      _closeHandler(this, code, reason, nativeEvent);
+      _closeHandler!(this, code, reason, nativeEvent);
     }
   }
 
   void handleError([dynamic nativeEvent]) {
     if (_errorHandler != null) {
-      _errorHandler(this, nativeEvent);
+      _errorHandler!(this, nativeEvent);
     }
   }
 
   void handleOpen([dynamic nativeEvent]) {
     if (_openHandler != null) {
-      _openHandler(this, nativeEvent);
+      _openHandler!(this, nativeEvent);
     }
   }
 
   void handleMessage(dynamic message, [dynamic nativeEvent]) {
     if (_messageHandler != null) {
-      _messageHandler(this, message as String, nativeEvent);
+      _messageHandler!(this, message as String?, nativeEvent);
     }
   }
 

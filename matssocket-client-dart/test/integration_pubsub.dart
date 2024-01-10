@@ -13,7 +13,7 @@ void main() {
   final _logger = Logger('integration_pubsub');
 
   group('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', () {
-    MatsSocket matsSocket;
+    late MatsSocket matsSocket;
 
     void setAuth(
         [String userId = 'standard',
@@ -29,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket?.matsSocketInstanceId}] ===========');
+      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     group('basic subscription with a publish from server', () {

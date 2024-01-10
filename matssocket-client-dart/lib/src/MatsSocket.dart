@@ -3,18 +3,6 @@ import 'dart:math' as math;
 import 'dart:convert';
 import 'package:logging/logging.dart';
 import 'package:matssocket/matssocket.dart';
-import 'package:matssocket/src/AuthorizationRequiredEvent.dart';
-import 'package:matssocket/src/ConnectionEvent.dart';
-import 'package:matssocket/src/ErrorEvent.dart';
-import 'package:matssocket/src/MatsSocketCloseEvent.dart';
-import 'package:matssocket/src/MessageEvent.dart';
-import 'package:matssocket/src/PingPong.dart';
-import 'package:matssocket/src/ReceivedEvent.dart';
-import 'package:matssocket/src/SubscriptionEvent.dart';
-
-import 'MatsSocketEnvelopeDto.dart';
-import 'InitiationProcessedEvent.dart';
-import 'MatsSocketPlatform.dart';
 
 final Logger _logger = Logger('MatsSocket');
 
@@ -80,9 +68,9 @@ class MatsSocket {
 
   final String appName;
   final String appVersion;
-  MatsSocketPlatform platform;
+  late MatsSocketPlatform platform;
 
-  String sessionId;
+  String? sessionId;
 
   // :: Message handling
   final Map<String, StreamController<MessageEvent>> _terminators = {};
@@ -96,17 +84,17 @@ class MatsSocket {
   final matsSocketInstanceId = id(3);
 
   DateTime _lastMessageEnqueuedTimestamp = DateTime.now(); // Start by assuming that it was just used.
-  double _initialSessionEstablished_PerformanceNow;
+  double? _initialSessionEstablished_PerformanceNow;
 
   // If true, we're currently already trying to get a WebSocket
   bool _webSocketConnecting = false;
   // If NOT undefined, we have an open WebSocket available.
-  WebSocket _webSocket; // NOTE: It is set upon "onopen", and unset upon "onclose".
+  WebSocket? _webSocket; // NOTE: It is set upon "onopen", and unset upon "onclose".
   // If false, we should not accidentally try to reconnect or similar
   bool _matsSocketOpen = false; // NOTE: Set to true upon enqueuing of information-bearing message.
 
-  final List<MatsSocketEnvelopeDto> _prePipeline = [];
-  final List<MatsSocketEnvelopeDto> _pipeline = [];
+  final List<MatsSocketEnvelopeDto?> _prePipeline = [];
+  final List<MatsSocketEnvelopeDto?> _pipeline = [];
 
   // :: Event listeners.
 
@@ -118,35 +106,35 @@ class MatsSocket {
   final List<ErrorEventListener> _errorEventListeners = [];
 
 
-  ConnectionState _state = ConnectionState.NO_SESSION;
+  ConnectionState? _state = ConnectionState.NO_SESSION;
 
   bool _helloSent = false;
 
   // :: Authorization fields
-  String _authorization;
-  String _lastAuthorizationSentToServer;
+  String? _authorization;
+  String? _lastAuthorizationSentToServer;
   int _lastDebugOptionsSentToServer = 0;
   bool _forcePipelineProcessing = false;
 
-  DateTime _expirationTimestamp;
-  Duration _roomForLatencyMillis;
+  DateTime? _expirationTimestamp;
+  late Duration _roomForLatencyMillis;
   AuthorizationExpiredCallback _authorizationExpiredCallback = (event) {};
 
   int _messageSequenceId = 0; // Increases for each SEND, REQUEST and REPLY
 
   // When we've informed the app that we need auth, we do not need to do it again until it has set it.
-  AuthorizationRequiredEventType _authExpiredCallbackInvoked_EventType;
+  AuthorizationRequiredEventType? _authExpiredCallbackInvoked_EventType;
 
   // Outstanding Pings
   final Map<String, _OutstandingPing> _outstandingPings = {};
   // Outstanding Request "futures", i.e. the resolve() and reject() functions of the returned Promise.
   final Map<String, _Request> _outstandingRequests = {};
   // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
-  final Map<String, _Initiation> _outboxInitiations = {};
+  final Map<String?, _Initiation> _outboxInitiations = {};
   // .. "guard object" to avoid having to retransmit messages sent /before/ the WELCOME is received for the HELLO handshake
   String _outboxInitiations_RetransmitGuard = jid(5);
   // Outbox for REPLYs
-  final Map<String, _OutboxReply> _outboxReplies = {};
+  final Map<String?, _OutboxReply> _outboxReplies = {};
   // The Inbox - to be able to catch double deliveries from Server
   final _inbox = {};
 
@@ -171,7 +159,7 @@ class MatsSocket {
   ///
   ///
   /// This can be set to any function fulfilling the PreConnectOperation typedef.
-  PreConnectOperation preconnectoperation;
+  PreConnectOperation? preconnectoperation;
 
   /// A bit field requesting different types of debug information, the bits defined in [DebugOption]. It is
   /// read each time an information bearing message is added to the pipeline, and if not 'undefined' or 0, the
@@ -197,7 +185,7 @@ class MatsSocket {
   ///
   /// The value from the client is bitwise-and'ed together with the debug capabilities the authenticated user has
   /// gotten by the AuthenticationPlugin on the Server side.
-  int debug = 0;
+  int? debug = 0;
 
   /// When performing a [request] and [requestReplyTo], you may not
   /// always get a (timely) answer: Either you can loose
@@ -215,9 +203,7 @@ class MatsSocket {
 
   ///
   ///
-  MatsSocket(this.appName, this.appVersion, this._useUrls, [MatsSocketPlatform platform]) {
-    assert(appName != null);
-    assert(appVersion != null);
+  MatsSocket(this.appName, this.appVersion, this._useUrls, [MatsSocketPlatform? platform]) {
     assert(_useUrls.isNotEmpty, 'Must provide at least 1 url');
 
     this.platform = platform ?? MatsSocketPlatform.create();
@@ -386,10 +372,7 @@ class MatsSocket {
   ///        expirationTimestamp is '-1', then this parameter is not used. *Default value is 30000 (30 seconds).*
   void setCurrentAuthorization(String authorizationValue, DateTime expirationTimestamp,
       [Duration roomForLatencyMillis = const Duration(seconds: 30)]) {
-    _logger.fine(() =>
-    'Got Authorization which '
-        + (expirationTimestamp != null ? 'Expires in [${expirationTimestamp.difference(DateTime.now())}]' : '[Never expires]')
-        + ', roomForLatencyMillis: $roomForLatencyMillis');
+    _logger.fine('Got Authorization which expires in [${expirationTimestamp.difference(DateTime.now())}], roomForLatencyMillis: $roomForLatencyMillis');
 
     for (var i=0; i < authorizationValue.length; i++) {
       if (authorizationValue.codeUnitAt(i) > 160) {
@@ -455,7 +438,7 @@ class MatsSocket {
   /// @member {string} state
   /// @memberOf MatsSocket
   /// @readonly
-  ConnectionState get state {
+  ConnectionState? get state {
     return _state;
   }
 
@@ -582,7 +565,7 @@ class MatsSocket {
     }
     _logger.info('Registering Terminator on id [$terminatorId]');
     _terminators[terminatorId] = StreamController<MessageEvent>();
-    return _terminators[terminatorId].stream;
+    return _terminators[terminatorId]!.stream;
   }
 
   /// Registers an Endpoint, on the specified endpointId, with the specified "promiseProducer". An Endpoint is
@@ -669,13 +652,13 @@ class MatsSocket {
       if (topicId.startsWith('!')) {
           throw ArgumentError.value(topicId, 'Topic cannot start with "!" (and why would you use chars like that anyway?!), Topic [' + topicId + '] is illegal.');
       }
-      _logger.fine('Registering Subscription on Topic [${topicId}]:\n #messageCallback: $messageCallback');
+      _logger.fine('Registering Subscription on Topic [$topicId]:\n #messageCallback: $messageCallback');
       // ?: Check if we have an active subscription holder here already
       var subs = _subscriptions.putIfAbsent(topicId, () => _Subscription(topicId));
 
       // :: Assert that the messageCallback is not already there
       if (subs.listeners.where((current) => current == messageCallback).isNotEmpty) {
-          error('subscription_already_exists', 'The specified messageCallback [${messageCallback}] was already subscribed to Topic [${topicId}].');
+          error('subscription_already_exists', 'The specified messageCallback [$messageCallback] was already subscribed to Topic [$topicId].');
           return;
       }
       // Add the present messageCallback to the subscription holder
@@ -721,11 +704,11 @@ class MatsSocket {
   void deleteSubscription(String topicId, MessageEventHandler messageCallback) {
       var subs = _subscriptions[topicId];
       if (subs == null) {
-          throw ArgumentError.value(topicId, 'The topicId [${topicId}] had no subscriptions! (thus definitely not this [${messageCallback}].');
+          throw ArgumentError.value(topicId, 'The topicId [$topicId] had no subscriptions! (thus definitely not this [$messageCallback].');
       }
       var idx = subs.listeners.indexOf(messageCallback);
       if (idx == -1) {
-          error('subscription_not_found', 'The specified messageCallback [${messageCallback}] was not subscribed with Topic [${topicId}].');
+          error('subscription_not_found', 'The specified messageCallback [$messageCallback] was not subscribed with Topic [$topicId].');
           return;
       }
       subs.listeners.removeAt(idx);
@@ -815,12 +798,12 @@ class MatsSocket {
   ///        described in the config object, or a config object - read JSDoc above.
   /// **returns** {Promise<MessageEvent>}
   Future<MessageEvent> request(String endpointId, String traceId, dynamic message, {
-    Function(ReceivedEvent) receivedCallback,
-    Function(ReceivedEvent) ackCallback,
-    Function(ReceivedEvent) nackCallback,
+    Function(ReceivedEvent)? receivedCallback,
+    Function(ReceivedEvent)? ackCallback,
+    Function(ReceivedEvent)? nackCallback,
     bool suppressInitiationProcessedEvent = false,
-    Duration timeout,
-    int debug
+    Duration? timeout,
+    int? debug
   }) {
     // :: Handle the different configOrCallback situations
     assert(receivedCallback == null ||
@@ -886,8 +869,8 @@ class MatsSocket {
   Future<ReceivedEvent> requestReplyTo(String endpointId, String traceId, dynamic message, replyToTerminatorId, {
     dynamic correlationInformation,
     bool suppressInitiationProcessedEvent = false,
-    Duration timeout,
-    int debug
+    Duration? timeout,
+    int? debug
   }) {
     // ?: Do we have the Terminator the client requests reply should go to?
     if (!_terminators.containsKey(replyToTerminatorId)) {
@@ -962,7 +945,7 @@ class MatsSocket {
       // -> Yes, so close WebSocket with MatsSocket-specific CloseCode CLOSE_SESSION 4000.
       _logger.fine(' \\-> WebSocket is open, so we perform in-band Session Close by closing the WebSocket with MatsSocketCloseCode.CLOSE_SESSION (4000).');
       // Perform the close
-      _webSocket.close(MatsSocketCloseCodes.CLOSE_SESSION.code, 'From client: $reason');
+      _webSocket!.close(MatsSocketCloseCodes.CLOSE_SESSION.code, 'From client: $reason');
     }
 
     // Close Session and clear all state of this MatsSocket.
@@ -972,7 +955,7 @@ class MatsSocket {
     // ?: Do we have a sessionId?
     if (existingSessionId != null) {
       // Yes -> inform the transport to close the session.
-      final closeUri = webSocketUrl.replace(
+      final closeUri = webSocketUrl!.replace(
           scheme: webSocketUrl.scheme.replaceAll('ws', 'http'),
           path: '${webSocketUrl.path}/close_session',
           queryParameters: {'session_id': sessionId }
@@ -995,7 +978,7 @@ class MatsSocket {
   void reconnect(String reason, [bool disconnect = false]) {
     var closeCode = disconnect ? MatsSocketCloseCodes.DISCONNECT : MatsSocketCloseCodes.RECONNECT;
     _logger.info(() => 'reconnect(): Closing WebSocket with CloseCode \'${closeCode.name} (${closeCode.code})\','
-        ' MatsSocketSessionId:[${sessionId}] due to [${reason}], currently connected: [${((_webSocket == null) ? _webSocket.url : "not connected")}]');
+        ' MatsSocketSessionId:[$sessionId] due to [$reason], currently connected: [${((_webSocket == null) ? _webSocket!.url : "not connected")}]');
     if (_webSocket == null) {
       throw StateError('There is no live WebSocket to close with ${closeCode.name} closeCode!');
     }
@@ -1010,24 +993,24 @@ class MatsSocket {
     // such reconnecting in face of an actual .close(..) invocation.
 
     // First unset message handler so that we do not receive any more WebSocket messages (but NOT unset 'onclose', nor 'onerror')
-    _webSocket.onMessage = null;
+    _webSocket!.onMessage = null;
     // Now closing the WebSocket (thus getting the 'onclose' handler invoked - just as if we'd lost connection, or got this RECONNECT close from Server).
-    _webSocket.close(closeCode.code, reason);
+    _webSocket!.close(closeCode.code, reason);
   }
 
   void _beforeunloadHandler(event) {
     close(CLIENT_LIB_NAME_AND_VERSION + ' unload');
   }
 
-  void error(String type, String msg, [Object error]) {
+  void error(String type, String msg, [Object? error]) {
     final event = ErrorEvent(type, msg, error);
     // Notify ErrorEvent listeners, synchronously.
 
     _errorEventListeners.forEach((listener) {
       try {
         listener(event);
-      } catch (err) {
-        _logger.severe('notify ErrorEvent listeners', 'Caught error when notifying ErrorEvent listeners [${listener}] - NOT notifying using ErrorEvent in fear of creating infinite recursion.', err);
+      } catch (err, stack) {
+        _logger.severe('Caught error when notifying ErrorEvent listeners [$listener] - NOT notifying using ErrorEvent in fear of creating infinite recursion.', err, stack);
       }
     });
 
@@ -1052,11 +1035,11 @@ class MatsSocket {
     // :: Clear out _webSocket;
     if (_webSocket != null) {
       // We don't want the onclose callback invoked from this event that we initiated ourselves.
-      _webSocket.onClose = null;
+      _webSocket!.onClose = null;
       // We don't want any messages either
-      _webSocket.onMessage = null;
+      _webSocket!.onMessage = null;
       // Also drop onerror for good measure.
-      _webSocket.onError = null;
+      _webSocket!.onError = null;
     }
     _webSocket = null;
   }
@@ -1077,23 +1060,23 @@ class MatsSocket {
 
     // :: NACK all outstanding messages
     for (var cmid in _outboxInitiations.keys.toList()) {
-      var initiation = _outboxInitiations.remove(cmid);
+      var initiation = _outboxInitiations.remove(cmid)!;
 
-      _logger.fine(() => 'Close Session: Clearing outstanding Initiation [${initiation.envelope.type}] to [${initiation.envelope.endpointId}], cmid:[${initiation.envelope.clientMessageId}], TraceId:[${initiation.envelope.traceId}].');
+      _logger.fine('Close Session: Clearing outstanding Initiation [${initiation.envelope!.type}] to [${initiation.envelope!.endpointId}], cmid:[${initiation.envelope!.clientMessageId}], TraceId:[${initiation.envelope!.traceId}].');
       _completeReceived(ReceivedEventType.SESSION_CLOSED, initiation, DateTime.now());
     }
 
     // :: Reject all Requests
     for (var cmid in _outstandingRequests.keys.toList()) {
-      var request = _outstandingRequests.remove(cmid);
+      var request = _outstandingRequests.remove(cmid)!;
 
-      _logger.fine(() => 'Close Session: Clearing outstanding REQUEST to ${request.envelope.endpointId}, cmid:${request.envelope.clientMessageId}, TraceId:${request.envelope.traceId}. ($request)');
+      _logger.fine('Close Session: Clearing outstanding REQUEST to ${request.envelope.endpointId}, cmid:${request.envelope.clientMessageId}, TraceId:${request.envelope.traceId}. ($request)');
       _completeRequest(request, MessageEventType.SESSION_CLOSED, MatsSocketEnvelopeDto.empty(), DateTime.now());
     }
   }
 
   void _addInformationBearingEnvelopeToPipeline(MatsSocketEnvelopeDto envelope, String traceId,
-      _Initiation initiation, _Request request) {
+      _Initiation initiation, _Request? request) {
     // This is an information-bearing message, so now this MatsSocket instance is open.
     _matsSocketOpen = true;
     var now = DateTime.now();
@@ -1151,7 +1134,7 @@ class MatsSocket {
       request.timer = Timer(request.timeout, () {
         // :: The Request timeout was hit.
         var performanceNow = platform.performanceTime();
-        _logger.fine(() => 'TIMEOUT! Request with TraceId:${request.envelope.traceId}, '
+        _logger.fine('TIMEOUT! Request with TraceId:${request.envelope.traceId}, '
             'cmid:${request.envelope.clientMessageId} '
             'overshot timeout [${(performanceNow - request.initiation.messageSent_PerformanceNow)} '
             'ms of ${request.timeout}]');
@@ -1208,22 +1191,22 @@ class MatsSocket {
 
   /// Unconditionally adds the supplied envelope to the pipeline, and then evaluates the pipeline,
   /// invokeLater-style so as to get "auth-pipelining". Use flush() to get sync send.
-  void _addEnvelopeToPipeline_EvaluatePipelineLater(MatsSocketEnvelopeDto envelope, [bool prePipeline = false]) {
+  void _addEnvelopeToPipeline_EvaluatePipelineLater(MatsSocketEnvelopeDto? envelope, [bool prePipeline = false]) {
       // ?: Should we add it to the pre-pipeline, or the ordinary?
       if (prePipeline) {
           // -> To pre-pipeline
-          _logger.fine(() => 'ENQUEUE: Envelope of type ${envelope.type} enqueued to PRE-pipeline: ' + jsonEncode(envelope));
+          _logger.fine('ENQUEUE: Envelope of type ${envelope!.type} enqueued to PRE-pipeline: ' + jsonEncode(envelope));
           _prePipeline.add(envelope);
       } else {
           // -> To ordinary pipeline.
-          _logger.fine(() => 'ENQUEUE: Envelope of type ${envelope.type} enqueued to pipeline: ' + jsonEncode(envelope));
+          _logger.fine('ENQUEUE: Envelope of type ${envelope!.type} enqueued to pipeline: ' + jsonEncode(envelope));
           _pipeline.add(envelope);
       }
       // Perform "auto-pipelining", by waiting a minimal amount of time before actually sending.
       _evaluatePipelineLater();
   }
 
-  Timer _evaluatePipelineLater_timer;
+  Timer? _evaluatePipelineLater_timer;
 
   void _evaluatePipelineLater() {
     _evaluatePipelineLater_timer?.cancel();
@@ -1257,7 +1240,7 @@ class MatsSocket {
     }
     // ?: Check whether we have expired authorization
     if ((_expirationTimestamp != null)
-        && (_expirationTimestamp.subtract(_roomForLatencyMillis).isBefore(DateTime.now()))) {
+        && (_expirationTimestamp!.subtract(_roomForLatencyMillis).isBefore(DateTime.now()))) {
       // -> Yes, authorization is expired.
       _requestNewAuthorizationFromApp('Authorization is expired',
           AuthorizationRequiredEvent(AuthorizationRequiredEventType.EXPIRED, _expirationTimestamp));
@@ -1321,7 +1304,7 @@ class MatsSocket {
 
       // :: Handle subscriptions
       for (var topicId in _subscriptions.keys) {
-        var subs = _subscriptions[topicId];
+        var subs = _subscriptions[topicId]!;
         // ?: Do we have subscribers, but not sent to server?
         if ((subs.listeners.isNotEmpty) && (!subs.subscriptionSentToServer)) {
           // -> Yes, so we need to subscribe
@@ -1348,13 +1331,13 @@ class MatsSocket {
     if (_helloSent && (_lastAuthorizationSentToServer != _authorization)) {
       // -> Yes, it has changed, so add it to some envelope - either last in pipeline, or if empty pipe, then make an AUTH message.
       if (_pipeline.isNotEmpty) {
-        var lastEnvelope = _pipeline[_pipeline.length - 1];
+        var lastEnvelope = _pipeline[_pipeline.length - 1]!;
         _logger
-            .fine(() => "Authorization has changed, and there is a message in pipeline of type ${lastEnvelope.type}, so so we add 'auth' to it.");
+            .fine("Authorization has changed, and there is a message in pipeline of type ${lastEnvelope.type}, so so we add 'auth' to it.");
         lastEnvelope.authorization = _authorization;
       } else {
         _logger
-            .fine(() => 'Authorization has changed, but there is no message in pipeline, so we add an AUTH message now.');
+            .fine('Authorization has changed, but there is no message in pipeline, so we add an AUTH message now.');
         _pipeline.add(MatsSocketEnvelopeDto(type: MessageType.AUTH, authorization: _authorization));
       }
       // The current authorization is now sent
@@ -1367,17 +1350,16 @@ class MatsSocket {
     // :: Send PRE-pipeline messages, if there are any
     // (Before the HELLO is sent and sessionId is established, the max size of message is low on the server)
     if (_prePipeline.isNotEmpty) {
-      _logger.fine(() => 'Flushing prePipeline of ${_prePipeline.length} messages.');
+      _logger.fine('Flushing prePipeline of ${_prePipeline.length} messages.');
       _logger.info('Sending: ${jsonEncode(_prePipeline)}');
-      _webSocket.send(jsonEncode(_prePipeline));
+      _webSocket!.send(jsonEncode(_prePipeline));
       // Clear prePipeline
       _prePipeline.length = 0;
     }
     // :: Send any pipelined messages.
     if (_pipeline.isNotEmpty) {
-      _logger.fine(() =>
-      'Flushing pipeline of ${_pipeline.length} messages:' + jsonEncode(_pipeline));
-      _webSocket.send(jsonEncode(_pipeline));
+      _logger.fine('Flushing pipeline of ${_pipeline.length} messages:' + jsonEncode(_pipeline));
+      _webSocket!.send(jsonEncode(_pipeline));
       // Clear pipeline
       _pipeline.length = 0;
     }
@@ -1388,11 +1370,11 @@ class MatsSocket {
       // ?: Have we already asked app for new auth?
       if (_authExpiredCallbackInvoked_EventType != null) {
           // -> Yes, so just return.
-          _logger.fine('${what}, but we\'ve already asked app for it due to: [${_authExpiredCallbackInvoked_EventType}].');
+          _logger.fine('$what, but we\'ve already asked app for it due to: [$_authExpiredCallbackInvoked_EventType].');
           return;
       }
       // E-> No, not asked for auth - so do it.
-      _logger.fine("${what}. Will not send pipeline until gotten. Invoking 'authorizationExpiredCallback', type:[${event.type}].");
+      _logger.fine("$what. Will not send pipeline until gotten. Invoking 'authorizationExpiredCallback', type:[${event.type}].");
       // We will have asked for auth after this.
       _authExpiredCallbackInvoked_EventType = event.type;
       // Assert that we have callback
@@ -1405,7 +1387,7 @@ class MatsSocket {
           // -> Yes, so close WebSocket with MatsSocket-specific CloseCode CLOSE_SESSION 4000.
           _logger.info(' \\-> WebSocket is open, so we perform in-band Session Close by closing the WebSocket with MatsSocketCloseCode.CLOSE_SESSION (4000).');
           // Perform the close
-          _webSocket.close(MatsSocketCloseCodes.CLOSE_SESSION.code, reason);
+          _webSocket!.close(MatsSocketCloseCodes.CLOSE_SESSION.code, reason);
         }
         // Close Session and clear all state of this MatsSocket.
         _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages();
@@ -1425,16 +1407,16 @@ class MatsSocket {
 
   int _urlIndexCurrentlyConnecting = 0; // Cycles through the URLs
   int _connectionAttemptRound = 0; // When cycled one time through URLs, this increases.
-  Uri _currentWebSocketUrl;
+  Uri? _currentWebSocketUrl;
 
   final int _connectionTimeoutBase = 500; // Base timout, milliseconds. Doubles, up to max defined below.
   final int _connectionTimeoutMinIfSingleUrl = 5000; // Min timeout if single-URL configured, milliseconds.
   final int _connectionTimeoutMax = 15000; // Milliseconds max between connection attempts.
 
   // Based on whether there is multiple URLs, or just a single one, we choose the short "timeout base", or a longer one, as minimum.
-  int _connectionTimeoutMin;
+  late int _connectionTimeoutMin;
 
-  int maxConnectionAttempts;
+  int? maxConnectionAttempts;
 
   int _maxConnectionAttempts() {
       // Way to let integration tests take a bit less time.
@@ -1449,7 +1431,7 @@ class MatsSocket {
           _connectionAttemptRound++;
       }
       _currentWebSocketUrl = _useUrls[_urlIndexCurrentlyConnecting];
-      _logger.fine('## _increaseReconnectStateVars(): round:[${_connectionAttemptRound}], urlIndex:[${_urlIndexCurrentlyConnecting}] = $_currentWebSocketUrl');
+      _logger.fine('## _increaseReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] = $_currentWebSocketUrl');
   }
 
   void _resetReconnectStateVars() {
@@ -1457,13 +1439,13 @@ class MatsSocket {
       _urlIndexCurrentlyConnecting = 0;
       _connectionAttemptRound = 0;
       _currentWebSocketUrl = _useUrls[_urlIndexCurrentlyConnecting];
-      _logger.fine('## _resetReconnectStateVars(): round:[${_connectionAttemptRound}], urlIndex:[${_urlIndexCurrentlyConnecting}] =  $_currentWebSocketUrl');
+      _logger.fine('## _resetReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] =  $_currentWebSocketUrl');
   }
 
   void _updateStateAndNotifyConnectionEventListeners(ConnectionEvent connectionEvent) {
       // ?: Should we log? Logging is on, AND (either NOT CountDown, OR CountDown == initialSeconds, OR Countdown == whole second).
       if (_logger.isLoggable(Level.FINE) && ((connectionEvent.type != ConnectionEventType.COUNTDOWN)
-          || (connectionEvent.elapsed.inMilliseconds == 0)
+          || (connectionEvent.elapsed!.inMilliseconds == 0)
           || (connectionEvent.countdownSeconds.endsWith('.0')))) {
           _logger.fine('Sending ConnectionEvent to listeners [$connectionEvent]');
       }
@@ -1471,7 +1453,7 @@ class MatsSocket {
       if (connectionEvent.type.connectionState != null) {
           // -> Yes, this is a state - so update the state..!
           _state = connectionEvent.type.connectionState;
-          _logger.fine('The ConnectionEventType [${connectionEvent.type}] is also a ConnectionState - setting MatsSocket state [${_state}].');
+          _logger.fine('The ConnectionEventType [${connectionEvent.type}] is also a ConnectionState - setting MatsSocket state [$_state].');
       }
 
       // :: Notify all ConnectionEvent listeners.
@@ -1479,7 +1461,7 @@ class MatsSocket {
         try {
           listener(connectionEvent);
         } catch (err) {
-          error('notify ConnectionEvent listeners', 'Caught error when notifying ConnectionEvent listeners [${listener}] about [${connectionEvent.type}].', err);
+          error('notify ConnectionEvent listeners', 'Caught error when notifying ConnectionEvent listeners [$listener] about [${connectionEvent.type}].', err);
         }
       });
   }
@@ -1490,7 +1472,7 @@ class MatsSocket {
         try {
           listener(closeEvent);
         } catch (err) {
-          error('notify SessionClosedEvent listeners', 'Caught error when notifying SessionClosedEvent listeners [${listener}] about [${closeEvent}].', err);
+          error('notify SessionClosedEvent listeners', 'Caught error when notifying SessionClosedEvent listeners [$listener] about [$closeEvent].', err);
         }
       });
   }
@@ -1514,7 +1496,7 @@ class MatsSocket {
       // Note: The start-over will happen when new auth comes in, _evaluatePipelineSend(..) is invoked, and there is no WebSocket there.
       // ?: Check whether we have expired authorization
       if ((_expirationTimestamp != null)
-          && ((_expirationTimestamp.subtract(_roomForLatencyMillis)).isBefore(DateTime.now()))) {
+          && ((_expirationTimestamp!.subtract(_roomForLatencyMillis)).isBefore(DateTime.now()))) {
           // -> Yes, authorization is expired.
           _logger.fine(() => 'InitiateWebSocketCreation: Authorization is expired, we need new to continue.');
           // We are not connecting anymore
@@ -1533,7 +1515,7 @@ class MatsSocket {
       // .. but at least '_connectionTimeoutMin', which handles the special case of longer minimum if just 1 URL.
       var timeoutMs = math.max(_connectionTimeoutMin,
           math.min(_connectionTimeoutMax,  _connectionTimeoutBase * math.pow(2, _connectionAttemptRound)));
-      var timeout = Duration(milliseconds: timeoutMs);
+      var timeout = Duration(milliseconds: timeoutMs as int);
       var attemptStart = DateTime.now();
       var currentCountdownTargetTimestamp = attemptStart;
       var targetTimeoutTimestamp = currentCountdownTargetTimestamp.add(timeout);
@@ -1544,17 +1526,17 @@ class MatsSocket {
       // About to create WebSocket, so notify our listeners about this.
       _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTING, _currentWebSocketUrl, null, timeout, elapsed(), _connectionAttempt));
 
-      Function() preConnectOperationAbortFunction;
-      WebSocket websocketAttempt;
-      Timer countdownId;
+      Function()? preConnectOperationAbortFunction;
+      WebSocket? websocketAttempt;
+      late Timer countdownId;
 
       // :: Internal lambdas to manage the connection state machine.
-      Function() w_countDownTimer;
-      Function() w_abortAttempt;
+      late Function() w_countDownTimer;
+      late Function() w_abortAttempt;
       Function() w_attemptPreConnectionOperation;
-      Function() w_connectTimeout_AbortAttemptAndReschedule;
-      Function() w_attemptWebSocket;
-      Function() w_connectFailed_RetryOrWaitForTimeout;
+      late Function() w_connectTimeout_AbortAttemptAndReschedule;
+      late Function() w_attemptWebSocket;
+      late Function() w_connectFailed_RetryOrWaitForTimeout;
 
       /*
        * Make a "connection timeout" countdown,
@@ -1594,7 +1576,7 @@ class MatsSocket {
               // -> Evidently still doing PreConnectionRequest - kill it.
               _logger.fine('  \\- Within PreConnectionOperation phase - invoking preConnectOperationFunction\'s abort() function.');
               // null out the 'preConnectOperationAbortFunction', as this is used for indication for whether the preConnectRequestPromise's resolve&reject should act.
-              var abortFunctionTemp = preConnectOperationAbortFunction;
+              var abortFunctionTemp = preConnectOperationAbortFunction!;
               // Clear out
               preConnectOperationAbortFunction = null;
               // Invoke the abort.
@@ -1605,15 +1587,15 @@ class MatsSocket {
           if (websocketAttempt != null) {
               // -> Evidently still trying to connect WebSocket - kill it.
               _logger.fine('  \\- Within WebSocket connect phase - clearing handlers and invoking webSocket.close().');
-              websocketAttempt.onOpen = null;
-              websocketAttempt.onError = (target, errorEvent) {
+              websocketAttempt!.onOpen = null;
+              websocketAttempt!.onError = (target, errorEvent) {
                 _logger.fine(() => '!! websocketAttempt.onerror: Forced close by timeout, instanceId:[${target.webSocketInstanceId}], event:[$errorEvent]');
               };
-              websocketAttempt.onClose = (target, code, reason, closeEvent) {
+              websocketAttempt!.onClose = (target, code, reason, closeEvent) {
                 _logger.fine(() => '!! websocketAttempt.onclose: Forced close by timeout, instanceId:[${target.webSocketInstanceId}], event:[$closeEvent]');
               };
               // Close the current WebSocket connection attempt (i.e. abort connect if still trying).
-              websocketAttempt.close(MatsSocketCloseCodes.CLOSE_SESSION.code, 'WebSocket connect aborted');
+              websocketAttempt!.close(MatsSocketCloseCodes.CLOSE_SESSION.code, 'WebSocket connect aborted');
               // Clear out the attempt
               websocketAttempt = null;
           }
@@ -1621,10 +1603,10 @@ class MatsSocket {
 
       w_attemptPreConnectionOperation = () {
           // :: Decide based on type of 'preconnectoperation' how to do the .. PreConnectOperation..!
-          var abortAndPromise = preconnectoperation(_currentWebSocketUrl, _authorization);
+          var abortAndPromise = preconnectoperation!(_currentWebSocketUrl, _authorization);
 
           // Deconstruct the return
-          preConnectOperationAbortFunction = abortAndPromise.abortFunction;
+          preConnectOperationAbortFunction = abortAndPromise.abortFunction as dynamic Function()?;
           var preConnectRequestPromise = abortAndPromise.responseStatusCode;
 
           // Handle the resolve or reject from the preConnectionOperation
@@ -1634,7 +1616,7 @@ class MatsSocket {
                   // ?: Are we still trying to perform the preConnectOperation? (not timed out)
                   if (preConnectOperationAbortFunction != null) {
                       // -> Yes, not timed out, so then we're good to go with the next phase
-                      _logger.info(() => 'PreConnectionOperation went OK [${statusMessage}], going on to create WebSocket.');
+                      _logger.info(() => 'PreConnectionOperation went OK [$statusMessage], going on to create WebSocket.');
                       // Create the WebSocket
                       w_attemptWebSocket();
                   }
@@ -1644,7 +1626,7 @@ class MatsSocket {
                   // ?: Are we still trying to perform the preConnectOperation? (not timed out)
                   if (preConnectOperationAbortFunction != null) {
                       // -> Yes, not timed out, so then we'll notify about our failed attempt
-                    _logger.info(() => 'PreConnectionOperation failed [${statusMessage}] - retrying.');
+                    _logger.info(() => 'PreConnectionOperation failed [$statusMessage] - retrying.');
                       // Go for next retry
                       w_connectFailed_RetryOrWaitForTimeout();
                   }
@@ -1668,31 +1650,31 @@ class MatsSocket {
 
           // :: Actually create the WebSocket instance
 
-          var url = (preconnectoperation != null ? _currentWebSocketUrl.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
+          var url = (preconnectoperation != null ? _currentWebSocketUrl!.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
 
           final webSocketInstanceId = id(6);
-          _logger.fine(() => 'INSTANTIATING new WebSocket("${url}", "matssocket") - InstanceId:[${webSocketInstanceId}]');
+          _logger.fine(() => 'INSTANTIATING new WebSocket("$url", "matssocket") - InstanceId:[$webSocketInstanceId]');
           websocketAttempt = platform.connect(url, 'matssocket', _authorization);
-          websocketAttempt.webSocketInstanceId = webSocketInstanceId;
+          websocketAttempt!.webSocketInstanceId = webSocketInstanceId;
 
           // :: Add the handlers for this "trying to acquire" procedure.
 
           // Error: Just log for debugging, as an "onclose" will always follow.
-          websocketAttempt.onError = (target, event) {
+          websocketAttempt!.onError = (target, event) {
             _logger.fine(() => 'Create WebSocket: error. InstanceId:[${target.webSocketInstanceId}], event:[$event]');
             // onClose will not be called, so we need to trigger connect failed
             w_connectFailed_RetryOrWaitForTimeout();
           };
 
           // Close: Log + IF this is the first "round" AND there is multiple URLs, then immediately try the next URL. (Close may happen way before the Connection Timeout)
-          websocketAttempt.onClose = (target, code, reason, closeEvent) {
-              _logger.fine(() => 'Create WebSocket: close. InstanceId:[${target.webSocketInstanceId}], Code:${code}, Reason:$reason, event: $closeEvent');
+          websocketAttempt!.onClose = (target, code, reason, closeEvent) {
+              _logger.fine(() => 'Create WebSocket: close. InstanceId:[${target.webSocketInstanceId}], Code:$code, Reason:$reason, event: $closeEvent');
               _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, timeout, elapsed(), _connectionAttempt));
               w_connectFailed_RetryOrWaitForTimeout();
           };
 
           // Open: Success! Cancel countdown timer, and set WebSocket in MatsSocket, clear flags, set proper WebSocket event handlers including onMessage.
-          websocketAttempt.onOpen = (target, event) {
+          websocketAttempt!.onOpen = (target, event) {
               // First and foremost: Cancel the "connection timeout" thingy - we're done!
               countdownId.cancel();
 
@@ -1713,10 +1695,10 @@ class MatsSocket {
               _helloSent = false;
 
               // Set our proper handlers
-              _webSocket.onOpen = null; // No need for 'onopen', it is already open. Also, node.js evidently immediately fires it again, even though it was already fired.
-              _webSocket.onError = _onerror;
-              _webSocket.onClose = _onclose;
-              _webSocket.onMessage = _onmessage;
+              _webSocket!.onOpen = null; // No need for 'onopen', it is already open. Also, node.js evidently immediately fires it again, even though it was already fired.
+              _webSocket!.onError = _onerror;
+              _webSocket!.onClose = _onclose;
+              _webSocket!.onMessage = _onmessage;
 
               platform.registerBeforeunload(_beforeunloadHandler);
 
@@ -1732,7 +1714,7 @@ class MatsSocket {
 
       w_connectFailed_RetryOrWaitForTimeout = () {
           // :: Attempt failed, either immediate retry or wait for timeout
-          _logger.fine("Create WebSocket: Attempt failed, URL [${_currentWebSocketUrl}] didn't work out.");
+          _logger.fine("Create WebSocket: Attempt failed, URL [$_currentWebSocketUrl] didn't work out.");
           // ?: Assert that we're still open
           if (!_matsSocketOpen) {
               _logger.fine('After failed attempt, we realize that this MatsSocket instance is closed! - stopping right here.');
@@ -1785,7 +1767,7 @@ class MatsSocket {
 
       w_connectTimeout_AbortAttemptAndReschedule = () {
           // :: Attempt timed out, clear this WebSocket out
-          _logger.fine("Create WebSocket: Attempt timeout exceeded [${timeout} ms], URL [${_currentWebSocketUrl}] didn't work out.");
+          _logger.fine("Create WebSocket: Attempt timeout exceeded [$timeout ms], URL [$_currentWebSocketUrl] didn't work out.");
           // Abort the attempt.
           w_abortAttempt();
           // ?: Assert that we're still open
@@ -1822,7 +1804,7 @@ class MatsSocket {
       _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTION_ERROR, _currentWebSocketUrl, event, null, null, _connectionAttempt));
   }
 
-  void _onclose(WebSocket target, int code, String reason, dynamic closeEvent) {
+  void _onclose(WebSocket target, int? code, String? reason, dynamic closeEvent) {
       _logger.info('websocket.onclose, instanceId:[${target.webSocketInstanceId}]', closeEvent);
 
       // Note: Here (as opposed to matsSocket.close()) the WebSocket is already closed, so we don't have to close it..!
@@ -1834,7 +1816,7 @@ class MatsSocket {
           || (code == MatsSocketCloseCodes.CLOSE_SESSION.code)
           || (code == MatsSocketCloseCodes.SESSION_LOST.code)) {
           // -> One of the specific "Session is closed" CloseCodes -> Reject all outstanding, this MatsSocket is trashed.
-          error('session closed from server', 'The WebSocket was closed with a CloseCode [${MatsSocketCloseCodesExtension.nameFor(code)}] signifying that our MatsSocketSession is closed, reason:[${reason}].', closeEvent);
+          error('session closed from server', 'The WebSocket was closed with a CloseCode [${MatsSocketCloseCodesExtension.nameFor(code)}] signifying that our MatsSocketSession is closed, reason:[$reason].', closeEvent);
 
           // Hold on to how many outstanding initiations there are now
           var outstandingInitiations = _outboxInitiations.length;
@@ -1888,26 +1870,26 @@ class MatsSocket {
       }
   }
 
-  void _onmessage(WebSocket target, String data, dynamic nativeEvent) {
+  void _onmessage(WebSocket target, String? data, dynamic nativeEvent) {
     var receivedTimestamp = DateTime.now();
-    var envelopes = (jsonDecode(data) as List<dynamic>)
+    var envelopes = (jsonDecode(data!) as List<dynamic>)
         .map((envelope) => MatsSocketEnvelopeDto.fromEncoded(envelope as Map<String, dynamic>))
         .toList();
 
     var numEnvelopes = envelopes.length;
     _logger.fine(() => 'websocket.onmessage, instanceId:[${target
-        .webSocketInstanceId}]: Got ${numEnvelopes} messages.');
+        .webSocketInstanceId}]: Got $numEnvelopes messages.');
 
     for (var i = 0; i < numEnvelopes; i++) {
       var envelope = envelopes[i];
       try {
-        _logger.fine(() => ' \\- onmessage: handling message ${i}: ${envelope.type}, envelope:${jsonEncode(envelope)}');
+        _logger.fine(() => ' \\- onmessage: handling message $i: ${envelope.type}, envelope:${jsonEncode(envelope)}');
 
         if (envelope.type == MessageType.WELCOME) {
           // Fetch our assigned MatsSocketSessionId
           sessionId = envelope.sessionId;
           _logger
-              .fine(() => 'We\'re WELCOME! SessionId:${sessionId}, there are [${_outboxInitiations
+              .fine(() => 'We\'re WELCOME! SessionId:$sessionId, there are [${_outboxInitiations
               .length}] outstanding sends-or-requests, and [${_outboxReplies
               .length}] outstanding replies.');
           // If this is the very first time we get SESSION_ESTABLISHED, then record time (can happen again due to reconnects)
@@ -1924,19 +1906,19 @@ class MatsSocket {
 
           // :: Outstanding SENDs and REQUESTs
           for (var key in _outboxInitiations.keys) {
-            var initiation = _outboxInitiations[key];
+            var initiation = _outboxInitiations[key]!;
             var initiationEnvelope = initiation.envelope;
             // ?: Is the RetransmitGuard the same as we currently have?
             if (initiation.retransmitGuard == _outboxInitiations_RetransmitGuard) {
               // -> Yes, so it makes little sense in sending these messages again just yet.
-              _logger.fine(() => 'RetransmitGuard: The outstanding Initiation [${initiationEnvelope.type}] with cmid:[${initiationEnvelope.clientMessageId}] and TraceId:[${initiationEnvelope
-                  .traceId}] was created with the same RetransmitGuard as we currently have [${_outboxInitiations_RetransmitGuard}] - they were sent directly trailing HELLO, before WELCOME came back in. No use in sending again.');
+              _logger.fine(() => 'RetransmitGuard: The outstanding Initiation [${initiationEnvelope!.type}] with cmid:[${initiationEnvelope.clientMessageId}] and TraceId:[${initiationEnvelope
+                  .traceId}] was created with the same RetransmitGuard as we currently have [$_outboxInitiations_RetransmitGuard] - they were sent directly trailing HELLO, before WELCOME came back in. No use in sending again.');
               continue;
             }
             initiation.attempt++;
             if (initiation.attempt > 10) {
               error('toomanyretries',
-                  'Upon reconnect: Too many attempts at sending Initiation [${initiationEnvelope.type}] with cmid:[${initiationEnvelope.clientMessageId}], TraceId[${initiationEnvelope.traceId}], size:[${jsonEncode(initiationEnvelope).length}].',
+                  'Upon reconnect: Too many attempts at sending Initiation [${initiationEnvelope!.type}] with cmid:[${initiationEnvelope.clientMessageId}], TraceId[${initiationEnvelope.traceId}], size:[${jsonEncode(initiationEnvelope).length}].',
                   initiationEnvelope);
               continue;
             }
@@ -1952,12 +1934,12 @@ class MatsSocket {
           // A Request from the Server cannot possibly come in before WELCOME (as that is by protcol definition the first message we get from the Server),
           // so there will "axiomatically" not be any outstanding Replies with the same RetransmitGuard as we currently have: Therefore, /all should be retransmitted/).
           for (var key in _outboxReplies.keys) {
-            var reply = _outboxReplies[key];
+            var reply = _outboxReplies[key]!;
             var replyEnvelope = reply.envelope;
             reply.attempt++;
             if (reply.attempt > 10) {
               error('toomanyretries',
-                  'Upon reconnect: Too many attempts at sending Reply [${replyEnvelope.type}] '
+                  'Upon reconnect: Too many attempts at sending Reply [${replyEnvelope!.type}] '
                       'with smid:[${replyEnvelope.serverMessageId}], TraceId[${replyEnvelope.traceId}], '
                       'size:[${jsonEncode(replyEnvelope).length}].', replyEnvelope);
               continue;
@@ -1983,13 +1965,13 @@ class MatsSocket {
             initiation.attempt++;
             if (initiation.attempt > 10) {
               error('toomanyretries',
-                  'Upon RETRY-request: Too many attempts at sending [${initiationEnvelope.type}] with cmid:[${initiationEnvelope.clientMessageId}], TraceId[${initiationEnvelope.traceId}], size:[${jsonEncode(initiationEnvelope).length}].',
+                  'Upon RETRY-request: Too many attempts at sending [${initiationEnvelope!.type}] with cmid:[${initiationEnvelope.clientMessageId}], TraceId[${initiationEnvelope.traceId}], size:[${jsonEncode(initiationEnvelope).length}].',
                   initiationEnvelope);
               continue;
             }
             // Note: the retry-cycles will start at attempt=2, since we initialize it with 1, and have already increased it by now.
             var retryDelay = math.pow(2, (initiation.attempt - 2)) * 500 + rnd.nextInt(1000);
-            Timer(Duration(milliseconds: retryDelay), () {
+            Timer(Duration(milliseconds: retryDelay as int), () {
               _addEnvelopeToPipeline_EvaluatePipelineLater(initiationEnvelope);
             });
             continue;
@@ -2003,12 +1985,12 @@ class MatsSocket {
             reply.attempt++;
             if (reply.attempt > 10) {
               error('toomanyretries',
-                  'Upon RETRY-request: Too many attempts at sending [${replyEnvelope.type}] with smid:[${replyEnvelope.serverMessageId}], TraceId[${replyEnvelope.traceId}], size:[${jsonEncode(replyEnvelope).length}].', replyEnvelope);
+                  'Upon RETRY-request: Too many attempts at sending [${replyEnvelope!.type}] with smid:[${replyEnvelope.serverMessageId}], TraceId[${replyEnvelope.traceId}], size:[${jsonEncode(replyEnvelope).length}].', replyEnvelope);
               continue;
             }
             // Note: the retry-cycles will start at attempt=2, since we initialize it with 1, and have already increased it by now.
-            var retryDelay = math.pow(2, (initiation.attempt - 2)) * 500 + rnd.nextInt(1000);
-            Timer(Duration(milliseconds: retryDelay), () {
+            var retryDelay = math.pow(2, (initiation!.attempt - 2)) * 500 + rnd.nextInt(1000);
+            Timer(Duration(milliseconds: retryDelay as int), () {
               _addEnvelopeToPipeline_EvaluatePipelineLater(replyEnvelope);
             });
           }
@@ -2021,9 +2003,9 @@ class MatsSocket {
             continue;
           }
 
-          var ids = <String>[];
+          var ids = <String?>[];
           if (envelope.clientMessageId != null) ids.add(envelope.clientMessageId);
-          if (envelope.ids != null) ids.addAll(envelope.ids);
+          if (envelope.ids != null) ids.addAll(envelope.ids!);
 
           _sendAck2Later(ids);
 
@@ -2045,7 +2027,7 @@ class MatsSocket {
             var receivedEventType = (envelope.type == MessageType.ACK ? ReceivedEventType.ACK : ReceivedEventType.NACK);
             _completeReceived(receivedEventType, initiation, receivedTimestamp, envelope.description);
 
-            var request = _outstandingRequests[cmid];
+            var request = _outstandingRequests[cmid!];
             // ?: If this was a REQUEST, and it is a !ACK - it will never get a Reply..
             if (request != null && (envelope.type != MessageType.ACK)) {
               // -> Yes, this was a REQUEST that got an !ACK
@@ -2080,21 +2062,21 @@ class MatsSocket {
           }
 
           // Find the (client) Terminator/Endpoint which the Send should go to
-          Function(MessageEvent) terminatorOrEndpoint = (envelope.type == MessageType.SEND
-              ? _terminators[envelope.endpointId].add
-              : _endpoints[envelope.endpointId]);
+          Function(MessageEvent)? terminatorOrEndpoint = (envelope.type == MessageType.SEND
+              ? _terminators[envelope.endpointId!]!.add
+              : _endpoints[envelope.endpointId!]);
 
           // :: Send receipt unconditionally
           _sendAckLater(
               (terminatorOrEndpoint != null ? MessageType.ACK : MessageType.NACK), envelope.serverMessageId,
-              terminatorOrEndpoint != null ? null : 'The Client ${termOrEndp} [${envelope.endpointId}] does not exist!');
+              terminatorOrEndpoint != null ? null : 'The Client $termOrEndp [${envelope.endpointId}] does not exist!');
 
 
           // ?: Do we have the desired Terminator?
           if (terminatorOrEndpoint == null) {
             // -> No, we do not have this. Programming error from app.
             error('client ${termOrEndp.toLowerCase()} does not exist',
-                'The Client ${termOrEndp} [${envelope.endpointId}] does not exist!!', envelope);
+                'The Client $termOrEndp [${envelope.endpointId}] does not exist!!', envelope);
             continue;
           }
           // E-> We found the Terminator to tell
@@ -2174,7 +2156,7 @@ class MatsSocket {
             _completeReceived(ReceivedEventType.ACK, initiation, receivedTimestamp);
           }
 
-          var request = _outstandingRequests[envelope.clientMessageId];
+          var request = _outstandingRequests[envelope.clientMessageId!];
           if (request == null) {
             _logger
                 .fine(() => 'Double delivery: Evidently we\'ve already completed the Request for cmid:[${envelope.clientMessageId}], traiceId: [${envelope.traceId}], ignoring.');
@@ -2182,7 +2164,7 @@ class MatsSocket {
           }
 
           // Ensure that the timeout is killed now. NOTICE: MUST do this here, since we might delay the delivery even more, check crazy stuff below.
-          request.timer.cancel();
+          request.timer!.cancel();
 
           // Complete the Promise on a REQUEST-with-Promise, or messageCallback/errorCallback on Endpoint for REQUEST-with-ReplyTo
           var messageEventType = (envelope.type == MessageType.RESOLVE ? MessageEventType.RESOLVE : MessageEventType.REJECT);
@@ -2256,7 +2238,7 @@ class MatsSocket {
           var event = MessageEvent(
               MessageEventType.PUB, envelope.message, envelope.traceId, envelope.serverMessageId, receivedTimestamp);
 
-          var subs = _subscriptions[envelope.endpointId];
+          var subs = _subscriptions[envelope.endpointId!];
           // ?: Did we find any listeners?
           if (subs == null) {
             // -> No. Strange.
@@ -2279,7 +2261,7 @@ class MatsSocket {
           subs.lastSmid = envelope.serverMessageId;
         } else if (envelope.type == MessageType.PONG) {
           // -> Response to a PING
-          var pingPongHolder = _outstandingPings.remove(envelope.pingId);
+          var pingPongHolder = _outstandingPings.remove(envelope.pingId)!;
           // Calculate the round-trip time, using performanceNow stored along with the PingPong instance.
           var pingPong = pingPongHolder.pingPong;
           var performanceThen = pingPongHolder.createTime;
@@ -2307,11 +2289,11 @@ class MatsSocket {
     }
   }
 
-  List<String> _laterAcks = [];
-  List<String> _laterNacks = [];
-  Timer _laterAckTimeoutId;
+  List<String?> _laterAcks = [];
+  List<String?> _laterNacks = [];
+  Timer? _laterAckTimeoutId;
 
-  void _sendAckLater(MessageType type, String smid, [String description]) {
+  void _sendAckLater(MessageType type, String? smid, [String? description]) {
       // ?: Do we have description?
       if (description != null) {
           // -> Yes, description - so then we need to send it by itself
@@ -2368,10 +2350,10 @@ class MatsSocket {
       }
   }
 
-  List<String> _laterAck2s = [];
-  Timer _laterAck2TimeoutId;
+  List<String?> _laterAck2s = [];
+  Timer? _laterAck2TimeoutId;
 
-  void _sendAck2Later(List<String> ids) {
+  void _sendAck2Later(List<String?> ids) {
       _laterAck2s.addAll(ids);
       // Send them now or later
       _laterAck2TimeoutId?.cancel();
@@ -2400,36 +2382,36 @@ class MatsSocket {
   }
 
 
-  void _completeReceived(ReceivedEventType receivedEventType, _Initiation initiation, DateTime receivedTimestamp, [String description]) {
+  void _completeReceived(ReceivedEventType receivedEventType, _Initiation initiation, DateTime receivedTimestamp, [String? description]) {
     var performanceNow = platform.performanceTime();
     initiation.messageAcked_PerformanceNow = performanceNow;
 
     // NOTICE! We do this SYNCHRONOUSLY, to ensure that we come in front of Request Promise settling (specifically, Promise /rejection/ if NACK).
-    _outboxInitiations.remove(initiation.envelope.clientMessageId);
-    var receivedEvent = ReceivedEvent(receivedEventType, initiation.envelope.traceId, initiation.sentTimestamp, receivedTimestamp, _roundTiming(performanceNow - initiation.messageSent_PerformanceNow), description);
+    _outboxInitiations.remove(initiation.envelope!.clientMessageId);
+    var receivedEvent = ReceivedEvent(receivedEventType, initiation.envelope!.traceId, initiation.sentTimestamp, receivedTimestamp, _roundTiming(performanceNow - initiation.messageSent_PerformanceNow), description);
     // ?: Was it a ACK (not NACK)?
     if (receivedEventType == ReceivedEventType.ACK) {
       // -> Yes, it was "ACK" - so Server was happy.
       if (initiation.ack != null) {
         try {
-          initiation.ack(receivedEvent);
+          initiation.ack!(receivedEvent);
         } catch (err) {
-          error('received ack', 'When trying to ACK the initiation with ReceivedEvent [${receivedEventType}], we got error.', err);
+          error('received ack', 'When trying to ACK the initiation with ReceivedEvent [$receivedEventType], we got error.', err);
         }
       }
     } else {
       // -> No, it was !ACK, so message has not been forwarded to Mats
       if (initiation.nack != null) {
         try {
-          initiation.nack(receivedEvent);
+          initiation.nack!(receivedEvent);
         } catch (err) {
-          error('received nack', 'When trying to NACK the initiation with ReceivedEvent [${receivedEventType}], we got error.', err);
+          error('received nack', 'When trying to NACK the initiation with ReceivedEvent [$receivedEventType], we got error.', err);
         }
       }
     }
 
     // ?: Should we issue InitiationProcessedEvent? (SEND is finished processed at ACK time, while REQUEST waits for REPLY from server before finished processing)
-    if (initiation.envelope.type == MessageType.SEND) {
+    if (initiation.envelope!.type == MessageType.SEND) {
         // -> Yes, we should issue - and to get this in a order where "Received is always invoked before
         // InitiationProcessedEvents", we'll have to delay it, as the Promise settling above is async)
         Timer(Duration(milliseconds: 50), () {
@@ -2474,20 +2456,20 @@ class MatsSocket {
       if (request.replyToTerminatorId != null) {
           // -> Yes, this is a REQUEST-with-ReplyTo
           // Find the (client) Terminator which the Reply should go to
-          var terminator = _terminators[request.replyToTerminatorId];
+          var terminator = _terminators[request.replyToTerminatorId!];
           // "Emulate" asyncness as if with Promise settling with setTimeout(.., 0).
           Timer.run(() {
               if (messageEventType == MessageEventType.RESOLVE) {
                   try {
-                      terminator.add(event);
+                      terminator!.add(event);
                   } catch (err) {
                       error('replytoterminator resolve', 'When trying to pass a RESOLVE to Terminator [${request.replyToTerminatorId}], an exception was raised.', err);
                   }
               } else {
                   try {
-                      terminator.addError(event);
+                      terminator!.addError(event);
                   } catch (err) {
-                      error('replytoterminator reject', 'When trying to pass a [${messageEventType}] to Terminator [${request.replyToTerminatorId}], an exception was raised.', err);
+                      error('replytoterminator reject', 'When trying to pass a [$messageEventType] to Terminator [${request.replyToTerminatorId}], an exception was raised.', err);
                   }
               }
           });
@@ -2510,15 +2492,15 @@ class MatsSocket {
   }
 
 
-  void _issueInitiationProcessedEvent(_Initiation initiation, [String replyToTerminatorId, MessageEvent replyMessageEvent]) {
+  void _issueInitiationProcessedEvent(_Initiation initiation, [String? replyToTerminatorId, MessageEvent? replyMessageEvent]) {
       // Handle when initationProcessed /before/ session established: Setting to 0. (Can realistically only happen in testing.)
-      var sessionEstablishedOffsetMillis = (_initialSessionEstablished_PerformanceNow != null ? _roundTiming(initiation.messageSent_PerformanceNow - _initialSessionEstablished_PerformanceNow) : 0.0);
+      var sessionEstablishedOffsetMillis = (_initialSessionEstablished_PerformanceNow != null ? _roundTiming(initiation.messageSent_PerformanceNow - _initialSessionEstablished_PerformanceNow!) : 0.0);
       var acknowledgeRoundTripTime = _roundTiming((initiation.messageAcked_PerformanceNow ?? 0) - initiation.messageSent_PerformanceNow);
       var requestRoundTripTime = (replyMessageEvent != null ? _roundTiming(platform.performanceTime() - initiation.messageSent_PerformanceNow) : null);
       var replyMessageEventType = replyMessageEvent?.type;
       if (_numberOfInitiationsKept > 0) {
-          var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope.endpointId, initiation.envelope.clientMessageId, initiation.sentTimestamp,
-              sessionEstablishedOffsetMillis, initiation.envelope.traceId, initiation.envelope.message, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEvent);
+          var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId, initiation.envelope!.clientMessageId, initiation.sentTimestamp,
+              sessionEstablishedOffsetMillis, initiation.envelope!.traceId, initiation.envelope!.message, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEvent);
           _initiationProcessedEvents.add(initiationProcessedEvent);
           while (_initiationProcessedEvents.length > _numberOfInitiationsKept) {
               _initiationProcessedEvents.removeAt(0);
@@ -2534,10 +2516,10 @@ class MatsSocket {
       for (var i = 0; i < _initiationProcessedEventListeners.length; i++) {
           try {
               var registration = _initiationProcessedEventListeners[i];
-              var initiationMessageIncluded = (registration.includeInitiationMessage ? initiation.envelope.message : null);
+              var initiationMessageIncluded = (registration.includeInitiationMessage ? initiation.envelope!.message : null);
               var replyMessageEventIncluded = (registration.includeReplyMessageEvent ? replyMessageEvent : null);
-              var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope.endpointId, initiation.envelope.clientMessageId, initiation.sentTimestamp, sessionEstablishedOffsetMillis,
-                  initiation.envelope.traceId, initiationMessageIncluded, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEventIncluded);
+              var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId, initiation.envelope!.clientMessageId, initiation.sentTimestamp, sessionEstablishedOffsetMillis,
+                  initiation.envelope!.traceId, initiationMessageIncluded, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEventIncluded);
               _logger.fine(() => 'Sending InitiationProcessedEvent to listener [${(i + 1)}/${_initiationProcessedEventListeners.length}]', initiationProcessedEvent);
               registration.listener(initiationProcessedEvent);
           } catch (err) {
@@ -2546,7 +2528,7 @@ class MatsSocket {
       }
   }
 
-  Timer _pinger_TimeoutId;
+  Timer? _pinger_TimeoutId;
   var _pingId = 0;
 
   void _startPinger() {
@@ -2561,7 +2543,7 @@ class MatsSocket {
 
   void _pingLater(initialPingDelay) {
       _pinger_TimeoutId = Timer(Duration(milliseconds: initialPingDelay), () {
-          _logger.fine(() => "Ping-'thread': About to send ping. ConnectionState:[${state}], matsSocketOpen:[${_matsSocketOpen}].");
+          _logger.fine(() => "Ping-'thread': About to send ping. ConnectionState:[$state], matsSocketOpen:[$_matsSocketOpen].");
           if ((state == ConnectionState.SESSION_ESTABLISHED) && _matsSocketOpen) {
               var pingId = _pingId++;
               var pingPong = PingPong('$pingId', DateTime.now());
@@ -2570,7 +2552,7 @@ class MatsSocket {
                   _pings.removeAt(0);
               }
               _outstandingPings[pingPong.pingId] = _OutstandingPing(platform.performanceTime(), pingPong);
-              _webSocket.send('[{"t":"${MessageType.PING.name}","x":"${pingId}"}]');
+              _webSocket!.send('[{"t":"${MessageType.PING.name}","x":"$pingId"}]');
               // Reschedule
               _pingLater(15000);
           } else {
@@ -2594,20 +2576,20 @@ class _InitiationProcessedEventListenerRegistration {
 class _Initiation {
   final bool suppressInitiationProcessedEvent;
   final int debug;
-  final Function(ReceivedEvent) ack;
-  final Function(ReceivedEvent) nack;
+  final Function(ReceivedEvent)? ack;
+  final Function(ReceivedEvent)? nack;
 
-  MatsSocketEnvelopeDto envelope;
+  MatsSocketEnvelopeDto? envelope;
 
-  String retransmitGuard;
+  String? retransmitGuard;
 
-  int attempt;
+  int attempt = 0;
 
-  DateTime sentTimestamp;
+  DateTime? sentTimestamp;
 
-  double messageSent_PerformanceNow;
+  late double messageSent_PerformanceNow;
 
-  double messageAcked_PerformanceNow;
+  double? messageAcked_PerformanceNow;
 
   final createTrace = StackTrace.current;
 
@@ -2618,14 +2600,14 @@ class _Initiation {
 class _Request {
   final Duration timeout;
   final Completer<MessageEvent> _completer = Completer();
-  final String replyToTerminatorId;
+  final String? replyToTerminatorId;
   final dynamic correlationInformation;
 
-  _Initiation initiation;
+  late _Initiation initiation;
 
-  MatsSocketEnvelopeDto envelope;
+  late MatsSocketEnvelopeDto envelope;
 
-  Timer timer;
+  Timer? timer;
 
   _Request.request(Duration timeout) : this.requestReply(timeout, null, null);
   _Request.requestReply(this.timeout, this.replyToTerminatorId, this.correlationInformation);
@@ -2641,7 +2623,7 @@ class _Subscription {
   final String topic;
   final List<MessageEventHandler> listeners = [];
   bool subscriptionSentToServer = false;
-  String lastSmid;
+  String? lastSmid;
 
   _Subscription(this.topic);
 
@@ -2656,10 +2638,10 @@ class _OutstandingPing {
 }
 
 class _OutboxReply {
-  MatsSocketEnvelopeDto envelope;
+  MatsSocketEnvelopeDto? envelope;
   int attempt;
 
-  _OutboxReply({this.envelope, this.attempt});
+  _OutboxReply({required this.envelope, required this.attempt});
 
 
 }
