@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:logging/logging.dart';
 import 'package:matssocket/matssocket.dart';
 import 'package:test/test.dart';
 
@@ -10,10 +9,8 @@ import 'lib/env.dart';
 void main() {
   configureLogging();
 
-  final _logger = Logger('integration_basic');
-
   group('MatsSocket integration tests, basics', () {
-    MatsSocket matsSocket;
+    late MatsSocket matsSocket;
 
     void setAuth(
         [String userId = 'standard',
@@ -197,7 +194,7 @@ void main() {
 
         // Create Terminator to receive the return
         var messageCallbackInvoked = false;
-        var firstMessage = matsSocket.terminator("Test.terminator").first.then((messageEvent) {
+        var firstMessage = matsSocket.terminator('Test.terminator').first.then((messageEvent) {
           // We do NOT expect a message!
           messageCallbackInvoked = true;
         }, onError: (event) {
@@ -290,7 +287,7 @@ void main() {
             receivedCallback: (event) => received = true);
         await promise.catchError((event) {
           standardStateAssert();
-          expect(received, isTrue, reason: "The received-callback should have been invoked.");
+          expect(received, isTrue, reason: 'The received-callback should have been invoked.');
           return event;
         });
       });
@@ -453,7 +450,7 @@ void main() {
     });
 
     group('debug object', () {
-      Future<DebugDto> testDebugOptionsSend({int debug, String userId = 'enableAllDebugOptions'}) async {
+      Future<DebugDto?> testDebugOptionsSend({int? debug, String userId = 'enableAllDebugOptions'}) async {
         // Set special userId that gives us all DebugOptions
         setAuth(userId);
 
@@ -505,7 +502,7 @@ void main() {
           'When the user is allowed to debug, and request all via matsSocket.debug, the debug object should be present and all filled',
           () async {
         matsSocket.debug = DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag;
-        var debug = await testDebugOptionsSend();
+        var debug = await (testDebugOptionsSend() as FutureOr<DebugDto>);
         assertNodes(debug);
         assertTimestamps(debug);
       });
@@ -514,7 +511,7 @@ void main() {
           'When the user is allowed to debug, and request DebugOption.NODES via matsSocket.debug, the debug object should be present and filled with just nodes, not timestamps',
           () async {
         matsSocket.debug = DebugOption.NODES.flag;
-        var debug = await testDebugOptionsSend();
+        var debug = await (testDebugOptionsSend() as FutureOr<DebugDto>);
         assertNodes(debug);
         assertTimestampsFromServerAreUndefined(debug);
       });
@@ -523,7 +520,7 @@ void main() {
           'When the user is allowed to debug, and request DebugOption.TIMINGS via matsSocket.debug, the debug object should be present and filled with just timestamps, not nodes',
           () async {
         matsSocket.debug = DebugOption.TIMESTAMPS.flag;
-        var debug = await testDebugOptionsSend();
+        var debug = await (testDebugOptionsSend() as FutureOr<DebugDto>);
         assertNodesUndefined(debug);
         assertTimestamps(debug);
       });
@@ -532,7 +529,7 @@ void main() {
           "When the user is allowed to debug, and request all via message-specific config, while matsSocket.debug='undefined', the debug object should be present and all filled",
           () async {
         matsSocket.debug = null;
-        var debug = await testDebugOptionsSend(debug: DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag);
+        var debug = await (testDebugOptionsSend(debug: DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag) as FutureOr<DebugDto>);
         assertNodes(debug);
         assertTimestamps(debug);
       });
@@ -541,7 +538,7 @@ void main() {
           'When the user is NOT allowed to debug, and request all via matsSocket.debug, the debug object should just have the Client-side filled stuff',
           () async {
         matsSocket.debug = DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag;
-        var debug = await testDebugOptionsSend(userId: 'userWithoutDebugOptions');
+        var debug = await (testDebugOptionsSend(userId: 'userWithoutDebugOptions') as FutureOr<DebugDto>);
         assertNodesUndefined(debug);
         assertTimestampsFromServerAreUndefined(debug);
       });

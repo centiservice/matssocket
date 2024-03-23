@@ -5,7 +5,7 @@ import 'lib/env.dart';
 import 'package:matssocket/matssocket.dart';
 
 void main() {
-  MatsSocketTransportMock transportMock;
+  late MatsSocketTransportMock transportMock;
 
   configureLogging();
 

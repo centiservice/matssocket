@@ -1,5 +1,4 @@
 import 'package:matssocket/matssocket.dart';
-import 'package:matssocket/src/ConnectionEvent.dart';
 import 'package:logging/logging.dart';
 
 import 'package:test_api/src/backend/invoker.dart' show Invoker;
@@ -30,16 +29,16 @@ MatsSocket createMatsSocket() {
   // Print rather than log the mats socket creation, so that the start of each test
   // is marked clearly in the logs
   print('=========== Created MatsSocket [${matsSocket.matsSocketInstanceId}] '
-      'for test [${Invoker?.current?.liveTest?.test?.name}] ===========');
+      'for test [${Invoker.current?.liveTest.test.name}] ===========');
   return matsSocket;
 }
 
 var serverUris = delegate.loadServerUris();
 
-int code(ConnectionEvent connectionEvent) {
+int? code(ConnectionEvent connectionEvent) {
   return delegate.code(connectionEvent);
 }
 
-String reason(ConnectionEvent connectionEvent) {
+String? reason(ConnectionEvent connectionEvent) {
   return delegate.reason(connectionEvent);
 }

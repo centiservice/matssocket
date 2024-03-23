@@ -99,7 +99,7 @@ enum MessageType {
   PONG,
 }
 
-extension MessageTypeExtension on MessageType {
+extension MessageTypeExtension on MessageType? {
   String get name {
     switch (this) {
       case MessageType.HELLO:
@@ -162,7 +162,7 @@ extension MessageTypeExtension on MessageType {
     }
   }
 
-  static MessageType fromName(String name) {
+  static MessageType fromName(String? name) {
     switch (name) {
       case 'HELLO':
         return MessageType.HELLO;

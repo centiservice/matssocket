@@ -13,7 +13,7 @@ class ErrorEvent {
   /// <b>For submitting errors back to the home server, check out {@link #referenceAsString}.</b>
   ///
   /// @type {Object}.
-  final Object reference;
+  final Object? reference;
 
 
   ErrorEvent(this.type, this.message, [this.reference]);
@@ -26,8 +26,8 @@ class ErrorEvent {
   ///
   /// @param {number} maxLength the max number of characters that will be returned, with any chop denoted by "...".
   /// @returns {string}
-  String referenceAsString([int maxLength = 1024]) {
-    String result;
+  String? referenceAsString([int maxLength = 1024]) {
+    String? result;
     try {
       result = jsonEncode(reference);
     } catch (err) {

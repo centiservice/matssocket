@@ -9,7 +9,7 @@ MatsSocketPlatform createTransport() => MatsSocketTransportMock.noop();
 
 class MatsSocketTransportMock extends MatsSocketPlatform {
 
-  Function(dynamic) beforeunloadHandler;
+  Function(dynamic)? beforeunloadHandler;
   final List<String> closedSessions = [];
   final MessageHandler websocketMessageHandler;
 
@@ -51,7 +51,7 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
   }
 
   @override
-  WebSocket connect(Uri webSocketUri, String protocol, String authorization) {
+  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
     return WebSocketMock(webSocketUri.toString(), websocketMessageHandler);
   }
 
@@ -71,7 +71,7 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
   }
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
+  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
     return ConnectResult(() {}, Future.value(200));
   }
 

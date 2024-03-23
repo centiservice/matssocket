@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:logging/logging.dart';
@@ -14,7 +13,7 @@ void main() {
   final _logger = Logger('integration_push');
 
   group('MatsSocket integration tests of Server-side send/request ("push")', () {
-    MatsSocket matsSocket;
+    late MatsSocket matsSocket;
 
     void setAuth(
         [String userId = 'standard',
@@ -30,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket?.matsSocketInstanceId}] ===========');
+      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     group('MatsSocketServer.send()', () {
@@ -130,31 +129,31 @@ void main() {
         expect(msg.debug, isNotNull);
         // These should be set
         if ((debugOptions & DebugOption.TIMESTAMPS.flag) > 0) {
-          expect(msg.debug.serverMessageCreated, isA<DateTime>());
-          expect(msg.debug.messageSentToClient, isA<DateTime>());
+          expect(msg.debug!.serverMessageCreated, isA<DateTime>());
+          expect(msg.debug!.messageSentToClient, isA<DateTime>());
         } else {
-          expect(msg.debug.serverMessageCreated, isNull);
-          expect(msg.debug.messageSentToClient, isNull);
+          expect(msg.debug!.serverMessageCreated, isNull);
+          expect(msg.debug!.messageSentToClient, isNull);
         }
         if ((debugOptions & DebugOption.NODES.flag) > 0) {
-          expect(msg.debug.serverMessageCreatedNodename, isNotNull);
-          expect(msg.debug.messageSentToClientNodename, isNotNull);
+          expect(msg.debug!.serverMessageCreatedNodename, isNotNull);
+          expect(msg.debug!.messageSentToClientNodename, isNotNull);
         } else {
-          expect(msg.debug.serverMessageCreatedNodename, isNull);
-          expect(msg.debug.messageSentToClientNodename, isNull);
+          expect(msg.debug!.serverMessageCreatedNodename, isNull);
+          expect(msg.debug!.messageSentToClientNodename, isNull);
         }
         // While all other should not be set
-        expect(msg.debug.clientMessageSent, isNull);
-        expect(msg.debug.clientMessageReceived, isNull);
-        expect(msg.debug.clientMessageReceivedNodename, isNull);
-        expect(msg.debug.matsMessageSent, isNull);
-        expect(msg.debug.matsMessageReplyReceived, isNull);
-        expect(msg.debug.matsMessageReplyReceivedNodename, isNull);
+        expect(msg.debug!.clientMessageSent, isNull);
+        expect(msg.debug!.clientMessageReceived, isNull);
+        expect(msg.debug!.clientMessageReceivedNodename, isNull);
+        expect(msg.debug!.matsMessageSent, isNull);
+        expect(msg.debug!.matsMessageReplyReceived, isNull);
+        expect(msg.debug!.matsMessageReplyReceivedNodename, isNull);
 
         // This is not a request from Client, so there is no requested debug options.
-        expect(msg.debug.requestedDebugOptions, isNull);
+        expect(msg.debug!.requestedDebugOptions, isNull);
         // This is the resolved from what we asked server to use above, and what we are allowed to.
-        expect(msg.debug.resolvedDebugOptions, equals(matsSocket.debug));
+        expect(msg.debug!.resolvedDebugOptions, equals(matsSocket.debug));
       }
 
       Future testServerInitiatedSend_DebugOptions(int debugOptions) async {
@@ -225,7 +224,7 @@ void main() {
         await testServerInitiatedRequest_DebugOptions(DebugOption.TIMESTAMPS.flag);
       });
 
-      Future serverInitiatedSend_NoDebugOptions(int debugOptions) async {
+      Future serverInitiatedSend_NoDebugOptions(int? debugOptions) async {
         // Set special userId that gives us all DebugOptions
         setAuth('enableAllDebugOptions');
 
@@ -236,7 +235,7 @@ void main() {
         // First set it to "all the things!"
         matsSocket.debug = 255;
 
-        var first = matsSocket.send('Test.single', 'DebugOptions_set_to_all', {'number': math.e});
+        await matsSocket.send('Test.single', 'DebugOptions_set_to_all', {'number': math.e});
 
         // Then set it to none (0 or undefined), which should result in NO debug object from server-initiated messages
         matsSocket.debug = debugOptions;

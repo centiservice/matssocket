@@ -37,17 +37,17 @@ typedef InitiationProcessedEventListener = Function(InitiationProcessedEvent);
 ///
 class InitiationProcessedEvent {
   /// Which initiation type of this flow, enum of [InitiationProcessedEventType].
-  InitiationProcessedEventType type;
+  InitiationProcessedEventType? type;
 
   /// Target Server MatsSocket Endpoint or Terminator Id  (envelope's 'eid').
-  final String endpointId;
+  final String? endpointId;
 
   /// The Client MessageId of the Initiation  (envelope's 'cmid'). For this particular MatsSocket library, this
   /// is currently an integer sequence id.
-  final String clientMessageId;
+  final String? clientMessageId;
 
   /// Millis-from-epoch when this initiation was sent.
-  final DateTime sentTimestamp;
+  final DateTime? sentTimestamp;
 
   /// The number of milliseconds offset for sending this message from the initial [ConnectionEventType.SESSION_ESTABLISHED] event for
   /// this MatsSocket - **this number will typically be negative for the first messages**: A negative number
@@ -62,7 +62,7 @@ class InitiationProcessedEvent {
   final double sessionEstablishedOffsetMillis;
 
   /// TraceId for the initiation - which follows through all parts of the processing  (envelope's 'tid').
-  final String traceId;
+  final String? traceId;
 
   /// The message object that was sent with the initiation, i.e. on send(), request() or requestReplyTo()  (outgoing envelope's 'msg').
   final dynamic initiationMessage;
@@ -75,19 +75,19 @@ class InitiationProcessedEvent {
   // === For Requests.
 
   /// The [MessageEventType] for Replies to Request Initiations.
-  final MessageEventType replyMessageEventType;
+  final MessageEventType? replyMessageEventType;
 
   /// The 'replyToTerminatorId' for [MatsSocket.requestReplyTo]-Requests.
-  final String replyToTerminatorId;
+  final String? replyToTerminatorId;
 
   /// The experienced round-trip time from a Request initiation to the Reply (RESOLVE or REJECT) comes back.
   ///
   /// **Note that this number can be a float, not necessarily integer**.
-  final double requestReplyRoundTripMillis;
+  final double? requestReplyRoundTripMillis;
 
   /// The Reply [MessageEvent] that was supplied to the Promise (on resolve/then or reject/catch) or ReplyTo
   /// Client [MatsSocket.terminator].
-  final MessageEvent replyMessageEvent;
+  final MessageEvent? replyMessageEvent;
 
   InitiationProcessedEvent(
       this.endpointId,
@@ -115,7 +115,7 @@ class InitiationProcessedEvent {
       'type' : type.name,
       'endpointId' : endpointId,
       'clientMessageId' : clientMessageId,
-      'sentTimestamp' : sentTimestamp.millisecondsSinceEpoch,
+      'sentTimestamp' : sentTimestamp!.millisecondsSinceEpoch,
       'sessionEstablishedOffsetMillis' : sessionEstablishedOffsetMillis,
       'traceId' : traceId,
       'initiationMessage' : initiationMessage,
@@ -143,7 +143,7 @@ enum InitiationProcessedEventType {
   REQUEST_REPLY_TO,
 }
 
-extension InitiationProcessedEventTypeExtension on InitiationProcessedEventType {
+extension InitiationProcessedEventTypeExtension on InitiationProcessedEventType? {
   String get name {
     switch (this) {
       case InitiationProcessedEventType.SEND:

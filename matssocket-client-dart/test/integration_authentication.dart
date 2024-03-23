@@ -13,7 +13,7 @@ void main() {
   final _logger = Logger('integration_authentication');
 
   group('MatsSocket integration-tests of Authentication & Authorization', () {
-    MatsSocket matsSocket;
+    late MatsSocket matsSocket;
 
     void setAuth(
         [String userId = 'standard',
@@ -29,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket?.matsSocketInstanceId}] ===========');
+      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     group('MatsSocket integration tests of Authentication & Authorization', () {
@@ -83,7 +83,7 @@ void main() {
           setAuth(userId, Duration(seconds: 2), Duration.zero);
 
           var authCallbackCalledCount = 0;
-          AuthorizationRequiredEventType authCallbackCalledEventType;
+          AuthorizationRequiredEventType? authCallbackCalledEventType;
           matsSocket.setAuthorizationExpiredCallback((event) {
             authCallbackCalledCount++;
             authCallbackCalledEventType = event.type;
@@ -132,7 +132,7 @@ void main() {
           var testCompleter = Completer();
           var receivedCallbackInvoked = 0;
 
-          AuthorizationRequiredEvent authCallbackCalledEvent;
+          late AuthorizationRequiredEvent authCallbackCalledEvent;
           matsSocket.setAuthorizationExpiredCallback((event) {
               authCallbackCalledCount++;
               authCallbackCalledEvent = event;
@@ -159,7 +159,7 @@ void main() {
               'number': math.e,
               'sleepTime': 0
           };
-          await matsSocket.send('Test.renewAuth', "MatsSocket.renewAuth_${id(6)}", req);
+          await matsSocket.send('Test.renewAuth', 'MatsSocket.renewAuth_${id(6)}', req);
           receivedCallbackInvoked++;
 
           await testCompleter.future;
@@ -195,7 +195,7 @@ void main() {
             expect(event.type, equals(MatsSocketCloseCodes.VIOLATED_POLICY));
             expect(event.code, equals(MatsSocketCloseCodes.VIOLATED_POLICY.code));
             expect(event.type.name, equals('VIOLATED_POLICY'));
-            expect(event.reason.toLowerCase(), contains('too many consecutive'));
+            expect(event.reason!.toLowerCase(), contains('too many consecutive'));
             testCompleter.complete();
           });
 
@@ -226,7 +226,7 @@ void main() {
             expect(event.type, equals(MatsSocketCloseCodes.VIOLATED_POLICY));
             expect(event.code, equals(MatsSocketCloseCodes.VIOLATED_POLICY.code));
             expect(event.type.name, equals('VIOLATED_POLICY'));
-            expect(event.reason.toLowerCase(), contains('too many consecutive'));
+            expect(event.reason!.toLowerCase(), contains('too many consecutive'));
             testCompleter.complete();
           });
 

@@ -22,7 +22,7 @@ class ConnectionEvent {
 
   /// For all of the events this holds the current URL we're either connected to, was connected to, or trying to
   /// connect to.
-  final Uri webSocketUrl;
+  final Uri? webSocketUrl;
 
   /// For several of the events (enumerated in [ConnectionEventType]), there is an underlying WebSocket event
   /// that caused it. This field holds that.
@@ -41,7 +41,7 @@ class ConnectionEvent {
   ///
   /// The timeouts starts at 500 ms (unless there is only 1 URL configured, in which case 5 seconds), and then
   /// increases exponentially, but maxes out at 15 seconds.
-  final Duration timeout;
+  final Duration? timeout;
 
   /// For [ConnectionEventType.CONNECTING], [ConnectionEventType.WAITING] and [ConnectionEventType.COUNTDOWN],
   /// tells how long since this last attempt transitioned to [ConnectionEventType.CONNECTING]. This will count
@@ -49,7 +49,7 @@ class ConnectionEvent {
   ///
   /// A number to present to the user is present in [countdownSeconds], which can be used to show how much time
   /// is left of the current attempt.
-  final Duration elapsed;
+  final Duration? elapsed;
 
   /// For [ConnectionEventType.CONNECTING], [ConnectionEventType.WAITING] and [ConnectionEventType.COUNTDOWN],
   /// tells how many seconds there are left for this attempt (of the [timeout] it started with),
@@ -76,16 +76,16 @@ class ConnectionEvent {
     if (timeout == null || elapsed == null) {
       return '';
     }
-    var countdown = timeout - elapsed;
+    var countdown = timeout! - elapsed!;
     // Round down the elapsed microseconds to deci seconds (10th of a second)
     var deciSeconds = (countdown.inMicroseconds / 100000).round();
     var seconds = (deciSeconds / 10).floor();
     var tenthSeconds = deciSeconds % 10;
-    return '${seconds}.${tenthSeconds}';
+    return '$seconds.$tenthSeconds';
   }
 
   /// The connection attempt count, starts at 0th attempt and increases for each time the connection attempt fails.
-  final int connectionAttempt;
+  final int? connectionAttempt;
 
   const ConnectionEvent(this.type, this.webSocketUrl, this.webSocketEvent, [this.timeout, this.elapsed, this.connectionAttempt]);
 
@@ -201,7 +201,7 @@ extension ConnectionEventTypeExtension on ConnectionEventType {
     }
   }
 
-  ConnectionState get connectionState {
+  ConnectionState? get connectionState {
     switch (this) {
       case ConnectionEventType.CONNECTING:
         return ConnectionState.CONNECTING;

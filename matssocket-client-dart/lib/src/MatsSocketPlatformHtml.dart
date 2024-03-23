@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:html' as html;
-import 'dart:html';
 import 'package:logging/logging.dart';
 
 import 'MatsSocketPlatform.dart';
@@ -9,10 +8,10 @@ final Logger _logger = Logger('MatsSocket.transportHtml');
 
 class MatsSocketPlatformHtml extends MatsSocketPlatform {
 
-  String cookies;
+  String? cookies;
 
   @override
-  WebSocket connect(Uri webSocketUri, String protocol, String authorization) {
+  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
     _logger.fine('Creating HTML WebSocket to $webSocketUri with protocol: $protocol');
     return HtmlWebSocket.create(webSocketUri.toString(), protocol, authorization);
   }
@@ -26,12 +25,12 @@ class MatsSocketPlatformHtml extends MatsSocketPlatform {
   String get version => html.window.navigator.userAgent;
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
+  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
     final completer = Completer<int>();
     // Create an XMLHttpRequest
     final xhr = html.HttpRequest();
     xhr.open('GET', websocketUri.toString().replaceAll('ws', 'http'));
-    xhr.setRequestHeader('Authorization', authorization);
+    xhr.setRequestHeader('Authorization', authorization!);
 
     // Taken from html.HttpRequest.request in Dart html package.
     xhr.onLoad.listen((e) async {
@@ -44,7 +43,7 @@ class MatsSocketPlatformHtml extends MatsSocketPlatform {
         completer.complete(status);
       } else {
         // -> Not, it was BAD - supplying the status code
-        completer.completeError(status);
+        completer.completeError(status!);
       }
     });
     xhr.withCredentials = true;
@@ -71,10 +70,10 @@ class MatsSocketPlatformHtml extends MatsSocketPlatform {
 }
 
 class HtmlWebSocket extends WebSocket {
-  String _url;
-  html.WebSocket _htmlWebSocket;
+  String? _url;
+  late html.WebSocket _htmlWebSocket;
 
-  HtmlWebSocket.create(String url, String protocol, String authorization) {
+  HtmlWebSocket.create(String url, String protocol, String? authorization) {
     _url = url;
     _htmlWebSocket = html.WebSocket(url, protocol);
     _htmlWebSocket.onClose.forEach((closeEvent) {
@@ -82,7 +81,7 @@ class HtmlWebSocket extends WebSocket {
     });
     _htmlWebSocket.onError.forEach(handleError);
     _htmlWebSocket.onMessage.forEach((messageEvent) {
-      handleMessage(messageEvent.data as String, messageEvent);
+      handleMessage(messageEvent.data as String?, messageEvent);
     });
     _htmlWebSocket.onOpen.forEach(handleOpen);
   }
@@ -102,7 +101,7 @@ class HtmlWebSocket extends WebSocket {
   }
 
   @override
-  String get url => _url;
+  String? get url => _url;
 }
 
 MatsSocketPlatform createTransport() => MatsSocketPlatformHtml();

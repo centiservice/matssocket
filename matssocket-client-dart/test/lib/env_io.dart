@@ -10,12 +10,12 @@ List<Uri> loadServerUris() {
 
 }
 
-int code(ConnectionEvent connectionEvent) {
-  return (connectionEvent.webSocketEvent as Map<String, dynamic>)['code'] as int;
+int? code(ConnectionEvent connectionEvent) {
+  return (connectionEvent.webSocketEvent as Map<String, dynamic>)['code'] as int?;
 }
 
-String reason(ConnectionEvent connectionEvent) {
-  return (connectionEvent.webSocketEvent as Map<String, dynamic>)['reason'] as String;
+String? reason(ConnectionEvent connectionEvent) {
+  return (connectionEvent.webSocketEvent as Map<String, dynamic>)['reason'] as String?;
 }
 
 /// Helper class to configure dart logging to print to stdout.

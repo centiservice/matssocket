@@ -23,7 +23,7 @@ class MatsSocketPlatformNative extends MatsSocketPlatform {
   }
 
   @override
-  WebSocket connect(Uri webSocketUri, String protocol, String authorization) {
+  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
     return IOWebSocket.create(webSocketUri.toString(), protocol, authorization, _cookies);
   }
 
@@ -44,14 +44,14 @@ class MatsSocketPlatformNative extends MatsSocketPlatform {
     final osName = io.Platform.operatingSystem.replaceAll(RegExp('[;,]'), '|');
     final osVersion = io.Platform.operatingSystemVersion.replaceAll(RegExp(';'), ',');
     final dartVersion = io.Platform.version.replaceAll(RegExp(';'), ',');
-    return '${osName},v${osVersion}; dart,v${dartVersion}';
+    return '$osName,v$osVersion; dart,v$dartVersion';
   }
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
+  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
     final client = io.HttpClient();
     final response = Future<int>(() async {
-      var preAuthUri = websocketUri.replace(scheme: websocketUri.scheme.replaceAll('ws', 'http'));
+      var preAuthUri = websocketUri!.replace(scheme: websocketUri.scheme.replaceAll('ws', 'http'));
 
       var req = await client.getUrl(preAuthUri);
       req.headers.set('Authorization', '$authorization');
@@ -93,10 +93,10 @@ class MatsSocketPlatformNative extends MatsSocketPlatform {
 }
 
 class IOWebSocket extends WebSocket {
-  String _url;
-  io.WebSocket _ioWebSocket;
+  String? _url;
+  io.WebSocket? _ioWebSocket;
 
-  IOWebSocket.create(String url, String protocol, String authorization, List<io.Cookie> cookies) {
+  IOWebSocket.create(String url, String protocol, String? authorization, List<io.Cookie> cookies) {
     _url = url;
     var headers = {'Authorization': '$authorization'};
     if (cookies.isNotEmpty) {
@@ -109,11 +109,11 @@ class IOWebSocket extends WebSocket {
       _ioWebSocket = await io.WebSocket.connect(url, protocols: [protocol], headers: headers);
       _logger.info('WebSocket connected');
       handleOpen();
-      _ioWebSocket.listen(handleMessage, cancelOnError: false, onError: handleError, onDone: () {
+      _ioWebSocket!.listen(handleMessage, cancelOnError: false, onError: handleError, onDone: () {
         // There really isn't a close event for the IO WebSocket, so we just create one as a map.
         // This is mainly used by unit tests, that read out the native event code and reason.
-        var closeEvent = {'code': _ioWebSocket.closeCode, 'reason': _ioWebSocket.closeReason};
-        handleClose(_ioWebSocket.closeCode, _ioWebSocket.closeReason, closeEvent);
+        var closeEvent = {'code': _ioWebSocket!.closeCode, 'reason': _ioWebSocket!.closeReason};
+        handleClose(_ioWebSocket!.closeCode, _ioWebSocket!.closeReason, closeEvent);
         _ioWebSocket = null;
       });
     }).catchError(handleError);
@@ -127,11 +127,11 @@ class IOWebSocket extends WebSocket {
   @override
   void send(String data) {
     assert(_ioWebSocket != null, 'Cannot send to web socket unless it is open');
-    _ioWebSocket.add(data);
+    _ioWebSocket!.add(data);
   }
 
   @override
-  String get url => _url;
+  String? get url => _url;
 }
 
 MatsSocketPlatform createTransport() => MatsSocketPlatformNative();
