@@ -31,18 +31,18 @@ ext {
     matsVersion = '1.0.0+2025-05-17'
     // MatsSocketServer Implementation dependencies
     javaxWebsocketsVersion = '1.0'
-    jacksonVersion = '2.13.4'
-    slf4jVersion = '1.7.36'
+    jacksonVersion = '2.17.2'
+    slf4jVersion = '2.0.16'
 
     // optional for DB setup/migration
     flywayVersion = '9.7.0'
 
     // For testing
-    logbackVersion = '1.2.11'
-    h2Version = '2.1.214'
-    jettyVersion = '9.4.49.v20220914'
+    logbackVersion = '1.5.8'
+    h2Version = '2.3.232'
+    jettyVersion = '9.4.56.v20240826'
 
-    // .. full path for this.
+    // .. full path for the JMS lib
     jmsApiDependency = 'jakarta.jms:jakarta.jms-api:2.0.3'
 }
 
