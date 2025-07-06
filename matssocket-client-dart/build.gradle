@@ -19,7 +19,7 @@ configurations {
 }
 
 ext {
-    dartSdkVersion = '2.14.2'
+    dartSdkVersion = '3.8.1'
     dartSdkPath = file("$projectDir/dartsdk_download/dart-sdk")
 }
 
@@ -47,9 +47,9 @@ task updateDartDependencies() {
         // Update dart dependencies by executing 'pub get'
         exec {
             def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/pub")
+            executable os.getScriptName("$dartSdkPath/bin/dart")
             workingDir projectDir
-            args = ['get']
+            args = ['pub', 'get']
         }
     }
 }
@@ -58,7 +58,7 @@ task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
     doLast {
         exec {
             def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/pub")
+            executable os.getScriptName("$dartSdkPath/bin/dart")
             workingDir projectDir
             environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
 
@@ -90,7 +90,7 @@ task publishDryRun(dependsOn:  updateDartDependencies) {
     doLast {
         exec {
             def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/pub")
+            executable os.getScriptName("$dartSdkPath/bin/dart")
             workingDir projectDir
             args = ['publish', '--dry-run']
         }
@@ -102,7 +102,7 @@ task publish(dependsOn:  updateDartDependencies) {
     doLast {
         exec {
             def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/pub")
+            executable os.getScriptName("$dartSdkPath/bin/dart")
             workingDir projectDir
             args = ['publish', '--force']
         }

@@ -60,6 +60,7 @@ void main() {
         await promise.catchError((receivedEvent) {
           standardStateAssert();
           expect(receivedEvent.type, equals(ReceivedEventType.NACK));
+          return receivedEvent; // Satisfy Dart3
         });
       });
     });
@@ -182,21 +183,32 @@ void main() {
             'sleepTime': 50 // Sleeptime before replying
           };
           matsSocket
-              .requestReplyTo('Test.slow', 'Timeout_requestReplyTo_${id(6)}', req, 'Test.terminator',
-                  correlationInformation: correlationInformation, timeout: Duration(milliseconds: 5))
-              .then((_) => receivedResolveInvoked = true, onError: (event) {
+              .requestReplyTo(
+              'Test.slow', 'Timeout_requestReplyTo_${id(6)}', req,
+              'Test.terminator',
+              correlationInformation: correlationInformation,
+              timeout: Duration(milliseconds: 5))
+              .then((receivedEvent) {
+            receivedResolveInvoked = true;
+            return receivedEvent; // Satisfy Dart3
+          }, onError: (event) {
             standardStateAssert();
             expect(event.type, equals(ReceivedEventType.TIMEOUT));
             receivedRejectInvoked = true;
+            return event; // Satisfy Dart3
           });
           matsSocket.flush();
         };
 
         // Create Terminator to receive the return
         var messageCallbackInvoked = false;
-        var firstMessage = matsSocket.terminator('Test.terminator').first.then((messageEvent) {
+        var firstMessage = matsSocket
+            .terminator('Test.terminator')
+            .first
+            .then((messageEvent) {
           // We do NOT expect a message!
           messageCallbackInvoked = true;
+          return messageEvent;  // Satisfy Dart3
         }, onError: (event) {
           standardStateAssert();
           expect(event.type, equals(MessageEventType.TIMEOUT));
@@ -212,6 +224,7 @@ void main() {
               expect(messageCallbackInvoked, isFalse);
             });
           });
+          return event; // Satisfy Dart3
         });
 
         // :: .. but must first wait for SESSION_ESTABLISHED to run test
@@ -299,6 +312,7 @@ void main() {
         await promise.catchError((event) {
           standardStateAssert();
           expect(received, isTrue, reason: 'The received-callback should have been invoked.');
+          return event; // Satisfy Dart3
         });
       });
 
@@ -310,6 +324,7 @@ void main() {
         await promise.then((event) {
           standardStateAssert();
           expect(received, isTrue, reason: 'The received-callback should have been invoked.');
+          return event; // Satisfy Dart3
         });
       });
 
@@ -321,6 +336,7 @@ void main() {
         await promise.catchError((event) {
           standardStateAssert();
           expect(received, isTrue, reason: 'The received-callback should have been invoked.');
+          return event; // Satisfy Dart3
         });
       });
 
@@ -332,6 +348,7 @@ void main() {
         await promise.catchError((event) {
           standardStateAssert();
           expect(received, isTrue, reason: 'The received-callback should have been invoked.');
+          return event; // Satisfy Dart3
         });
       });
     });
@@ -349,30 +366,35 @@ void main() {
 
       test('context.deny() should NACK (reject Promise)', () async {
         var promise = matsSocket.send('Test.denyInIncomingHandler', 'SEND_denied_in_incomingHandler${id(6)}', {});
-        await promise.catchError((_) {
+        await promise.catchError((receivedEvent) {
           standardStateAssert();
+          return receivedEvent; // Satisfy Dart3
         });
       });
 
       test('context.resolve(..) should NACK (reject Promise) since it is not allowed to resolve/reject a send',
           () async {
         var promise = matsSocket.send('Test.resolveInIncomingHandler', 'SEND_resolved_in_incomingHandler${id(6)}', {});
-        await promise.catchError((_) {
+        await promise.catchError((receivedEvent) {
           standardStateAssert();
+          return receivedEvent; // Satisfy Dart3
         });
       });
 
       test('context.reject(..) should NACK (reject Promise) since it is not allowed to resolve/reject a send',
           () async {
         var promise = matsSocket.send('Test.rejectInIncomingHandler', 'SEND_rejected_in_incomingHandler${id(6)}', {});
-        await promise.catchError((_) {
+        await promise.catchError((receivedEvent) {
           standardStateAssert();
+          return receivedEvent; // Satisfy Dart3
         });
       });
 
       test('Exception in incomingAdapter should NACK (reject Promise)', () async {
         var promise = matsSocket.send('Test.throwsInIncomingHandler', 'SEND_throws_in_incomingHandler${id(6)}', {});
-        await promise.catchError((_) {});
+        await promise.catchError((receivedEvent) {
+          return receivedEvent; // Satisfy Dart3
+        });
       });
     });
 
@@ -498,53 +520,55 @@ void main() {
         expect(debug.messageReceived, isA<DateTime>());
       }
 
-      test(
-          'When the user is allowed to debug, and request all via matsSocket.debug, the debug object should be present and all filled',
+      test('When the user is allowed to debug, and request all via matsSocket.debug,'
+          ' the debug object should be present and all filled',
           () async {
         matsSocket.debug = DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag;
-        var debug = await (testDebugOptionsSend() as FutureOr<DebugDto>);
-        assertNodes(debug);
-        assertTimestamps(debug);
+        var debug = await testDebugOptionsSend();
+        expect(debug, isNotNull);
+        assertNodes(debug!);
+        assertTimestamps(debug!);
       });
 
-      test(
-          'When the user is allowed to debug, and request DebugOption.NODES via matsSocket.debug, the debug object should be present and filled with just nodes, not timestamps',
+      test('When the user is allowed to debug, and request DebugOption.NODES via matsSocket.debug,'
+          ' the debug object should be present and filled with just nodes, not timestamps',
           () async {
         matsSocket.debug = DebugOption.NODES.flag;
-        var debug = await (testDebugOptionsSend() as FutureOr<DebugDto>);
-        assertNodes(debug);
-        assertTimestampsFromServerAreUndefined(debug);
+        var debug = await testDebugOptionsSend();
+        expect(debug, isNotNull);
+        assertNodes(debug!);
+        assertTimestampsFromServerAreUndefined(debug!);
       });
 
-      test(
-          'When the user is allowed to debug, and request DebugOption.TIMINGS via matsSocket.debug, the debug object should be present and filled with just timestamps, not nodes',
+      test('When the user is allowed to debug, and request DebugOption.TIMINGS'
+          ' via matsSocket.debug, the debug object should be present and filled with just timestamps, not nodes',
           () async {
         matsSocket.debug = DebugOption.TIMESTAMPS.flag;
-        var debug = await (testDebugOptionsSend() as FutureOr<DebugDto>);
-        assertNodesUndefined(debug);
-        assertTimestamps(debug);
+        var debug = await testDebugOptionsSend();
+        assertNodesUndefined(debug!);
+        assertTimestamps(debug!);
       });
 
-      test(
-          "When the user is allowed to debug, and request all via message-specific config, while matsSocket.debug='undefined', the debug object should be present and all filled",
+      test("When the user is allowed to debug, and request all via message-specific config,"
+          " while matsSocket.debug='undefined', the debug object should be present and all filled",
           () async {
         matsSocket.debug = null;
-        var debug = await (testDebugOptionsSend(debug: DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag) as FutureOr<DebugDto>);
-        assertNodes(debug);
-        assertTimestamps(debug);
+        var debug = await testDebugOptionsSend(debug: DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag);
+        assertNodes(debug!);
+        assertTimestamps(debug!);
       });
 
-      test(
-          'When the user is NOT allowed to debug, and request all via matsSocket.debug, the debug object should just have the Client-side filled stuff',
+      test('When the user is NOT allowed to debug, and request all via matsSocket.debug,'
+          ' the debug object should just have the Client-side filled stuff',
           () async {
         matsSocket.debug = DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag;
-        var debug = await (testDebugOptionsSend(userId: 'userWithoutDebugOptions') as FutureOr<DebugDto>);
-        assertNodesUndefined(debug);
-        assertTimestampsFromServerAreUndefined(debug);
+        var debug = await testDebugOptionsSend(userId: 'userWithoutDebugOptions');
+        assertNodesUndefined(debug!);
+        assertTimestampsFromServerAreUndefined(debug!);
       });
 
-      test(
-          'When the user is allowed to debug, but do not request any debug (undefined), there should not be a debug object',
+      test('When the user is allowed to debug, but do not request any debug (undefined),'
+          ' there should not be a debug object',
           () async {
         // Set special userId that gives us all DebugOptions
         setAuth('enableAllDebugOptions');

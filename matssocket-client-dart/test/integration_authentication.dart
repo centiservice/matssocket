@@ -202,6 +202,7 @@ void main() {
           await matsSocket.request(
               'Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {}).catchError((messageEvent) {
             expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
+            return messageEvent; // Satisfy Dart3
           });
           await testCompleter.future;
         });
@@ -233,6 +234,7 @@ void main() {
           await matsSocket.request(
               'Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {}).catchError((messageEvent) {
             expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
+            return messageEvent; // Satisfy Dart3
           });
 
           await testCompleter.future;
