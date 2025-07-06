@@ -2,6 +2,7 @@
 
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
+import org.gradle.internal.jvm.Jvm
 
 // mats-websockets
 plugins {
@@ -13,7 +14,7 @@ plugins {
 
 // Specify Gradle version, run update by './gradlew wrapper'
 wrapper {
-    gradleVersion = "7.5.1"
+    gradleVersion = "8.5"
     // Use "-all"-version of distribution, since IntelliJ works better then..
     setDistributionType(Wrapper.DistributionType.ALL)
 }
@@ -27,7 +28,7 @@ allprojects {
 // Versions for all libraries used throughout the subprojects
 ext {
     // MatsSocketServer API dependencies
-    matsVersion = '0.19.0-2022-11-05'
+    matsVersion = '1.0.0+2025-05-17'
     // MatsSocketServer Implementation dependencies
     javaxWebsocketsVersion = '1.0'
     jacksonVersion = '2.13.4'
@@ -40,6 +41,16 @@ ext {
     logbackVersion = '1.2.11'
     h2Version = '2.1.214'
     jettyVersion = '9.4.49.v20220914'
+
+    // .. full path for this.
+    jmsApiDependency = 'jakarta.jms:jakarta.jms-api:2.0.3'
+}
+
+// :: Find which Java version to use for the toolchain.
+int javaVersion = 11;
+if (project.properties.containsKey('mats.build.java_version')) {
+    javaVersion = Integer.parseInt((String) project.properties['mats.build.java_version'])
+    println "Specified Java version for toolchain, using Java version: $javaVersion"
 }
 
 configure ([project('matssocket-server-api'), project('matssocket-server-impl')]) {
@@ -49,19 +60,22 @@ configure ([project('matssocket-server-api'), project('matssocket-server-impl')]
 
     repositories { mavenCentral() }
 
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(javaVersion))
+        }
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     compileJava {
         options.encoding = 'UTF-8'
         options.deprecation = true
         options.incremental = true
         options.compilerArgs += ['-Werror', '-Xlint:all', '-Xlint:-serial']
-    }
-
-    java {
-        withJavadocJar()
-        withSourcesJar()
     }
 
     javadoc {
@@ -99,6 +113,10 @@ configure ([project('matssocket-server-api'), project('matssocket-server-impl')]
          */
         // NOTICE: Currently no Java tests. These properties are also forwarded to the MatsSocketTestServer exec below.
         systemProperties project.properties.subMap(["mats.test.brokerurl", "mats.test.broker"])
+
+        testLogging {
+            exceptionFormat = 'full'
+        }
     }
 
     signing {
@@ -193,7 +211,11 @@ task startMatsSocketTestServer(dependsOn: [configurations.testRuntimeClasspath, 
         logger.info("Starting MatsSocketTestServer");
 
         // :: Create cmd-line for MatsSocketTestServer Java-process to execute
-        List<String> cmd = ["${System.getenv("JAVA_HOME")}/bin/java"]
+        def javaExe = Jvm.current().javaExecutable.absolutePath
+
+        println "MatsSocketTestServer: Using Java executable: $javaExe"
+
+        List<String> cmd = [javaExe]
         // Add the MatsTestBroker -P properties from Gradle-invocation as -D properties to the JVM, if set
         project.properties.subMap(["mats.test.brokerurl", "mats.test.broker"]).each {k, v -> cmd << "-D$k=$v"}
         // Add classpath, from test's runtimeClasspath for both server-api and server-impl projects

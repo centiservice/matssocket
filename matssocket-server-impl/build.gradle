@@ -28,6 +28,9 @@ dependencies {
     testImplementation "io.mats3:mats-test-junit:$matsVersion"
     testImplementation "io.mats3:mats-test-broker:$matsVersion"
 
+    // Need the JMS API for compilation, since we handle the JMS ConnectionFactory.
+    testCompileOnly "$jmsApiDependency"
+
     // Base Jetty Server
     testImplementation "org.eclipse.jetty:jetty-server:$jettyVersion"
     // .. Jetty Servlets

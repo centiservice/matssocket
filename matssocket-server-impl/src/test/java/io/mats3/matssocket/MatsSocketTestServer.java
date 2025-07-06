@@ -139,7 +139,7 @@ public class MatsSocketTestServer {
             // Get JMS ConnectionFactory from ServletContext
             ConnectionFactory connFactory = (ConnectionFactory) sc.getAttribute(ConnectionFactory.class.getName());
             // MatsSerializer
-            MatsSerializer<String> matsSerializer = MatsSerializerJson.create();
+            MatsSerializer matsSerializer = MatsSerializerJson.create();
             // Create the MatsFactory
             _matsFactory = JmsMatsFactory.createMatsFactory_JmsAndJdbcTransactions(
                     MatsSocketTestServer.class.getSimpleName(), "*testing*",
