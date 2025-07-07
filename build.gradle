@@ -133,8 +133,8 @@ configure ([project('matssocket-server-api'), project('matssocket-server-impl')]
                     url = 'https://github.com/centiservice/mats3'
                     licenses {
                         license {
-                            name = 'PolyForm Perimeter License 1.0.0 with examples'
-                            url = 'https://github.com/centiservice/matssocket/blob/main/LICENSE.md'
+                            name = 'Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                         }
                     }
                     developers {

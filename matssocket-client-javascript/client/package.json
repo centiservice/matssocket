@@ -4,7 +4,7 @@
   "description": "MatsSocket client library",
   "repository": "https://github.com/centiservice/matssocket",
   "author": "Endre Stølsvik",
-  "license": "Polyform Perimeter 1.0.0",
+  "license": "Apache-2.0",
   "private": false,
 
   "type": "module",
