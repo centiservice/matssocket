@@ -18,9 +18,12 @@ configurations {
     dartSdk
 }
 
+
 ext {
     dartSdkVersion = '3.8.1'
-    dartSdkPath = file("$projectDir/dartsdk_download/dart-sdk")
+    dartDownloadTemp = file("$projectDir/dartsdk_download-temp")
+    dartDownload = file("$projectDir/dartsdk_download")
+    dartSdkPath = file("$dartDownload/dart-sdk")
 }
 
 dependencies {
@@ -36,34 +39,52 @@ dependencies {
     }
 }
 
+// Small helper to run the Dart executable with common configuration.
+def dartExec(Closure body) {
+    exec {
+        def os = org.gradle.internal.os.OperatingSystem.current()
+        executable os.getScriptName("$dartSdkPath/bin/dart")
+        workingDir projectDir
+        body.delegate = delegate
+        body.resolveStrategy = Closure.DELEGATE_FIRST
+        body()
+    }
+}
+def dartExec(Object... cmd) {
+    dartExec {
+        args cmd
+    }
+}
+
 task updateDartDependencies() {
+    doFirst {
+        println "Cleaning DART temp dir '$dartDownloadTemp'"
+        delete dartDownloadTemp
+    }
     doLast {
         // Fetch the Dart SDK from "custom ivy repo" set up above
+        println "Unzipping DART SDK to '$dartDownloadTemp'"
         copy {
             from zipTree(configurations.dartSdk.asPath)
-            into "$projectDir/dartsdk_download"
+            into "$dartDownloadTemp"
         }
 
+        // Move it into place - avoids problem if IntelliJ is set up to use the Dart SDK here ("Text file busy")
+        // Note: If on Windows, you'll probably have to find another SDK location for IntelliJ, as it locks the files.
+        println "Renaming DART SDK download to '$dartDownload'"
+        dartDownloadTemp.renameTo(dartDownload)
+
         // Update dart dependencies by executing 'pub get'
-        exec {
-            def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/dart")
-            workingDir projectDir
-            args = ['pub', 'get']
-        }
+        dartExec 'pub', 'get'
     }
 }
 
 task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
     doLast {
-        exec {
-            def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/dart")
-            workingDir projectDir
+        dartExec {
+            // :: Setting environment for test run
             environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
-
-            // logging.level returns null, so we need to check which log level is enabled to pass
-            // on to the tests, so that they log if needed.
+            // Checking which log level is enabled to pass on to the tests, so that they log if needed.
             if (logger.isEnabled(LogLevel.DEBUG)) {
                 environment("LOG_LEVEL", "DEBUG")
             }
@@ -85,49 +106,38 @@ task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 
-// 'pub publish --dry-run'
+// 'dart publish --dry-run'
 task publishDryRun(dependsOn:  updateDartDependencies) {
     doLast {
-        exec {
-            def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/dart")
-            workingDir projectDir
-            args = ['publish', '--dry-run']
-        }
+        dartExec 'publish', '--dry-run'
     }
 }
 
-// 'pub publish --force'
+// 'dart publish --force'
 task publish(dependsOn:  updateDartDependencies) {
     doLast {
-        exec {
-            def os = org.gradle.internal.os.OperatingSystem.current();
-            executable os.getScriptName("$dartSdkPath/bin/dart")
-            workingDir projectDir
-            args = ['publish', '--force']
-        }
+        dartExec 'publish', '--force'
     }
 }
-
 
 // Package up the Dart library
 task archiveLib(type: Zip) {
     from "$projectDir/lib"
     into "mats_socket-${project.version}-dart"
     archiveFileName = "mats_socket-${project.version}-dart.zip"
-    destinationDirectory = file("$buildDir/dist")
+    destinationDirectory.set(layout.buildDirectory.dir("dist"))
 }
 
 // Include the packaging of the lib into the main build
 rootProject.build.dependsOn(archiveLib)
 
-task clean(type: Delete) {
-    delete buildDir
+tasks.register('clean', Delete) {
+    delete layout.buildDirectory
 }
 
 // "distclean": Clean out the downloaded Dart SDK and dependencies
 task distclean(type: Delete, dependsOn: [clean]) {
-    delete "$projectDir/dartsdk_download"
+    delete "$dartDownload"
     delete "$projectDir/.dart_tool"
     delete "$projectDir/.packages" // Old-style .dart_tool/package_config.json
     delete "$projectDir/pubspec.lock"

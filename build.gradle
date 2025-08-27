@@ -19,12 +19,6 @@ wrapper {
     setDistributionType(Wrapper.DistributionType.ALL)
 }
 
-allprojects {
-    group = 'io.mats3.matssocket'
-    version = '0.19.0-2022-11-11'
-    buildDir = 'build-gradle'
-}
-
 // Versions for all libraries used throughout the subprojects
 ext {
     // MatsSocketServer API dependencies
@@ -53,6 +47,14 @@ if (project.properties.containsKey('mats.build.java_version')) {
     println "Specified Java version for toolchain, using Java version: $javaVersion"
 }
 
+// Common config for all projects
+allprojects {
+    group = 'io.mats3.matssocket'
+    version = '0.19.0-2022-11-11'
+    layout.buildDirectory.set(file('build-gradle'))
+}
+
+// Common config for the two Java subprojects
 configure ([project('matssocket-server-api'), project('matssocket-server-impl')]) {
     apply plugin: 'java-library'
     apply plugin: 'signing'

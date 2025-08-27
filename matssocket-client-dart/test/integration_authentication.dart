@@ -10,7 +10,7 @@ import 'lib/env.dart';
 void main() {
   configureLogging();
 
-  final _logger = Logger('integration_authentication');
+  final log = Logger('integration_authentication');
 
   group('MatsSocket integration-tests of Authentication & Authorization', () {
     late MatsSocket matsSocket;
@@ -29,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
+      log.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     group('MatsSocket integration tests of Authentication & Authorization', () {
@@ -214,7 +214,7 @@ void main() {
           var testCompleter = Completer();
 
           matsSocket.addConnectionEventListener((event) {
-            _logger.info('Connection attempt: ${event.connectionAttempt}, type: ${event.type}, countDown: ${event.countdownSeconds}');
+            log.info('Connection attempt: ${event.connectionAttempt}, type: ${event.type}, countDown: ${event.countdownSeconds}');
           });
 
           matsSocket.setAuthorizationExpiredCallback((event) {

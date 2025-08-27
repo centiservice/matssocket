@@ -66,9 +66,11 @@ void _shuffleList(List items) {
 
 class MatsSocket {
 
+  // Public members
+
   final String appName;
   final String appVersion;
-  late MatsSocketPlatform platform;
+  final MatsSocketPlatform platform;
 
   String? sessionId;
 
@@ -117,8 +119,8 @@ class MatsSocket {
   bool _forcePipelineProcessing = false;
 
   DateTime? _expirationTimestamp;
-  late Duration _roomForLatencyMillis;
-  AuthorizationExpiredCallback _authorizationExpiredCallback = (event) {};
+  late Duration _roomForLatencyDuration;
+  AuthorizationExpiredCallback? _authorizationExpiredCallback;
 
   int _messageSequenceId = 0; // Increases for each SEND, REQUEST and REPLY
 
@@ -201,19 +203,29 @@ class MatsSocket {
   /// either, this will also (*before* the Promise reject!) be NACK'ed with [ReceivedEventType.TIMEOUT]
   Duration requestTimeout = Duration(seconds: 45);
 
+  /// Creates a MatsSocket, requiring the using Application's name and version, and which URLs to connect to.
   ///
+  /// [appName] the name of the application using this MatsSocket.dart client library
+  /// [appVersion] the version of the application using this MatsSocket.dart client library
+  /// [urls] a List of WebSocket URLs speaking 'matssocket' protocol - one, or multiple for high availability.
+  /// @param {object} config an optional object carrying extra configuration. Current sole key: 'webSocketFactory': how to
+  /// make WebSockets, not required in a browser setting as it will use window.WebSocket if not set.
+  /// @class
   ///
-  MatsSocket(this.appName, this.appVersion, this._useUrls, [MatsSocketPlatform? platform]) {
-    assert(_useUrls.isNotEmpty, 'Must provide at least 1 url');
-
-    this.platform = platform ?? MatsSocketPlatform.create();
+  MatsSocket(this.appName, this.appVersion, List<Uri> urls, [MatsSocketPlatform? platform])
+      : _useUrls = List.of(urls),
+        platform = platform ?? MatsSocketPlatform.create(),
+        _connectionTimeoutMin = (urls.length > 1
+            ? _connectionTimeoutBase
+            : _connectionTimeoutMinIfSingleUrl) {
+    assert(urls.isNotEmpty, 'Must provide at least 1 url');
 
     _shuffleList(_useUrls);
-    _connectionTimeoutMin = _useUrls.length > 1 ? _connectionTimeoutBase : _connectionTimeoutMinIfSingleUrl;
 
     // .. Invoke resetConnectStateVars() right away to get URL set.
     _resetReconnectStateVars();
 
+    // Make an endpoint for the server to ask for new auth, read more at: AuthorizationRequiredEventType.REAUTHENTICATE
     _endpoints['MatsSocket.renewAuth'] = (messageEvent) {
           // Immediately ask for new Authorization
           _requestNewAuthorizationFromApp('MatsSocket.renewAuth was invoked', AuthorizationRequiredEvent(AuthorizationRequiredEventType.REAUTHENTICATE));
@@ -356,23 +368,23 @@ class MatsSocket {
   /// do that - only the first actual MatsSocket message will start the WebSocket and perform the HELLO/WELCOME
   /// handshake.
   ///
-  /// [authorizationValue] the string Value which will be transfered to the Server and there resolved
+  /// [authorizationValue] the string Value which will be transferred to the Server and there resolved
   ///        to a Principal and UserId on the server side by the AuthorizationPlugin. Note that this value potentially
   ///        also will be forwarded to other resources that requires authorization.
-  /// [expirationTimestamp] the millis-since-epoch at which this authorization expires
-  ///        (in case of OAuth-style tokens), or -1 if it never expires or otherwise has no defined expiration mechanism.
-  ///        *Notice that in a JWT token, the expiration time is in seconds, not millis: Multiply by 1000.*
-  /// [roomForLatencyMillis] the number of millis which is subtracted from the 'expirationTimestamp' to
+  /// [expirationTimestamp] the DateTime at which this authorization expires
+  ///        (in case of OAuth-style tokens), or null if it never expires or otherwise has no defined expiration mechanism.
+  /// [roomForLatencyDuration] the Duration which is subtracted from the 'expirationTimestamp' to
   ///        find the point in time where the MatsSocket will refuse to use the authorization and instead invoke the
   ///        [setAuthorizationExpiredCallback] and wait for a new authorization
   ///        being set by invocation of the present method. Depending on what the usage of the Authorization string
-  ///        is on server side is, this should probably **at least** be 10000, i.e. 10 seconds - but if the Mats
+  ///        is on server side is, this should probably **at least** be 10 seconds - but if the Mats
   ///        endpoints uses the Authorization string to do further accesses, both latency and queue time must be
   ///        taken into account (e.g. for calling into another API that also needs a valid token). If
-  ///        expirationTimestamp is '-1', then this parameter is not used. *Default value is 30000 (30 seconds).*
-  void setCurrentAuthorization(String authorizationValue, DateTime expirationTimestamp,
-      [Duration roomForLatencyMillis = const Duration(seconds: 30)]) {
-    _logger.fine('Got Authorization which expires in [${expirationTimestamp.difference(DateTime.now())}], roomForLatencyMillis: $roomForLatencyMillis');
+  ///        expirationTimestamp is null, then this parameter is not used. *Default value is 30 seconds.*
+  void setCurrentAuthorization(String authorizationValue, DateTime? expirationTimestamp,
+      [Duration roomForLatencyDuration = const Duration(seconds: 30)]) {
+    _logger.fine(() => 'Got Authorization which ' + (expirationTimestamp != null ? 'Expires in [${expirationTimestamp.difference(DateTime.now())}]' : '[Never expires]')
+        + ', roomForLatencyMillis: $roomForLatencyDuration');
 
     for (var i=0; i < authorizationValue.length; i++) {
       if (authorizationValue.codeUnitAt(i) > 160) {
@@ -383,7 +395,7 @@ class MatsSocket {
 
     _authorization = authorizationValue;
     _expirationTimestamp = expirationTimestamp;
-    _roomForLatencyMillis = roomForLatencyMillis;
+    _roomForLatencyDuration = roomForLatencyDuration;
     // ?: Should we send it now?
     if (_authExpiredCallbackInvoked_EventType == AuthorizationRequiredEventType.REAUTHENTICATE) {
       _logger.fine('Immediate send of new authentication due to REAUTHENTICATE');
@@ -1240,7 +1252,7 @@ class MatsSocket {
     }
     // ?: Check whether we have expired authorization
     if ((_expirationTimestamp != null)
-        && (_expirationTimestamp!.subtract(_roomForLatencyMillis).isBefore(DateTime.now()))) {
+        && (_expirationTimestamp!.subtract(_roomForLatencyDuration).isBefore(DateTime.now()))) {
       // -> Yes, authorization is expired.
       _requestNewAuthorizationFromApp('Authorization is expired',
           AuthorizationRequiredEvent(AuthorizationRequiredEventType.EXPIRED, _expirationTimestamp));
@@ -1401,7 +1413,7 @@ class MatsSocket {
         return;
       }
       // E-> We do have 'authorizationExpiredCallback', so ask app for new auth
-      _authorizationExpiredCallback(event);
+      _authorizationExpiredCallback!(event);
   }
   int _connectionAttempt = 0; // A counter of how many times a connection attempt has been performed, starts at 0th attempt.
 
@@ -1409,12 +1421,12 @@ class MatsSocket {
   int _connectionAttemptRound = 0; // When cycled one time through URLs, this increases.
   Uri? _currentWebSocketUrl;
 
-  final int _connectionTimeoutBase = 500; // Base timout, milliseconds. Doubles, up to max defined below.
-  final int _connectionTimeoutMinIfSingleUrl = 5000; // Min timeout if single-URL configured, milliseconds.
-  final int _connectionTimeoutMax = 15000; // Milliseconds max between connection attempts.
+  static const int _connectionTimeoutBase = 500; // Base timout, milliseconds. Doubles, up to max defined below.
+  static const int _connectionTimeoutMinIfSingleUrl = 5000; // Min timeout if single-URL configured, milliseconds.
+  static const int _connectionTimeoutMax = 15000; // Milliseconds max between connection attempts.
 
   // Based on whether there is multiple URLs, or just a single one, we choose the short "timeout base", or a longer one, as minimum.
-  late int _connectionTimeoutMin;
+  final int _connectionTimeoutMin;
 
   int? maxConnectionAttempts;
 
@@ -1496,7 +1508,7 @@ class MatsSocket {
       // Note: The start-over will happen when new auth comes in, _evaluatePipelineSend(..) is invoked, and there is no WebSocket there.
       // ?: Check whether we have expired authorization
       if ((_expirationTimestamp != null)
-          && ((_expirationTimestamp!.subtract(_roomForLatencyMillis)).isBefore(DateTime.now()))) {
+          && ((_expirationTimestamp!.subtract(_roomForLatencyDuration)).isBefore(DateTime.now()))) {
           // -> Yes, authorization is expired.
           _logger.fine(() => 'InitiateWebSocketCreation: Authorization is expired, we need new to continue.');
           // We are not connecting anymore

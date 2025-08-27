@@ -10,7 +10,7 @@ import 'lib/env.dart';
 void main() {
   configureLogging();
 
-  final _logger = Logger('integration_pubsub');
+  final log = Logger('integration_pubsub');
 
   group('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', () {
     late MatsSocket matsSocket;
@@ -29,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
+      log.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     group('basic subscription with a publish from server', () {

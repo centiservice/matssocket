@@ -10,7 +10,7 @@ import 'lib/env.dart';
 void main() {
   configureLogging();
 
-  final _logger = Logger('integration_listeners');
+  final log = Logger('integration_listeners');
 
   group('MatsSocket integration tests, listeners', () {
     late MatsSocket matsSocket;
@@ -29,7 +29,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
+      log.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     // TODO: Check ConnectionEventListeners, including matsSocket.state

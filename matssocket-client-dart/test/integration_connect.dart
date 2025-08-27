@@ -9,7 +9,7 @@ import 'lib/env.dart';
 void main() {
   configureLogging();
 
-  final _logger = Logger('integration_connect');
+  final log = Logger('integration_connect');
 
   group('MatsSocket integration tests, basics', () {
     late MatsSocket matsSocket;
@@ -27,7 +27,7 @@ void main() {
 
     tearDown(() async  {
       await matsSocket.close('Test done');
-      _logger.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
+      log.info('=========== Closed MatsSocket [${matsSocket.matsSocketInstanceId}] ===========');
     });
 
     /*

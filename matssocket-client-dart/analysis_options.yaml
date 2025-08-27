@@ -1,7 +1,4 @@
-# Defines a default set of lint rules enforced for
-# projects at Google. For details and rationale,
-# see https://github.com/dart-lang/pedantic#enabled-lints.
-include: package:pedantic/analysis_options.yaml
+include: package:lints/recommended.yaml
 
 # For lint rules and documentation, see http://dart-lang.github.io/linter/lints.
 # Uncomment to specify additional rules.
@@ -10,8 +7,15 @@ include: package:pedantic/analysis_options.yaml
 #     - camel_case_types
 
 analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
+  errors:
+    constant_identifier_names: ignore
+    file_names: ignore
+    non_constant_identifier_names: ignore
+  exclude:
+    - dartsdk_download/**
+    - dartsdk_download-temp/**
+    - build-gradle/**
+    - .dart_tool/**
 
 formatter:
   page_width: 120
