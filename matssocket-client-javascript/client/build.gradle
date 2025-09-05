@@ -13,34 +13,36 @@ apply from: '../node.gradle'
  * Using this blog post as reference:
  * https://dev.to/remshams/rolling-up-a-multi-module-system-esm-cjs-compatible-npm-library-with-typescript-and-babel-3gjg
  */
-task build(type: YarnTask, dependsOn: yarn) {
+tasks.register('build', YarnTask) {
+    dependsOn yarn, jsdoc, archiveLib
     args = ['build']
     inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('bundles')
 }
 
-task jsdoc(type: YarnTask, dependsOn: yarn) {
+tasks.register('jsdoc', YarnTask) {
+    dependsOn yarn
     args = ['jsdoc']
     inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('jsdoc')
 }
 
-// Include creation of jsdoc into the build
-project.build.dependsOn(jsdoc)
-
-task publishDryRun(type: NpmTask, dependsOn: build) {
+tasks.register('publishDryRun', NpmTask) {
+    dependsOn build
     args = ['publish', '--dry-run']
 }
 
-task publishExperimental(type: NpmTask, dependsOn: build) {
+tasks.register('publishExperimental', NpmTask) {
+    dependsOn build
     // Remember to update version in package.json, it shall read "0.0.0-experimental-<iso datetime>" (e.g. 2021-07-14T18-06)
     // TODO: Also update in clients and build.gradle files.
     args = ['publish', '--tag', 'experimental']
 }
 
-task publish(type: NpmTask, dependsOn: build) {
+tasks.register('publish', NpmTask) {
+    dependsOn build
     // Remember to update version in package.json, it shall read "x.y.z"
     // TODO: Also update in clients and build.gradle files.
     // 'publish' by default uses '--tag latest'
@@ -49,30 +51,32 @@ task publish(type: NpmTask, dependsOn: build) {
 
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
-task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
+tasks.register('javascriptTestWatch', YarnTask) {
+    dependsOn yarn
     args = ['test', '--watch']
     workingDir = file('./tests')
 }
 
 // Package up the JavaScript library
-task archiveLib(type: Zip) {
-    from "$projectDir/client/lib"
-    into "mats_socket-${project.version}-js"
-    archiveFileName = "mats_socket-${project.version}-js.zip"
-    destinationDirectory = file("$buildDir/dist")
+tasks.register('archiveLib', Zip) {
+    from "$projectDir/lib"
+    into "matssocket-${project.version}-js"
+    def destinationDir = layout.buildDirectory.dir("dist").get().asFile
+    def archiveName = "matssocket-${project.version}-js.zip"
+    println("JavaScript Client zip: " + destinationDir + "/" + archiveName)
+    destinationDirectory = destinationDir
+    archiveFileName = archiveName
 }
 
-// Include the packaging of the lib into the build
-project.build.dependsOn(archiveLib)
-
-task clean(type: Delete) {
-    delete buildDir
+tasks.register('clean', Delete) {
+    delete layout.buildDirectory
     delete "$projectDir/bundles/"
     delete "$projectDir/jsdoc/"
 }
 
 // Clean out the downloaded node & yarn
-task distclean(type: Delete, dependsOn: [clean]) {
+tasks.register('distclean', Delete) {
+    dependsOn clean
     delete "$projectDir/node_download/"
     delete "$projectDir/node_modules/"
 }

@@ -19,9 +19,10 @@ node {
 }
 
 // :: Versions of node tools
-task node_version(type: NodeTask) {
+tasks.register('node_version', NodeTask) {
     script = file('./dummy_empty.js')
     options = ['--version']
 }
-task versions(dependsOn: [node_version, yarn_version]) {
+tasks.register('versions') {
+    dependsOn 'node_version', 'yarn_version'
 }

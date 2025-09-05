@@ -3,7 +3,8 @@
 apply from: '../node.gradle'
 
 
-task build(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn]) {
+tasks.register('build', YarnTask) {
+    dependsOn ':matssocket-client-javascript:client:build', 'yarn'
     args = ['build']
     inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
     inputs.dir('../tests_esm/src')
@@ -11,7 +12,8 @@ task build(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:bui
 }
 
 // Execute both unit and integration tests against a test MatsSocketTestServer
-task test(type: YarnTask, dependsOn: [yarn, build, ':startMatsSocketTestServer']) {
+tasks.register('test', YarnTask) {
+    dependsOn 'cleanNodeModules', 'yarn', 'build', ':startMatsSocketTestServer'
     args = ['test']
     doFirst {
         execOverrides {
@@ -23,13 +25,17 @@ task test(type: YarnTask, dependsOn: [yarn, build, ':startMatsSocketTestServer']
 // We need to ensure that javascript tests are run before MatsSocketTestServer stops!
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 
-task clean(type: Delete) {
-    delete buildDir
+tasks.register('cleanNodeModules', Delete) {
+    delete "$projectDir/node_modules/"
+}
+
+tasks.register('clean', Delete) {
+    delete layout.buildDirectory
     delete "$projectDir/bundles/"
 }
 
 // Clean out the downloaded node & yarn
-task distclean(type: Delete, dependsOn: [clean]) {
+tasks.register('distclean', Delete) {
+    dependsOn clean, cleanNodeModules
     delete "$projectDir/node_download/"
-    delete "$projectDir/node_modules/"
 }

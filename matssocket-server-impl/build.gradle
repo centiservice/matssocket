@@ -51,7 +51,7 @@ dependencies {
     testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
-task distclean(dependsOn: [clean])
+tasks.register('distclean') { dependsOn 'clean' }
 
 publishing {
     publications {

@@ -560,12 +560,13 @@ public class MatsSocketTestServer {
             resp.setCharacterEncoding("UTF-8");
             resp.setContentLengthLong(Files.size(pathWithFile));
             // Copy over the File to the HTTP Response's OutputStream
-            InputStream inputStream = Files.newInputStream(pathWithFile);
-            ServletOutputStream outputStream = resp.getOutputStream();
-            int n;
-            byte[] buffer = new byte[16384];
-            while ((n = inputStream.read(buffer)) > -1) {
-                outputStream.write(buffer, 0, n);
+            try (InputStream inputStream = Files.newInputStream(pathWithFile)) {
+                ServletOutputStream outputStream = resp.getOutputStream();
+                int n;
+                byte[] buffer = new byte[16384];
+                while ((n = inputStream.read(buffer)) > -1) {
+                    outputStream.write(buffer, 0, n);
+                }
             }
         }
     }
@@ -632,7 +633,7 @@ public class MatsSocketTestServer {
         server.setHandler(stats);
 
         // Add a Jetty Lifecycle Listener to cleanly shut down the MatsSocketServer.
-        server.addLifeCycleListener(new AbstractLifeCycleListener() {
+        server.addLifeCycleListener(new LifeCycle.Listener() {
             @Override
             public void lifeCycleStopping(LifeCycle event) {
                 log.info("===== STOP! ===========================================");
@@ -676,7 +677,7 @@ public class MatsSocketTestServer {
                 log.info("######### Starting server [" + serverId + "] on [" + port + "]");
 
                 // Add a life cycle hook to log when the server has started
-                servers[i].addLifeCycleListener(new AbstractLifeCycleListener() {
+                servers[i].addLifeCycleListener(new LifeCycle.Listener() {
                     @Override
                     public void lifeCycleStarted(LifeCycle event) {
                         log.info("######### Started server " + serverId + " on port " + port);

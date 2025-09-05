@@ -3,16 +3,14 @@
 apply from: '../node.gradle'
 
 // Execute only the unit tests
-task testUnit(type: YarnTask, dependsOn: [':matssocket-client-javascript:client:build', yarn]) {
+tasks.register('testUnit', YarnTask) {
+    dependsOn ':matssocket-client-javascript:client:build', 'yarn'
     args = ['testUnit']
 }
 
-task cleanNodeModules(type: Delete) {
-    delete "$projectDir/node_modules/"
-}
-
 // Execute only the basic tests
-task testBasic(type: YarnTask, dependsOn: [cleanNodeModules, yarn, ':startMatsSocketTestServer']) {
+tasks.register('testBasic', YarnTask) {
+    dependsOn 'cleanNodeModules', 'yarn', ':startMatsSocketTestServer'
     args = ['testBasic']
     doFirst {
         execOverrides {
@@ -22,8 +20,21 @@ task testBasic(type: YarnTask, dependsOn: [cleanNodeModules, yarn, ':startMatsSo
 }
 
 // Execute both unit and integration tests against a test MatsSocketTestServer
-task test(type: YarnTask, dependsOn: [cleanNodeModules, yarn, ':startMatsSocketTestServer']) {
+tasks.register('test', YarnTask) {
+    dependsOn 'cleanNodeModules', 'yarn', ':startMatsSocketTestServer'
     args = ['test']
+    doFirst {
+        execOverrides {
+            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+        }
+    }
+}
+
+// Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
+// a server listening on ws://localhost:8080/matssocket
+tasks.register('javascriptTestWatch', YarnTask) {
+    dependsOn 'cleanNodeModules', 'yarn', ':startMatsSocketTestServer'
+    args = ['test', '--watch']
     doFirst {
         execOverrides {
             it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
@@ -35,19 +46,17 @@ task test(type: YarnTask, dependsOn: [cleanNodeModules, yarn, ':startMatsSocketT
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
 
-// Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
-// a server listening on ws://localhost:8080/matssocket
-task javascriptTestWatch(type: YarnTask, dependsOn: yarn) {
-    args = ['test', '--watch']
+tasks.register('cleanNodeModules', Delete) {
+    delete "$projectDir/node_modules/"
 }
 
-task clean(type: Delete) {
-    delete buildDir
+tasks.register('clean', Delete) {
+    delete layout.buildDirectory
     delete "$projectDir/bundles/"
 }
 
 // Clean out the downloaded node & yarn
-task distclean(type: Delete, dependsOn: [clean]) {
+tasks.register('distclean', Delete) {
+    dependsOn clean, cleanNodeModules
     delete "$projectDir/node_download/"
-    delete "$projectDir/node_modules/"
 }

@@ -3,4 +3,4 @@
 // Nothing here - go to subprojects 'client', 'tests_esm' and 'test_umd'
 
 // Test: Depend on both test subprojects' tests
-task test(dependsOn: ['tests_esm:test', 'tests_umd:test'])
+tasks.register('test') { dependsOn 'tests_esm:test', 'tests_umd:test' }

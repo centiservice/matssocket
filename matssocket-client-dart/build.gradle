@@ -4,7 +4,7 @@ repositories {
     // Create a custom ivy repository that represents the dart sdk download, so that we
     // can download the SDK using gradles download mechanisms and cache.
     ivy {
-        url "https://storage.googleapis.com/dart-archive/channels/stable/release/"
+        url = "https://storage.googleapis.com/dart-archive/channels/stable/release/"
         patternLayout {
             artifact "[revision]/sdk/[artifact]-[classifier]-release.[ext]"
         }
@@ -17,7 +17,6 @@ repositories {
 configurations {
     dartSdk
 }
-
 
 ext {
     dartSdkVersion = '3.8.1'
@@ -37,15 +36,18 @@ dependencies {
     else if (os.isLinux()) {
         dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:linux-x64@zip"
     }
+    else {
+        throw new GradleException("Unsupported OS for Dart SDK: ${os.toString()}")
+    }
 }
 
 // Small helper to run the Dart executable with common configuration.
 def dartExec(Closure body) {
-    exec {
+    services.get(ExecOperations).exec { ExecSpec spec ->
         def os = org.gradle.internal.os.OperatingSystem.current()
-        executable os.getScriptName("$dartSdkPath/bin/dart")
-        workingDir projectDir
-        body.delegate = delegate
+        spec.executable os.getScriptName("$dartSdkPath/bin/dart")
+        spec.workingDir projectDir
+        body.delegate = spec
         body.resolveStrategy = Closure.DELEGATE_FIRST
         body()
     }
@@ -56,14 +58,12 @@ def dartExec(Object... cmd) {
     }
 }
 
-task updateDartDependencies() {
-    doFirst {
-        println "Cleaning DART temp dir '$dartDownloadTemp'"
-        delete dartDownloadTemp
-    }
+tasks.register('updateDartDependencies') {
     doLast {
+        println "Pre-cleaning Dart temp dir '$dartDownloadTemp'"
+        delete dartDownloadTemp
         // Fetch the Dart SDK from "custom ivy repo" set up above
-        println "Unzipping DART SDK to '$dartDownloadTemp'"
+        println "Unzipping Dart SDK to temp dir '$dartDownloadTemp'"
         copy {
             from zipTree(configurations.dartSdk.asPath)
             into "$dartDownloadTemp"
@@ -71,15 +71,22 @@ task updateDartDependencies() {
 
         // Move it into place - avoids problem if IntelliJ is set up to use the Dart SDK here ("Text file busy")
         // Note: If on Windows, you'll probably have to find another SDK location for IntelliJ, as it locks the files.
-        println "Renaming DART SDK download to '$dartDownload'"
+        println "Renaming Dart SDK download to '$dartDownload'"
         dartDownloadTemp.renameTo(dartDownload)
 
         // Update dart dependencies by executing 'pub get'
+        println "Executing 'dart pub get' to resolve and fetch dependencies."
         dartExec 'pub', 'get'
+        dartExec '--version' // Just to show which dart version we are using.
+
+        println "All good, cleaning Dart temp dir '$dartDownloadTemp'"
+        delete dartDownloadTemp
     }
 }
 
-task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
+def platformProp = providers.gradleProperty('platform')
+tasks.register('test') {
+    dependsOn 'updateDartDependencies', ':startMatsSocketTestServer'
     doLast {
         dartExec {
             // :: Setting environment for test run
@@ -87,17 +94,12 @@ task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
             // Checking which log level is enabled to pass on to the tests, so that they log if needed.
             if (logger.isEnabled(LogLevel.DEBUG)) {
                 environment("LOG_LEVEL", "DEBUG")
-            }
-            else if (logger.isEnabled(LogLevel.INFO)) {
+            } else if (logger.isEnabled(LogLevel.INFO)) {
                 environment("LOG_LEVEL", "INFO")
-            }
-            else {
+            } else {
                 environment("LOG_LEVEL", "SEVERE")
             }
-            def platform = "vm"
-            if (project.hasProperty('platform')) {
-                platform = project.getProperties()['platform']
-            }
+            def platform = platformProp.orElse('vm').get()
             def testFiles = file("$projectDir/test").listFiles().findAll { it.name.endsWith(".dart") }
             args = ['run', 'test'] + testFiles + ['-p', platform, '--reporter=expanded', '-j', '1']
         }
@@ -107,21 +109,23 @@ task test(dependsOn: ['updateDartDependencies', ':startMatsSocketTestServer']) {
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 
 // 'dart publish --dry-run'
-task publishDryRun(dependsOn:  updateDartDependencies) {
+tasks.register('publishDryRun') {
+    dependsOn updateDartDependencies
     doLast {
         dartExec 'publish', '--dry-run'
     }
 }
 
 // 'dart publish --force'
-task publish(dependsOn:  updateDartDependencies) {
+tasks.register('publish') {
+    dependsOn updateDartDependencies
     doLast {
         dartExec 'publish', '--force'
     }
 }
 
 // Package up the Dart library
-task archiveLib(type: Zip) {
+tasks.register('archiveLib', Zip) {
     from "$projectDir/lib"
     into "mats_socket-${project.version}-dart"
     archiveFileName = "mats_socket-${project.version}-dart.zip"
@@ -135,13 +139,7 @@ tasks.register('clean', Delete) {
     delete layout.buildDirectory
 }
 
-// "distclean": Clean out the downloaded Dart SDK and dependencies
-task distclean(type: Delete, dependsOn: [clean]) {
+tasks.register('distclean', Delete) {
+    dependsOn clean
     delete "$dartDownload"
-    delete "$projectDir/.dart_tool"
-    delete "$projectDir/.packages" // Old-style .dart_tool/package_config.json
-    delete "$projectDir/pubspec.lock"
-    doLast {
-        println "NOTICE: Not deleting '~/.pub-cache'"
-    }
 }

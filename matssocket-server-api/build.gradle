@@ -6,7 +6,7 @@ dependencies {
     api "javax.websocket:javax.websocket-api:$javaxWebsocketsVersion"
 }
 
-task distclean(dependsOn: [clean])
+tasks.register('distclean') { dependsOn clean }
 
 publishing {
     publications {
