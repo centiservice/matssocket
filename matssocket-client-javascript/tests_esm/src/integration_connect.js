@@ -424,6 +424,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
         it("Sends a message to a Server endpoint, which in a Thread closes this session - which should issue a SessionClosedEvent, and the closeEvent.code should be MatsSocketCloseCodes.CLOSE_SESSION.", function (done) {
             // :: We add a SessionClosedEvent listener, which will be invoked when we MatsSocket endpoint closes us.
             let sessionClosed = 0;
+            matsSocket.errorLogging = false; // Turn off annoying output of the CloseEvent to console.error which makes the test output ugly.
             matsSocket.addSessionClosedEventListener(function (closeEvent) {
                 chai.assert.equal(closeEvent.code, mats.MatsSocketCloseCodes.CLOSE_SESSION, "WebSocket CloseEvent's CloseCode should be MatsSocketCloseCodes.CLOSE_SESSION");
                 chai.assert.equal(closeEvent.codeName, "CLOSE_SESSION", "WebSocket CloseEvent should have 'codeName'==\"CLOSE_SESSION\".");

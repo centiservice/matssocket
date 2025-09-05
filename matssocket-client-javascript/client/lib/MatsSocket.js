@@ -153,6 +153,13 @@ function MatsSocket(appName, appVersion, urls, config) {
     this.logging = false;
 
     /**
+     * Whether to log errors via console.error. <b>Default <code>true</code></b>.
+     *
+     * @type {boolean}
+     */
+    this.errorLogging = true;
+
+    /**
      * "Out-of-band Close" refers to a small hack to notify the server about a MatsSocketSession being Closed even
      * if the WebSocket is not live anymore: When {@link MatsSocket#close} is invoked, an attempt is done to close
      * the WebSocket with CloseCode {@link MatsSocketCloseCodes.CLOSE_SESSION} - but whether the WebSocket is open
@@ -1377,10 +1384,12 @@ function MatsSocket(appName, appVersion, urls, config) {
             }
         }
 
-        if (err) {
-            console.error(type + ": " + msg, err);
-        } else {
-            console.error(type + ": " + msg);
+        if (that.errorLogging) {
+            if (err) {
+                console.error(type + ": " + msg, err);
+            } else {
+                console.error(type + ": " + msg);
+            }
         }
     }
 
@@ -2343,10 +2352,10 @@ function MatsSocket(appName, appVersion, urls, config) {
         }
     }
 
-    function _onerror(event) {
-        error("websocket.onerror", "Got 'onerror' event from WebSocket, instanceId:[" + event.target.webSocketInstanceId + "].", event);
+    function _onerror(errorEvent) {
+        error("websocket.onerror", "Got 'onerror' event from WebSocket, instanceId:[" + errorEvent.target.webSocketInstanceId + "].", errorEvent);
         // :: Synchronously notify our ConnectionEvent listeners.
-        _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.CONNECTION_ERROR, _currentWebSocketUrl, event, undefined, undefined, _connectionAttempt));
+        _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.CONNECTION_ERROR, _currentWebSocketUrl, errorEvent, undefined, undefined, _connectionAttempt));
     }
 
     function _onclose(closeEvent) {
