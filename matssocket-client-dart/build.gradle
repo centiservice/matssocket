@@ -125,13 +125,12 @@ registerDartTestTask('testVmSource', 'vm', 'source')
 registerDartTestTask('testVmKernel', 'vm', 'kernel')
 
 // Make 'test' be 'testVmKernel'
-tasks.register('test') {
-    dependsOn 'testVmKernel'
-}
+tasks.register('test') { dependsOn 'testVmKernel' }
 
-// Aggregate task to run all variants
-tasks.register('testAll') {
-    dependsOn 'testWebJs', 'testWebWasm', 'testVmExe', 'testVmSource', 'testVmKernel'
+// Aggregate tasks to run subset of, or all tests.
+tasks.register('testWeb') { dependsOn 'testWebJs', 'testWebWasm' }
+tasks.register('testVm') { dependsOn 'testVmExe', 'testVmSource', 'testVmKernel' }
+tasks.register('testAll') {dependsOn 'testWeb', 'testVm'
 }
 
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
