@@ -218,7 +218,9 @@ class MatsSocket {
         _connectionTimeoutMin = (urls.length > 1
             ? _connectionTimeoutBase
             : _connectionTimeoutMinIfSingleUrl) {
-    assert(urls.isNotEmpty, 'Must provide at least 1 url');
+    if (urls.isEmpty) {
+      throw ArgumentError.value(urls, 'urls', 'Must provide at least 1 url');
+    }
 
     _shuffleList(_useUrls);
 

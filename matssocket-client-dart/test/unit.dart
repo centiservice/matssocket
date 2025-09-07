@@ -16,7 +16,7 @@ void main() {
   group('MatsSocket constructor', () {
 
     test('Should fail on empty url list', () {
-      expect(() => MatsSocket('', '', [], transportMock), throwsA(TypeMatcher<AssertionError>()));
+      expect(() => MatsSocket('', '', [], transportMock), throwsA(TypeMatcher<ArgumentError>()));
     });
 
     test('Should accept a single wsUrl', () {
