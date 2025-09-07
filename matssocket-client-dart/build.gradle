@@ -19,7 +19,7 @@ configurations {
 }
 
 ext {
-    dartSdkVersion = '3.8.1'
+    dartSdkVersion = '3.9.2'
     dartDownloadTemp = file("$projectDir/dartsdk_download-temp")
     dartDownload = file("$projectDir/dartsdk_download")
     dartSdkPath = file("$dartDownload/dart-sdk")
@@ -60,8 +60,9 @@ def dartExec(Object... cmd) {
 
 tasks.register('updateDartDependencies') {
     doLast {
-        println "Pre-cleaning Dart temp dir '$dartDownloadTemp'"
-        delete dartDownloadTemp
+        println "Pre-cleaning Dart temp dir '$dartDownloadTemp' and target dir '$dartDownload'"
+        delete "$dartDownloadTemp"
+        delete "$dartDownload"
         // Fetch the Dart SDK from "custom ivy repo" set up above
         println "Unzipping Dart SDK to temp dir '$dartDownloadTemp'"
         copy {
@@ -80,7 +81,7 @@ tasks.register('updateDartDependencies') {
         dartExec '--version' // Just to show which dart version we are using.
 
         println "All good, cleaning Dart temp dir '$dartDownloadTemp'"
-        delete dartDownloadTemp
+        delete "$dartDownloadTemp"
     }
 }
 
@@ -102,6 +103,7 @@ tasks.register('test') {
             def platform = platformProp.orElse('vm').get()
             def testFiles = file("$projectDir/test").listFiles().findAll { it.name.endsWith(".dart") }
             args = ['run', 'test'] + testFiles + ['-p', platform, '--reporter=expanded', '-j', '1']
+            println "Executing 'dart ${args.join(" ")}' to run tests on platform '$platform'."
         }
     }
 }
@@ -112,7 +114,7 @@ rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 tasks.register('publishDryRun') {
     dependsOn updateDartDependencies
     doLast {
-        dartExec 'publish', '--dry-run'
+        dartExec 'pub', 'publish', '--dry-run'
     }
 }
 
@@ -120,7 +122,7 @@ tasks.register('publishDryRun') {
 tasks.register('publish') {
     dependsOn updateDartDependencies
     doLast {
-        dartExec 'publish', '--force'
+        dartExec 'pub', 'publish', '--force'
     }
 }
 
@@ -142,4 +144,6 @@ tasks.register('clean', Delete) {
 tasks.register('distclean', Delete) {
     dependsOn clean
     delete "$dartDownload"
+    delete "$dartDownloadTemp"
+    delete "$projectDir/.dart_tool"
 }
