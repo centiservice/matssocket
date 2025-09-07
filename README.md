@@ -2,13 +2,20 @@
 
 MatsSocket is a WebSocket-based client-server solution which bridges the asynchronous message based nature
 of [Mats<sup>3</sup>](https://github.com/centiservice/mats3) all the way out to your end user client applications,
-featuring bidirectional communication. It consists of a small MatsSocketServer API which is implemented on top of the _
-Mats<sup>3</sup> API_ and _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client
+featuring bidirectional communication. It consists of a small MatsSocketServer API which is implemented on top of the 
+_Mats<sup>3</sup> API_ and _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client
 libraries - for which there currently exists JavaScript and Dart/Flutter implementations.
 
 Java server API and implementation: [Maven Repository](https://mvnrepository.com/artifact/io.mats3.matssocket)  
 JavaScript client: [npm](https://www.npmjs.com/package/matssocket)  
 Dart/Flutter client: [pub.dev](https://pub.dev/packages/matssocket)
+
+**Instant boot after git clone**: To start the test server on localhost, run <code>./gradlew matsSocketTestServer</code>
+from project root, or run the <code>io.mats3.matssocket.MatsSocketTestServer</code> class from your IDE. Go
+to http://localhost:8080. It provides a menu of different examples, and can run the JS Client integration tests in the
+browser (which connects to the same server).
+
+## Overview
 
 To get a gist of how this works on the client, here is a small JavaScript client code example:
 ```javascript
@@ -155,7 +162,7 @@ matsSocket.subscribe("NewProductAnnouncements", function(messageEvent) {
 
 ## Authentication and Authorization
 
-Authentication is handled by a small authentication plugin on both client and server side, which is simple enough that
+Authentication is handled by a small authentication plugin on both client and server side. It is simple enough that
 you may use a cookie-based approach where the containing application already has authenticated and authorized the user
 and thus just want the MatsSocket to ride on that authentication. It is however also advanced enough to handle
 authentications with expiration times, e.g. direct use of Bearer access tokens, where both the MatsSocket and the
