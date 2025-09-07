@@ -16,12 +16,8 @@ void main() {
     });
 
     test('Version contains dart version', () {
-      expect(MatsSocketPlatform.create().version, contains('; dart,v'));
-    });
-
-    test('Only a single ; in the version, separating OS and Dart version', () {
-      // 2 parts, the OS part and the Dart part
-      expect(MatsSocketPlatform.create().version.split(RegExp('; ')), hasLength(2));
+      expect(MatsSocketPlatform.create().version, contains('MatsSocket.dart'));
+      expect(MatsSocketPlatform.create().version, anyOf(contains('User-Agent:'), contains('Host:')));
     });
 
   });

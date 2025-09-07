@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:logging/logging.dart';
 
 import 'MatsSocketPlatform.dart';
+import 'MatsSocket.dart' show CLIENT_LIB_NAME_AND_VERSION;
 
 final Logger _logger = Logger('MatsSocket.transportIO');
 
@@ -41,7 +42,7 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
     final osName = io.Platform.operatingSystem.replaceAll(RegExp('[;,]'), '|');
     final osVersion = io.Platform.operatingSystemVersion.replaceAll(RegExp(';'), ',');
     final dartVersion = io.Platform.version.replaceAll(RegExp(';'), ',');
-    return '$osName,v$osVersion; dart,v$dartVersion';
+    return '$CLIENT_LIB_NAME_AND_VERSION; Host: $osName,v$osVersion; Dart,v$dartVersion';
   }
 
   @override

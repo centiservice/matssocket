@@ -1850,14 +1850,14 @@ function MatsSocket(appName, appVersion, urls, config) {
         // :: Send PRE-pipeline messages, if there are any
         // (Before the HELLO is sent and sessionId is established, the max size of message is low on the server)
         if (_prePipeline.length > 0) {
-            if (that.logging) log("Flushing prePipeline of [" + _prePipeline.length + "] messages.");
+            if (that.logging) log("Flushing prePipeline of [" + _prePipeline.length + "] messages: " + JSON.stringify(_prePipeline));
             _webSocket.send(JSON.stringify(_prePipeline));
             // Clear prePipeline
             _prePipeline.length = 0;
         }
         // :: Send any pipelined messages.
         if (_pipeline.length > 0) {
-            if (that.logging) log("Flushing pipeline of [" + _pipeline.length + "] messages:" + JSON.stringify(_pipeline));
+            if (that.logging) log("Flushing pipeline of [" + _pipeline.length + "] messages: " + JSON.stringify(_pipeline));
             _webSocket.send(JSON.stringify(_pipeline));
             // Clear pipeline
             _pipeline.length = 0;

@@ -4,6 +4,7 @@ import 'dart:js_interop';
 import 'package:logging/logging.dart';
 
 import 'MatsSocketPlatform.dart';
+import 'MatsSocket.dart' show CLIENT_LIB_NAME_AND_VERSION;
 
 final Logger _logger = Logger('MatsSocket.transportHtml');
 
@@ -25,9 +26,7 @@ class MatsSocketPlatformWeb extends MatsSocketPlatform {
 
   @override
   String get version {
-    final userAgent = web.window.navigator.userAgent.replaceAll(RegExp('[;,]'), '|');
-
-    return '$userAgent; dart,vJS-Compiled';
+    return '$CLIENT_LIB_NAME_AND_VERSION; User-Agent: ${web.window.navigator.userAgent}';
   }
 
   @override

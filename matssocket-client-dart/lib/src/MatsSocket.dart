@@ -1364,15 +1364,14 @@ class MatsSocket {
     // :: Send PRE-pipeline messages, if there are any
     // (Before the HELLO is sent and sessionId is established, the max size of message is low on the server)
     if (_prePipeline.isNotEmpty) {
-      _logger.fine('Flushing prePipeline of ${_prePipeline.length} messages.');
-      _logger.info('Sending: ${jsonEncode(_prePipeline)}');
+      _logger.info('Flushing prePipeline of ${_prePipeline.length} messages: ' + jsonEncode(_prePipeline));
       _webSocket!.send(jsonEncode(_prePipeline));
       // Clear prePipeline
       _prePipeline.length = 0;
     }
     // :: Send any pipelined messages.
     if (_pipeline.isNotEmpty) {
-      _logger.fine('Flushing pipeline of ${_pipeline.length} messages:' + jsonEncode(_pipeline));
+      _logger.fine('Flushing pipeline of ${_pipeline.length} messages: ' + jsonEncode(_pipeline));
       _webSocket!.send(jsonEncode(_pipeline));
       // Clear pipeline
       _pipeline.length = 0;
