@@ -52,7 +52,7 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
 
   @override
   WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
-    return WebSocketMock(webSocketUri.toString(), websocketMessageHandler);
+    return MockWebSocket(webSocketUri.toString(), websocketMessageHandler);
   }
 
   @override
@@ -76,23 +76,24 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
   }
 
   @override
-  String get version => 'UnitTest version';
+  String get version => 'Mock Transport; dart,vMock';
 
 }
 
 typedef MessageHandler = Function(MatsSocketEnvelopeDto, Function(Iterable<MatsSocketEnvelopeDto>));
 
-class WebSocketMock extends WebSocket {
+/// Implementation of WebSocket that is a mock, and fakes the necessary server interaction.
+class MockWebSocket extends WebSocket {
   @override
   String url;
   final MessageHandler _messageHandler;
 
-  WebSocketMock(this.url, this._messageHandler) {
+  MockWebSocket(this.url, this._messageHandler) {
     // Open after 10ms
     Timer(Duration(milliseconds: 10), handleOpen);
   }
 
-  WebSocketMock.noop(String url): this(url, (envelope, sink) {
+  MockWebSocket.noop(String url): this(url, (envelope, sink) {
     switch (envelope.type) {
       case MessageType.HELLO:
         {

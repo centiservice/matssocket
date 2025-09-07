@@ -1,13 +1,12 @@
-import 'package:logging/logging.dart';
 import 'dart:io';
 
+import 'package:logging/logging.dart';
 import 'package:matssocket/src/ConnectionEvent.dart';
 
 List<Uri> loadServerUris() {
   var envUrls = Platform.environment['MATS_SOCKET_URLS'] ??
       'ws://localhost:8080/matssocket,ws://localhost:8081/matssocket';
   return envUrls.split(',').map((url) => Uri.parse(url)).toList();
-
 }
 
 int? code(ConnectionEvent connectionEvent) {

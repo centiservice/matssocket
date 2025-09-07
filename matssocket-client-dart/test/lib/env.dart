@@ -1,10 +1,10 @@
 import 'package:matssocket/matssocket.dart';
 import 'package:logging/logging.dart';
 
-import 'package:test_api/src/backend/invoker.dart' show Invoker;
 import 'env_html.dart' if (dart.library.io) 'env_io.dart' as delegate;
 
 var logContext = 'none';
+var serverUris = delegate.loadServerUris();
 
 /// Helper class to configure dart logging to print to stdout.
 void configureLogging() {
@@ -24,16 +24,10 @@ void configureLogging() {
 }
 
 MatsSocket createMatsSocket() {
-  var matsSocket = MatsSocket('TestApp', '1.2.3', delegate.loadServerUris());
+  var matsSocket = MatsSocket('TestApp', '1.2.3', serverUris);
   logContext = matsSocket.matsSocketInstanceId;
-  // Print rather than log the mats socket creation, so that the start of each test
-  // is marked clearly in the logs
-  print('=========== Created MatsSocket [${matsSocket.matsSocketInstanceId}] '
-      'for test [${Invoker.current?.liveTest.test.name}] ===========');
   return matsSocket;
 }
-
-var serverUris = delegate.loadServerUris();
 
 int? code(ConnectionEvent connectionEvent) {
   return delegate.code(connectionEvent);

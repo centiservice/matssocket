@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
+import 'dart:js_interop';
 import 'package:logging/logging.dart';
 
 import 'MatsSocketPlatform.dart';
@@ -7,75 +8,98 @@ import 'MatsSocketPlatform.dart';
 final Logger _logger = Logger('MatsSocket.transportHtml');
 
 class MatsSocketPlatformHtml extends MatsSocketPlatform {
-
   String? cookies;
+  // Keep a mapping from the Dart handler to the JS handler so we can remove by the same reference.
+  final Map<Function, JSFunction> _beforeUnloadJsHandlers = {};
 
   @override
   WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
     _logger.fine('Creating HTML WebSocket to $webSocketUri with protocol: $protocol');
-    return HtmlWebSocket.create(webSocketUri.toString(), protocol, authorization);
+    return WebWebSocket.create(webSocketUri.toString(), protocol, authorization);
   }
 
   @override
   Future<bool> closeSession(Uri closeUri, String sessionId) async {
-    return html.window.navigator.sendBeacon(closeUri.toString(), null);
+    return web.window.navigator.sendBeacon(closeUri.toString(), null);
   }
 
   @override
-  String get version => html.window.navigator.userAgent;
+  String get version {
+    final userAgent = web.window.navigator.userAgent.replaceAll(RegExp('[;,]'), '|');
+
+    return '$userAgent; dart,vJS-Compiled';
+  }
 
   @override
   ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
     final completer = Completer<int>();
-    // Create an XMLHttpRequest
-    final xhr = html.HttpRequest();
-    xhr.open('GET', websocketUri.toString().replaceAll('ws', 'http'));
-    xhr.setRequestHeader('Authorization', authorization!);
 
-    // Taken from html.HttpRequest.request in Dart html package.
-    xhr.onLoad.listen((e) async {
-      _logger.fine('  \\ - Received reply from server $e - status: ${xhr.status}');
-      // Get XHR's status
-      var status = xhr.status;
-      // ?: Was it a GOOD return?
-      if ((status == 200) || (status == 202) || (status == 204)) {
-        // -> Yes, it was good - supplying the status code
+    // Flip ws:// -> http:// and wss:// -> https:// safely (scheme only).
+    final httpUri = websocketUri!.scheme == 'wss'
+        ? websocketUri.replace(scheme: 'https')
+        : websocketUri.replace(scheme: 'http');
+
+    // Create an XMLHttpRequest (package:web)
+    final xhr = web.XMLHttpRequest();
+    xhr.open('GET', httpUri.toString());
+
+    if (authorization != null) {
+      xhr.setRequestHeader('Authorization', authorization);
+    }
+
+    xhr.onload = (web.Event e) {
+      final status = xhr.status;
+      if (status == 200 || status == 202 || status == 204) {
         completer.complete(status);
       } else {
-        // -> Not, it was BAD - supplying the status code
-        completer.completeError(status!);
+        completer.completeError(status);
       }
-    });
+    }.toJS;
+
+    xhr.onerror = (web.Event e) {
+      completer.completeError(-1);
+    }.toJS;
+
     xhr.withCredentials = true;
-    _logger.fine('Sending authorization headers to $websocketUri using XMLHttpRequest $xhr');
+
+    _logger.fine('Sending authorization headers to $httpUri using XMLHttpRequest $xhr');
     xhr.send();
-    return ConnectResult(xhr.abort, completer.future.timeout(Duration(seconds: 10)));
+
+    return ConnectResult(() => xhr.abort(), completer.future.timeout(const Duration(seconds: 10)));
   }
 
   @override
   void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
-    html.window.addEventListener('beforeunload', beforeunloadHandler);
+    final jsHandler = _beforeUnloadJsHandlers.remove(beforeunloadHandler);
+    if (jsHandler != null) {
+      web.window.removeEventListener('beforeunload', jsHandler);
+    }
   }
 
   @override
   void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
-    html.window.removeEventListener('beforeunload', beforeunloadHandler);
+    // Wrap the Dart handler into a JS-compatible EventListener and store its reference.
+    final jsHandler = ((web.Event e) {
+      beforeunloadHandler(e);
+    }).toJS;
+    _beforeUnloadJsHandlers[beforeunloadHandler] = jsHandler;
+    web.window.addEventListener('beforeunload', jsHandler);
   }
 
   @override
   double performanceTime() {
-    return html.window.performance.now();
+    return web.window.performance.now();
   }
-
 }
 
-class HtmlWebSocket extends WebSocket {
+/// Implementation of WebSocket using the browser's WebSocket API (package:web).
+class WebWebSocket extends WebSocket {
   String? _url;
-  late html.WebSocket _htmlWebSocket;
+  late web.WebSocket _htmlWebSocket;
 
-  HtmlWebSocket.create(String url, String protocol, String? authorization) {
+  WebWebSocket.create(String url, String protocol, String? authorization) {
     _url = url;
-    _htmlWebSocket = html.WebSocket(url, protocol);
+    _htmlWebSocket = web.WebSocket(url, protocol.toJS);
     _htmlWebSocket.onClose.forEach((closeEvent) {
       handleClose(closeEvent.code, closeEvent.reason, closeEvent);
     });
@@ -86,8 +110,8 @@ class HtmlWebSocket extends WebSocket {
     _htmlWebSocket.onOpen.forEach(handleOpen);
   }
 
-  static HtmlWebSocket connect(String url, String protocol, String authorization) {
-    return HtmlWebSocket.create(url, protocol, authorization);
+  static WebWebSocket connect(String url, String protocol, String authorization) {
+    return WebWebSocket.create(url, protocol, authorization);
   }
 
   @override
@@ -97,7 +121,7 @@ class HtmlWebSocket extends WebSocket {
 
   @override
   void send(String data) {
-    _htmlWebSocket.send(data);
+    _htmlWebSocket.send(data.toJS);
   }
 
   @override

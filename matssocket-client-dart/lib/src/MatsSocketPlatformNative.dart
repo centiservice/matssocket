@@ -1,15 +1,12 @@
-import 'dart:async';
 import 'dart:io' as io;
+import 'dart:async';
 import 'dart:isolate';
-
 import 'package:logging/logging.dart';
 
 import 'MatsSocketPlatform.dart';
 
 final Logger _logger = Logger('MatsSocket.transportIO');
 
-///
-///
 class MatsSocketPlatformNative extends MatsSocketPlatform {
   final ReceivePort _onExitPort = ReceivePort();
   final List<Function(dynamic)> _beforeUnloadHandles = [];
@@ -24,7 +21,7 @@ class MatsSocketPlatformNative extends MatsSocketPlatform {
 
   @override
   WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
-    return IOWebSocket.create(webSocketUri.toString(), protocol, authorization, _cookies);
+    return IoWebSocket.create(webSocketUri.toString(), protocol, authorization, _cookies);
   }
 
   @override
@@ -92,11 +89,12 @@ class MatsSocketPlatformNative extends MatsSocketPlatform {
   }
 }
 
-class IOWebSocket extends WebSocket {
+/// Implementation of WebSocket using native dart:io WebSocket.
+class IoWebSocket extends WebSocket {
   String? _url;
   io.WebSocket? _ioWebSocket;
 
-  IOWebSocket.create(String url, String protocol, String? authorization, List<io.Cookie> cookies) {
+  IoWebSocket.create(String url, String protocol, String? authorization, List<io.Cookie> cookies) {
     _url = url;
     var headers = {'Authorization': '$authorization'};
     if (cookies.isNotEmpty) {

@@ -50,7 +50,6 @@ class ConnectResult {
 }
 
 
-
 /// Handler for the open event, will be passed the native event as an argument, if any.
 typedef OpenHandler = void Function(WebSocket, dynamic);
 
