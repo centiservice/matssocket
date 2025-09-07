@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:web/web.dart' as web;
+import 'dart:async';
 import 'dart:js_interop';
 import 'package:logging/logging.dart';
 
@@ -7,7 +7,7 @@ import 'MatsSocketPlatform.dart';
 
 final Logger _logger = Logger('MatsSocket.transportHtml');
 
-class MatsSocketPlatformHtml extends MatsSocketPlatform {
+class MatsSocketPlatformWeb extends MatsSocketPlatform {
   String? cookies;
   // Keep a mapping from the Dart handler to the JS handler so we can remove by the same reference.
   final Map<Function, JSFunction> _beforeUnloadJsHandlers = {};
@@ -105,7 +105,7 @@ class WebWebSocket extends WebSocket {
     });
     _htmlWebSocket.onError.forEach(handleError);
     _htmlWebSocket.onMessage.forEach((messageEvent) {
-      handleMessage(messageEvent.data as String?, messageEvent);
+      handleMessage(messageEvent.data?.toString(), messageEvent);
     });
     _htmlWebSocket.onOpen.forEach(handleOpen);
   }
@@ -128,4 +128,4 @@ class WebWebSocket extends WebSocket {
   String? get url => _url;
 }
 
-MatsSocketPlatform createTransport() => MatsSocketPlatformHtml();
+MatsSocketPlatform createTransport() => MatsSocketPlatformWeb();

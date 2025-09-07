@@ -85,30 +85,55 @@ tasks.register('updateDartDependencies') {
     }
 }
 
-def platformProp = providers.gradleProperty('platform')
-tasks.register('test') {
-    dependsOn 'updateDartDependencies', ':startMatsSocketTestServer'
-    doLast {
-        dartExec {
-            // :: Setting environment for test run
-            environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
-            // Checking which log level is enabled to pass on to the tests, so that they log if needed.
-            if (logger.isEnabled(LogLevel.DEBUG)) {
-                environment("LOG_LEVEL", "DEBUG")
-            } else if (logger.isEnabled(LogLevel.INFO)) {
-                environment("LOG_LEVEL", "INFO")
-            } else {
-                environment("LOG_LEVEL", "SEVERE")
+def chromePath = providers.gradleProperty('chromePath')
+
+// Small helper to register a Dart test task with platform and compiler variants.
+def registerDartTestTask = { String name, String platform, String compiler ->
+    tasks.register(name) {
+        dependsOn 'updateDartDependencies', ':startMatsSocketTestServer'
+        doLast {
+            dartExec {
+                // :: Setting environment for test run
+                environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+                // Checking which log level is enabled to pass on to the tests, so that they log if needed.
+                if (logger.isEnabled(LogLevel.DEBUG)) {
+                    environment("LOG_LEVEL", "DEBUG")
+                } else if (logger.isEnabled(LogLevel.INFO)) {
+                    environment("LOG_LEVEL", "INFO")
+                } else {
+                    environment("LOG_LEVEL", "SEVERE")
+                }
+                def testFiles = file("$projectDir/test")
+                        .listFiles().findAll { it.name.endsWith(".dart") }.collect { "test/${it.name}" }
+                args = ['test', '-p', platform, '-c', compiler, '--reporter=expanded', '-j', '1'] + testFiles
+                if (platform == 'chrome' && chromePath.isPresent()) {
+                    environment("CHROME_EXECUTABLE", chromePath.get())
+                }
+                println "Executing 'dart ${args.join(" ")}' to run tests."
             }
-            def platform = platformProp.orElse('vm').get()
-            def testFiles = file("$projectDir/test").listFiles().findAll { it.name.endsWith(".dart") }
-            args = ['run', 'test'] + testFiles + ['-p', platform, '--reporter=expanded', '-j', '1']
-            println "Executing 'dart ${args.join(" ")}' to run tests on platform '$platform'."
         }
     }
 }
+
+// Define the various test tasks with their platform/compiler variants.
+registerDartTestTask('testWebJs', 'chrome', 'dart2js')
+registerDartTestTask('testWebWasm', 'chrome', 'dart2wasm')
+registerDartTestTask('testVmExe', 'vm', 'exe')
+registerDartTestTask('testVmSource', 'vm', 'source')
+registerDartTestTask('testVmKernel', 'vm', 'kernel')
+
+// Make 'test' be 'testVmKernel'
+tasks.register('test') {
+    dependsOn 'testVmKernel'
+}
+
+// Aggregate task to run all variants
+tasks.register('testAll') {
+    dependsOn 'testWebJs', 'testWebWasm', 'testVmExe', 'testVmSource', 'testVmKernel'
+}
+
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
-rootProject.stopMatsSocketTestServer.mustRunAfter(test)
+rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVmExe, testVmSource, testVmKernel, test, testAll)
 
 // 'dart publish --dry-run'
 tasks.register('publishDryRun') {

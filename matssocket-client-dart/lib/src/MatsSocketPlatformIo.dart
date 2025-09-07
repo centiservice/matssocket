@@ -7,12 +7,12 @@ import 'MatsSocketPlatform.dart';
 
 final Logger _logger = Logger('MatsSocket.transportIO');
 
-class MatsSocketPlatformNative extends MatsSocketPlatform {
+class MatsSocketPlatformIo extends MatsSocketPlatform {
   final ReceivePort _onExitPort = ReceivePort();
   final List<Function(dynamic)> _beforeUnloadHandles = [];
   final List<io.Cookie> _cookies = [];
 
-  MatsSocketPlatformNative() {
+  MatsSocketPlatformIo() {
     Isolate.current.addOnExitListener(_onExitPort.sendPort);
     _onExitPort.listen((data) {
       _beforeUnloadHandles.forEach((handler) => handler(data));
@@ -132,4 +132,4 @@ class IoWebSocket extends WebSocket {
   String? get url => _url;
 }
 
-MatsSocketPlatform createTransport() => MatsSocketPlatformNative();
+MatsSocketPlatform createTransport() => MatsSocketPlatformIo();

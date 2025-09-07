@@ -1,6 +1,6 @@
 import 'MatsSocketPlatformStub.dart'
-    if (dart.library.io) 'MatsSocketPlatformNative.dart'
-    if (dart.library.html) 'MatsSocketPlatformHtml.dart';
+    if (dart.library.io) 'MatsSocketPlatformIo.dart'
+    if (dart.library.js_interop) 'MatsSocketPlatformWeb.dart';
 
 typedef PreConnectOperation = ConnectResult Function(Uri?, String?);
 
