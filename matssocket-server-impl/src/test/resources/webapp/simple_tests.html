@@ -3,7 +3,7 @@
 <body>
 <h1>Testing 1, 2, 3</h1>
 
-NOTE! You must open the browser's DevTool Console to get any effect of this!
+NOTE! You must open the browser's DevTool Console to see what happens in the console log.
 
 <script type="module">
     import * as mats from './mats/client/lib/MatsSocket.js';
@@ -13,7 +13,7 @@ NOTE! You must open the browser's DevTool Console to get any effect of this!
             'ws://localhost:8080/matssocket', 'ws://localhost:8081/matssocket']); // <- These two should work
     // ['ws://localhost:5000/matssocket', 'ws://localhost:5001/matssocket', 'ws://localhost:5001/matssocket']); // <- All bogus
 
-    // ===== Configure the MatsSocket
+    // ===== Configure the MatsSocket, Listeners, and Terminator
 
     matsSocket.preconnectoperation = true;
     matsSocket.logging = true;
@@ -35,18 +35,10 @@ NOTE! You must open the browser's DevTool Console to get any effect of this!
        console.log("= PingPong listener!", pingPong);
     });
 
-    // Add three different InitiationProcessedEventListeners
+    // Add an InitiationProcessedEventListener
     matsSocket.addInitiationProcessedEventListener(function (initiationProcessedEvent) {
-        console.log("# InitiationProcessedEvent (false, false)!", initiationProcessedEvent);
-    });
-
-    matsSocket.addInitiationProcessedEventListener(function (initiationProcessedEvent) {
-        console.log("InitiationProcessedEvent (true, false)!", initiationProcessedEvent);
-    }, true);
-
-    matsSocket.addInitiationProcessedEventListener(function (initiationProcessedEvent) {
-        console.log("InitiationProcessedEvent (false, true)!", initiationProcessedEvent);
-    }, false, true);
+        console.log("Message finished processing: InitiationProcessedEvent from listener!", initiationProcessedEvent);
+    }, true, true); // true, true: includes the initiationMessage and replyMessageEvent
 
     // Create a Terminator for the requestReplyTo Requests.
     matsSocket.terminator("ClientSide.testEndpoint", function (messageEvent) {
