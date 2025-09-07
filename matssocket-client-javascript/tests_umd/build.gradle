@@ -17,7 +17,7 @@ tasks.register('test', YarnTask) {
     args = ['test']
     doFirst {
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
         }
     }
 }

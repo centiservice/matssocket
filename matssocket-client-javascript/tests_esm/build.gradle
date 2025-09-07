@@ -14,7 +14,7 @@ tasks.register('testBasic', YarnTask) {
     args = ['testBasic']
     doFirst {
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
         }
     }
 }
@@ -25,7 +25,7 @@ tasks.register('test', YarnTask) {
     args = ['test']
     doFirst {
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
         }
     }
 }
@@ -37,7 +37,7 @@ tasks.register('javascriptTestWatch', YarnTask) {
     args = ['test', '--watch']
     doFirst {
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
         }
     }
 }

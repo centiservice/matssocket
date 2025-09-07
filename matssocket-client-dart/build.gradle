@@ -85,16 +85,18 @@ tasks.register('updateDartDependencies') {
     }
 }
 
-def chromePath = providers.gradleProperty('chromePath')
 
 // Small helper to register a Dart test task with platform and compiler variants.
 def registerDartTestTask = { String name, String platform, String compiler ->
     tasks.register(name) {
         dependsOn 'updateDartDependencies', ':startMatsSocketTestServer'
+
+        def chromePath = providers.gradleProperty('chromePath')
+
         doLast {
             dartExec {
                 // :: Setting environment for test run
-                environment("MATS_SOCKET_URLS", rootProject.startMatsSocketTestServer.wsUrls.join(","))
+                environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
                 // Checking which log level is enabled to pass on to the tests, so that they log if needed.
                 if (logger.isEnabled(LogLevel.DEBUG)) {
                     environment("LOG_LEVEL", "DEBUG")

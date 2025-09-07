@@ -55,7 +55,7 @@ allprojects {
 }
 
 // Common config for the two Java subprojects
-configure ([project('matssocket-server-api'), project('matssocket-server-impl')]) {
+configure([project('matssocket-server-api'), project('matssocket-server-impl')]) {
     apply plugin: 'java-library'
     apply plugin: 'signing'
     apply plugin: 'maven-publish'
@@ -199,13 +199,10 @@ tasks.register('alljavadoc', Javadoc) {
 // .. ensure 'alljavadoc' is run together with './gradlew clean javadoc', thus building 'all' + submodules.
 javadoc.dependsOn alljavadoc
 
-// Task to start a MatsSocketTestServer for integration tests. We will monitor the log until we get the expected number
+// Task to start a MatsSocketTestServer. We will monitor the log until we get the expected number
 // of ws urls, that other tasks can then depend on
-tasks.register('startMatsSocketTestServer') {
+tasks.register('startMatsSocketTestServer_internal') {
     dependsOn configurations.testRuntimeClasspath, 'matssocket-server-impl:compileTestJava', 'matssocket-server-impl:processTestResources'
-    ext {
-        wsUrls = []
-    }
 
     // Precompute values at configuration time to avoid accessing Task.project during execution
     def matsSystemProps = ['mats.test.brokerurl', 'mats.test.broker']
@@ -222,7 +219,6 @@ tasks.register('startMatsSocketTestServer') {
 
     doLast {
         int numberOfServers = 3
-        String serverClassname = "io.mats3.matssocket.MatsSocketTestServer"
         logger.info("Starting MatsSocketTestServer");
 
         // :: Create cmd-line for MatsSocketTestServer Java-process to execute
@@ -236,14 +232,14 @@ tasks.register('startMatsSocketTestServer') {
         // Add classpath, from test's runtimeClasspath for both server-api and server-impl projects (precomputed above)
         cmd << "-classpath" << serverClasspath.asPath
         // The classname to execute, with argument which is the number of servers to start
-        cmd << serverClassname << numberOfServers.toString()
+        cmd << matsSocketTestServerClassname << numberOfServers.toString()
 
         // Execute!
         // println "MatsSocketTestServer: Executing: ${cmd.join(" ")}" // Verbose due to classpath
         Process server = cmd.execute()
 
         // Keep a log file of the server output
-        File logFile = new File("${layout.buildDirectory.get().asFile}/logs/matsSocketServer-${LocalDateTime.now().withNano(0)}.log".replace(':', '.'))
+        logFile = new File("${layout.buildDirectory.get().asFile}/logs/matsSocketServer-${LocalDateTime.now().withNano(0)}.log".replace(':', '.'))
         println "MatsSocketTestServer: Logging to ${logFile.path}"
         logFile.parentFile.mkdirs();
 
@@ -268,10 +264,10 @@ tasks.register('startMatsSocketTestServer') {
         if (wsUrls.isEmpty()) {
             server.errorStream.eachLine { logger.error(it) }
             logger.error("Failed to execute: [${cmd.join(" ")}]")
-            throw new GradleException("Failed to start $serverClassname, check log above for command.")
+            throw new GradleException("Failed to start $matsSocketTestServerClassname, check log above for command.")
         }
-        println "MatsSocketTestServer started"
-        logger.info "$serverClassname started"
+        println "MatsSocketTestServer: Started, WebSocket URLs: ${wsUrls}"
+        logger.info "$matsSocketTestServerClassname started, WebSocket URLs: ${wsUrls}"
 
         // Fork a new thread to just keep reading and logging the MatsSocketTestServer
         // Notice: It will exit once the process exits, as the reader will then be done.
@@ -285,6 +281,41 @@ tasks.register('startMatsSocketTestServer') {
         }, "MatsSocketTestServer-logprinter").start()
     }
 }
+ext {
+    matsSocketTestServerClassname = "io.mats3.matssocket.MatsSocketTestServer"
+    wsUrls = []
+    logFile = null
+}
+
+// Task for starting the MatsSocketTestServer and keeping it alive - so that it can be accessed and used from command
+// line tests etc.
+tasks.register('matsSocketTestServer') {
+    dependsOn 'startMatsSocketTestServer_internal'
+    doLast {
+        println ''
+        println "MatsSocketTestServer is running!  (class: ${matsSocketTestServerClassname})"
+        println ''
+        println "HTTP URLs:       " + wsUrls.collect { it.replace("ws://", "http://").replace("/matssocket", "") }
+        println "MatsSocket URLs: ${wsUrls}"
+        println 'Logfile:         ' + (logFile != null ? logFile.path : "Unknown")
+        println ''
+        println '  #####################################################################'
+        println '  ### PRESS [Enter] IN THIS TERMINAL WINDOW TO TERMINATE THE SERVER ###'
+        println '  #####################################################################'
+        println ''
+        try {
+            System.in.withReader { it.readLine() }
+        } catch (ignore) {
+            // no-op
+        }
+        println 'Stopping MatsSocketTestServer...'
+    }
+}
+
+// Task to start a MatsSocketTestServer for integration tests in gradle, that will be stopped when the build is done.
+tasks.register('startMatsSocketTestServer') {
+    dependsOn 'startMatsSocketTestServer_internal'
+}
 
 // Stop the MatsSocketTestServer, this is done by inspecting the wsUrls field on the start task,
 // and creating a url to the shutdown page based on the first websocket url. The shutdown page is
@@ -292,7 +323,7 @@ tasks.register('startMatsSocketTestServer') {
 tasks.register('stopMatsSocketTestServer') {
     dependsOn startMatsSocketTestServer
     doLast {
-        String shutdownUrl = startMatsSocketTestServer.wsUrls[0]
+        String shutdownUrl = wsUrls[0]
                 .replace("ws://", "http://")
                 .replace("/matssocket", "/shutdown");
         logger.info("Shutting down MatsSocketTestServer by invoking '$shutdownUrl")
@@ -305,6 +336,7 @@ tasks.register('stopMatsSocketTestServer') {
 
 // Make sure that the startMatsSocketTestServer is finalized and shut down.
 startMatsSocketTestServer.finalizedBy(stopMatsSocketTestServer)
+matsSocketTestServer.finalizedBy(stopMatsSocketTestServer)
 
 // ------------------------------------------------
 // -- Simple tools
