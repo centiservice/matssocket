@@ -6,7 +6,7 @@ import org.gradle.internal.jvm.Jvm
 
 // mats-websockets
 plugins {
-    id 'com.github.node-gradle.node' version '3.1.0'
+    id 'com.github.node-gradle.node' version '7.1.0'
     id 'java-library'
     id 'signing'
     id 'maven-publish'
@@ -38,6 +38,10 @@ ext {
 
     // .. full path for the JMS lib
     jmsApiDependency = 'jakarta.jms:jakarta.jms-api:2.0.3'
+
+    // Build tools
+    nodeVersion = '24.7.0' // Current as of 2025-09-08, will become LTS.
+    dartSdkVersion = '3.9.2'
 }
 
 // :: Find which Java version to use for the toolchain.
@@ -175,6 +179,12 @@ configure([project('matssocket-server-api'), project('matssocket-server-impl')])
                 }
             }
         }
+    }
+
+    // Clean out 'out' directory that may be created by IntelliJ.
+    tasks.register('distclean', Delete) {
+        dependsOn clean
+        delete "$projectDir/out/"
     }
 
     // Tasks to publish to Sonatype's OSSRH (OSS Repository Hosting), Snapshot and Staging
@@ -338,10 +348,20 @@ tasks.register('stopMatsSocketTestServer') {
 startMatsSocketTestServer.finalizedBy(stopMatsSocketTestServer)
 matsSocketTestServer.finalizedBy(stopMatsSocketTestServer)
 
+// Clean out random directories that I've seen pop up..
+tasks.register('distclean', Delete) {
+    dependsOn clean
+    delete "$projectDir/build/"
+    delete "$projectDir/build-gradle/"
+    delete "$projectDir/.gradle/nodejs/"
+    delete "$projectDir/.gradle/yarn/"
+}
+
 // ------------------------------------------------
 // -- Simple tools
 
 tasks.register('systemInformation') {
+    dependsOn 'versions'
     doLast {
         println "\n** Java properties [System.getProperties()], sorted:\n"
         System.properties.sort().each { k, v ->
@@ -358,3 +378,10 @@ tasks.register('systemInformation') {
     }
 }
 
+tasks.register('versions') {
+    doLast {
+        println "** Gradle Version: " + gradle.gradleVersion
+        println "** Java Version:   " + System.getProperty("java.version")
+        println "** Groovy Version: " + GroovySystem.getVersion()
+    }
+}

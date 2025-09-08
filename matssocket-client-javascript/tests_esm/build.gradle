@@ -2,15 +2,17 @@
 
 apply from: '../node.gradle'
 
+tasks.register('build') {dependsOn test }
+
 // Execute only the unit tests
-tasks.register('testUnit', YarnTask) {
-    dependsOn ':matssocket-client-javascript:client:build', 'yarn'
+tasks.register('testUnit', NpmTask) {
+    dependsOn npmInstall, ':matssocket-client-javascript:client:build'
     args = ['testUnit']
 }
 
 // Execute only the basic tests
-tasks.register('testBasic', YarnTask) {
-    dependsOn 'cleanNodeModules', 'yarn', ':startMatsSocketTestServer'
+tasks.register('testBasic', NpmTask) {
+    dependsOn npmInstall, ':startMatsSocketTestServer'
     args = ['testBasic']
     doFirst {
         execOverrides {
@@ -20,8 +22,8 @@ tasks.register('testBasic', YarnTask) {
 }
 
 // Execute both unit and integration tests against a test MatsSocketTestServer
-tasks.register('test', YarnTask) {
-    dependsOn 'cleanNodeModules', 'yarn', ':startMatsSocketTestServer'
+tasks.register('test', NpmTask) {
+    dependsOn npmInstall, ':startMatsSocketTestServer'
     args = ['test']
     doFirst {
         execOverrides {
@@ -32,8 +34,8 @@ tasks.register('test', YarnTask) {
 
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
-tasks.register('javascriptTestWatch', YarnTask) {
-    dependsOn 'cleanNodeModules', 'yarn', ':startMatsSocketTestServer'
+tasks.register('javascriptTestWatch', NpmTask) {
+    dependsOn npmInstall, ':startMatsSocketTestServer'
     args = ['test', '--watch']
     doFirst {
         execOverrides {
@@ -46,17 +48,7 @@ tasks.register('javascriptTestWatch', YarnTask) {
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
 
-tasks.register('cleanNodeModules', Delete) {
-    delete "$projectDir/node_modules/"
-}
-
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
     delete "$projectDir/bundles/"
-}
-
-// Clean out the downloaded node & yarn
-tasks.register('distclean', Delete) {
-    dependsOn clean, cleanNodeModules
-    delete "$projectDir/node_download/"
 }

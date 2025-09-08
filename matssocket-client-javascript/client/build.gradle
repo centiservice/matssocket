@@ -13,25 +13,33 @@ apply from: '../node.gradle'
  * Using this blog post as reference:
  * https://dev.to/remshams/rolling-up-a-multi-module-system-esm-cjs-compatible-npm-library-with-typescript-and-babel-3gjg
  */
-tasks.register('build', YarnTask) {
-    dependsOn yarn, jsdoc, archiveLib
-    args = ['build']
-    inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
+tasks.register('build', NpmTask) {
+    dependsOn npmInstall, jsdoc, archiveLib
+    args = ['run', 'build']
+    inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('bundles')
 }
 
-tasks.register('jsdoc', YarnTask) {
-    dependsOn yarn
-    args = ['jsdoc']
-    inputs.files('package.json', 'yarn.lock', 'rollup.config.js')
+tasks.register('jsdoc', NpmTask) {
+    dependsOn npmInstall
+    args = ['run', 'jsdoc']
+    inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('jsdoc')
+    doLast {
+        println("##### JavaScript Client API docs: " + file("$projectDir/jsdoc/index.html").toURI())
+    }
+}
+
+tasks.register('packDryRun', NpmTask) {
+    dependsOn build
+    args = ['pack', '--dry-run']
 }
 
 tasks.register('publishDryRun', NpmTask) {
-    dependsOn build
-    args = ['publish', '--dry-run']
+    dependsOn packDryRun
+    args = ['publish', '--dry-run', '--tag', 'experimental']
 }
 
 tasks.register('publishExperimental', NpmTask) {
@@ -51,8 +59,7 @@ tasks.register('publish', NpmTask) {
 
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
-tasks.register('javascriptTestWatch', YarnTask) {
-    dependsOn yarn
+tasks.register('javascriptTestWatch', NpmTask) {
     args = ['test', '--watch']
     workingDir = file('./tests')
 }
@@ -63,20 +70,29 @@ tasks.register('archiveLib', Zip) {
     into "matssocket-${project.version}-js"
     def destinationDir = layout.buildDirectory.dir("dist").get().asFile
     def archiveName = "matssocket-${project.version}-js.zip"
-    println("JavaScript Client zip: " + destinationDir + "/" + archiveName)
     destinationDirectory = destinationDir
     archiveFileName = archiveName
+    doLast {
+        println("##### JavaScript Client zip: " + destinationDir + "/" + archiveName)
+    }
 }
+
+// Versions of Node
+tasks.register('nodeVersion', NodeTask) {
+    script = file('./dummy_empty.js')
+    options = ['--version']
+}
+
+// Versions of npm
+tasks.register('npmVersion', NpmTask) {
+    args = ['--version']
+}
+
+// Versions
+tasks.register('versions') {dependsOn nodeVersion, npmVersion }
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
     delete "$projectDir/bundles/"
     delete "$projectDir/jsdoc/"
-}
-
-// Clean out the downloaded node & yarn
-tasks.register('distclean', Delete) {
-    dependsOn clean
-    delete "$projectDir/node_download/"
-    delete "$projectDir/node_modules/"
 }

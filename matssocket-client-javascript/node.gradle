@@ -2,27 +2,59 @@ apply plugin: 'com.github.node-gradle.node'
 
 node {
     // Version of node to use.
-    version = '18.12.1'
-
-    // Version of Yarn to use.
-    yarnVersion = '1.22.5'
+    version = "$nodeVersion"
 
     // Download node rather than using global
     download = true
 
-    nodeModulesDir = file(projectDir)
-
     // Set the work directories
     workDir = file("$projectDir/node_download/nodejs")
     npmWorkDir = file("$projectDir/node_download/npm")
-    yarnWorkDir = file("$projectDir/node_download/yarn")
 }
 
-// :: Versions of node tools
-tasks.register('node_version', NodeTask) {
-    script = file('./dummy_empty.js')
-    options = ['--version']
+// :: Cleaning tasks
+
+// Delete package-lock.json
+tasks.register('deletePackageLock', Delete) {
+    delete "$projectDir/package-lock.json"
 }
-tasks.register('versions') {
-    dependsOn 'node_version', 'yarn_version'
+
+// Delete node_modules
+tasks.register('deleteNodeModules', Delete) {
+    delete "$projectDir/node_modules/"
 }
+
+// Clean out the downloaded node and modules
+tasks.register('distclean', Delete) {
+    dependsOn clean, deleteNodeModules
+    delete "$projectDir/node_download/"
+    delete "$projectDir/.gradle/" // If Yarn is accidentally used, it puts stuff here.
+}
+
+// :: Update npm dependencies tasks
+
+// :: 'npmUpdate' to
+tasks.register('npmUpdate', NpmTask) {
+    dependsOn deletePackageLock, deleteNodeModules, npmInstall
+    args = ['update']
+}
+npmInstall.mustRunAfter deletePackageLock
+npmInstall.mustRunAfter deleteNodeModules
+
+tasks.register('npmCheckUpdates', NpxTask) {
+    command = 'npm-check-updates@latest'
+}
+
+// :: 'npmCheckUpdatesUpdate' to force update of all deps, ignore specified versions in package.json.
+tasks.register('npmCheckUpdatesUpdate_internal', NpxTask) {
+    command = 'npm-check-updates@latest'
+    args = ['-u']
+}
+tasks.register('npmCheckUpdatesUpdate') {dependsOn npmCheckUpdatesUpdate_internal, npmUpdate }
+npmUpdate.mustRunAfter npmCheckUpdatesUpdate_internal
+
+tasks.register('npmAudit', NpmTask) {
+    dependsOn npmInstall
+    args = ['audit']
+}
+

@@ -19,7 +19,7 @@ configurations {
 }
 
 ext {
-    dartSdkVersion = '3.9.2'
+    dartSdkVersion = "$dartSdkVersion"
     dartDownloadTemp = file("$projectDir/dartsdk_download-temp")
     dartDownload = file("$projectDir/dartsdk_download")
     dartSdkPath = file("$dartDownload/dart-sdk")
@@ -39,6 +39,10 @@ dependencies {
     else {
         throw new GradleException("Unsupported OS for Dart SDK: ${os.toString()}")
     }
+}
+
+tasks.register('build') {
+    dependsOn archiveLib, test
 }
 
 // Small helper to run the Dart executable with common configuration.
@@ -85,6 +89,27 @@ tasks.register('updateDartDependencies') {
     }
 }
 
+tasks.register('dartOutdated') {
+    dependsOn updateDartDependencies
+    doLast {
+        dartExec 'pub', 'outdated'
+    }
+}
+
+tasks.register('dartUpgradeUpdate') {
+    dependsOn updateDartDependencies
+    doLast {
+        dartExec 'pub', 'upgrade', '--major-versions'
+    }
+}
+
+tasks.register('dartVersion') {
+    dependsOn updateDartDependencies
+    doLast {
+        dartExec '--version'
+    }
+}
+tasks.register('versions') { dependsOn dartVersion }
 
 // Small helper to register a Dart test task with platform and compiler variants.
 def registerDartTestTask = { String name, String platform, String compiler ->
@@ -130,8 +155,7 @@ tasks.register('test') { dependsOn 'testVmKernel' }
 // Aggregate tasks to run subset of, or all tests.
 tasks.register('testWeb') { dependsOn 'testWebJs', 'testWebWasm' }
 tasks.register('testVm') { dependsOn 'testVmExe', 'testVmSource', 'testVmKernel' }
-tasks.register('testAll') {dependsOn 'testWeb', 'testVm'
-}
+tasks.register('testAll') {dependsOn 'testWeb', 'testVm' }
 
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
 rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVmExe, testVmSource, testVmKernel, test, testAll)
@@ -158,10 +182,10 @@ tasks.register('archiveLib', Zip) {
     into "mats_socket-${project.version}-dart"
     archiveFileName = "mats_socket-${project.version}-dart.zip"
     destinationDirectory.set(layout.buildDirectory.dir("dist"))
+    doLast {
+        println("##### Dart Client zip: " + destinationDirectory.get().asFile + "/" + archiveFileName)
+    }
 }
-
-// Include the packaging of the lib into the main build
-rootProject.build.dependsOn(archiveLib)
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory

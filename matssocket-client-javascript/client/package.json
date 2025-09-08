@@ -19,20 +19,20 @@
 
   "files": ["lib/", "bundles/", "build.gradle", "rollup.config.js"],
 
-  "dependencies": {
-    "ws": "^7.2.1"
-  },
-
   "scripts": {
     "prebuild": "tsc",
     "build": "rollup --config",
     "jsdoc": "jsdoc --destination jsdoc/ lib/*"
   },
 
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+
   "devDependencies": {
-    "rollup": "^2.52.7",
-    "rollup-plugin-terser": "^7.0.2",
-    "typescript": "^4.8.4",
-    "jsdoc": "^4.0.0"
+    "rollup": "^4.50.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "typescript": "^5.9.2",
+    "jsdoc": "^4.0.4"
   }
 }

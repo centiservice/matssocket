@@ -51,8 +51,6 @@ dependencies {
     testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
-tasks.register('distclean') { dependsOn 'clean' }
-
 publishing {
     publications {
         mavenJava(MavenPublication) {

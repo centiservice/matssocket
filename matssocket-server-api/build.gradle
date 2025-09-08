@@ -6,8 +6,6 @@ dependencies {
     api "javax.websocket:javax.websocket-api:$javaxWebsocketsVersion"
 }
 
-tasks.register('distclean') { dependsOn clean }
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
