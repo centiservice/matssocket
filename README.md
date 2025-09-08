@@ -15,6 +15,24 @@ from project root, or run the <code>io.mats3.matssocket.MatsSocketTestServer</co
 to http://localhost:8080. It provides a menu of different examples, and can run the JS Client integration tests in the
 browser (which connects to the same server).
 
+**A few Gradle tasks:**
+* `./gradlew matsSocketTestServer` - starts a test server, with a webapp on localhost:8080.
+* `./gradlew build` - builds the Java code, JS ESM and UMD bundles, and runs 'test' tasks.
+* `./gradlew test` - runs tests, both JS in ESM and UMD mode, and Dart in VM/Kernel mode. (You can run JS tests in
+  the browser using the test server, see above.)
+* `./gradlew matssocket-client-dart:testAll` - runs the Dart tests for all platforms and compilers, including in chrome
+  (headless), read more in [matssocket-client-dart/README.md](matssocket-client-dart/README.md).
+* `./gradlew clean` - deletes all build output.
+* `./gradlew distclean` - .. also deletes all downloaded dependencies like Node and Dart SDKs - `distclean build` for a
+  fully fresh build.
+* `./gradlew npmCheckUpdates` - check all JS deps in package.json for newer versions, `npmCheckUpdatesUpdate` to force
+  update.
+* `./gradlew dartOutdated` - check all Dart deps in pubspec.yaml for newer versions, `dartUpgradeUpdate` to force
+  update.
+* `./gradlew publishDryRun` - runs dry-run publish of Dart (pub.dev) and JS (npm).
+* `./gradlew versions` - displays versions of all tooling.
+* `./gradlew allDeps` - Library dependencies for Java projects.
+
 ## Overview
 
 To get a gist of how this works on the client, here is a small JavaScript client code example:
