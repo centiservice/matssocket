@@ -1,0 +1,86 @@
+# EndreXY 2025-09-09: Based on Mats3's CI.
+#
+# Based on: https://docs.github.com/en/enterprise-cloud@latest/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+#  and: https://github.com/gradle/actions/blob/main/setup-gradle/README.md#caching-build-state-between-jobs
+#  and: https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs
+
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '16 */6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  java_versions:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        javaversion: [11, 17, 21]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ matrix.javaversion }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.javaversion }}
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+    - name: Build with Gradle
+      run: ./gradlew -Pmats.build.java_version=${{ matrix.javaversion }} distclean build
+
+
+  alternative_os:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        javaversion: [11]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.javaversion }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.javaversion }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Build with Gradle
+        run: ./gradlew distclean build
+
+  with_artemis:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        javaversion: [11]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.javaversion }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.javaversion }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Build with Gradle
+        run: ./gradlew -Pmats.test.broker=artemis distclean build
