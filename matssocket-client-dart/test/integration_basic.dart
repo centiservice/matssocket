@@ -261,22 +261,22 @@ void main() {
 
         var req1 = matsSocket.requestReplyTo(
             'Test.single',
-            'REQUEST-with-ReplyTo_Pipeline_1_${id(6)}',
+            'REQUEST-with-ReplyTo_Pipeline_msg1of3_${id(6)}',
             {'string': 'Messge 1', 'number': 100.001, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
             'ClientSide.testEndpoint',
-            correlationInformation: 'pipeline_1_${id(10)}');
+            correlationInformation: 'pipeline_msg1of3_${id(10)}');
         var req2 = matsSocket.requestReplyTo(
             'Test.single',
-            'REQUEST-with-ReplyTo_Pipeline_2_${id(6)}',
+            'REQUEST-with-ReplyTo_Pipeline_msg2of3_${id(6)}',
             {'string': 'Message 2', 'number': 200.002, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
             'ClientSide.testEndpoint',
-            correlationInformation: 'pipeline_2_${id(10)}');
+            correlationInformation: 'pipeline_msg2of3_${id(10)}');
         var req3 = matsSocket.requestReplyTo(
             'Test.single',
-            'REQUEST-with-ReplyTo_Pipeline_3_${id(6)}',
+            'REQUEST-with-ReplyTo_Pipeline_msg3of3_${id(6)}',
             {'string': 'Message 3', 'number': 300.003, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
             'ClientSide.testEndpoint',
-            correlationInformation: 'pipeline_3_${id(10)}');
+            correlationInformation: 'pipeline_msg3of3_${id(10)}');
         matsSocket.flush();
 
         // Wait for the last future, to ensure all processing done, and that the test completer is
