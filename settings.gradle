@@ -1,3 +1,21 @@
+import java.nio.charset.Charset
+
+// From https://docs.gradle.org/current/userguide/github-actions.html
+// To run a build scan locally, either force this block to kick in by: $ CI=true ./gradlew build
+// Or run the build with: $ ./gradlew build --scan
+plugins {
+    id "com.gradle.enterprise" version "3.14.1"
+}
+gradleEnterprise {
+    if (System.getenv("CI") != null) {
+        buildScan {
+            publishAlways()
+            termsOfServiceUrl = "https://gradle.com/terms-of-service"
+            termsOfServiceAgree = "yes"
+        }
+    }
+}
+
 rootProject.name = 'matssocket'
 
 include 'matssocket-server-api', 'matssocket-server-impl',
@@ -6,5 +24,5 @@ include 'matssocket-server-api', 'matssocket-server-impl',
         'matssocket-client-dart'
 
 println "** Java: ${ System.getProperty('java.version') }, Groovy: $GroovySystem.version," +
-        " Gradle: ${ gradle.gradleVersion }   (printed from settings.gradle)"
-
+        " Gradle: ${ gradle.gradleVersion }, Charset.defaultCharset(): ${Charset.defaultCharset() }" +
+        "   (printed from settings.gradle)"
