@@ -249,7 +249,7 @@ tasks.register('startMatsSocketTestServer_internal') {
         Process server = cmd.execute()
 
         // Keep a log file of the server output
-        logFile = new File("${layout.buildDirectory.get().asFile}/logs/matsSocketServer-${LocalDateTime.now().withNano(0)}.log".replace(':', '.'))
+        logFile = new File("${layout.buildDirectory.get().asFile}/logs/matsSocketServer-${LocalDateTime.now().withNano(0).toString().replace(':', '.')}.log")
         println "MatsSocketTestServer: Logging to ${logFile.path}"
         logFile.parentFile.mkdirs();
 
