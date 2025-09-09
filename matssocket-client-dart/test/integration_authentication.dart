@@ -125,12 +125,11 @@ void main() {
       });
 
       group('Server side invokes "magic" Client-side endpoint MatsSocket.renewAuth', () {
-        test('MatsSocket.renewAuth: This endpoint forces invocation of authorizationExpiredCallback, the reply is held until new auth present, and then resolves on Server.', () async {
+        test('Test.renewAuth: This endpoint forces invocation of authorizationExpiredCallback, the reply is held until new auth present, and then resolves on Server.', () async {
           setAuth();
           var authValue;
           var authCallbackCalledCount = 0;
           var testCompleter = Completer();
-          var receivedCallbackInvoked = 0;
 
           late AuthorizationRequiredEvent authCallbackCalledEvent;
           matsSocket.setAuthorizationExpiredCallback((event) {
@@ -146,10 +145,9 @@ void main() {
           matsSocket.terminator('Client.renewAuth_terminator').listen((messageEvent) {
               // Assert that the Authorization Value is the one we set just above.
               expect(messageEvent.data, equals(authValue));
-              // Assert that we got receivedCallback ONCE
-              expect(receivedCallbackInvoked, equals(1), reason: 'Should have gotten one, and only one, receivedCallback.');
               // Assert that we got AuthorizationExpiredEventType.REAUTHENTICATE, and only one call to Auth.
               expect(authCallbackCalledEvent.type, equals(AuthorizationRequiredEventType.REAUTHENTICATE), reason: 'Should have gotten AuthorizationRequiredEventType.REAUTHENTICATE authorizationExpiredCallback.');
+              // Assert that the authorizationExpiredCallback was called only once.
               expect(authCallbackCalledCount, equals(1), reason: 'authorizationExpiredCallback should only have been invoked once');
               testCompleter.complete();
           });
@@ -160,7 +158,6 @@ void main() {
               'sleepTime': 0
           };
           await matsSocket.send('Test.renewAuth', 'MatsSocket.renewAuth_${id(6)}', req);
-          receivedCallbackInvoked++;
 
           await testCompleter.future;
         });

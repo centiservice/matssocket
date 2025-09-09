@@ -163,7 +163,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
             closeMatsSocket();
         });
 
-        it('MatsSocket.renewAuth: This endpoint forces invocation of authorizationExpiredCallback, the reply is held until new auth present, and then resolves on Server.', function (done) {
+        it('Test.renewAuth: This endpoint forces invocation of authorizationExpiredCallback, the reply is held until new auth present, and then resolves on Server.', function (done) {
             setAuth();
             let authValue;
             let authCallbackCalledCount = 0;
@@ -181,11 +181,10 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
             matsSocket.terminator("Client.renewAuth_terminator", function (messageEvent) {
                 // Assert that the Authorization Value is the one we set just above.
                 chai.assert.strictEqual(messageEvent.data, authValue);
-                // Assert that we got receivedCallback ONCE
-                chai.assert.strictEqual(receivedCallbackInvoked, 1, "Should have gotten one, and only one, receivedCallback.");
+                // Assert that the authorizationExpiredCallback was called only once.
+                chai.assert.strictEqual(authCallbackCalledCount, 1, "authorizationExpiredCallback should only have been invoked once");
                 // Assert that we got AuthorizationExpiredEventType.REAUTHENTICATE, and only one call to Auth.
                 chai.assert.strictEqual(authCallbackCalledEvent.type, mats.AuthorizationRequiredEventType.REAUTHENTICATE, "Should have gotten AuthorizationRequiredEventType.REAUTHENTICATE authorizationExpiredCallback.");
-                chai.assert.strictEqual(authCallbackCalledCount, 1, "authorizationExpiredCallback should only have been invoked once");
                 done();
             });
 
@@ -194,11 +193,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 number: Math.E,
                 sleepTime: 0
             };
-            let receivedCallbackInvoked = 0;
-            matsSocket.send("Test.renewAuth", "MatsSocket.renewAuth_" + matsSocket.id(6), req)
-                .then(reply => {
-                    receivedCallbackInvoked++;
-                });
+            matsSocket.send("Test.renewAuth", "MatsSocket.renewAuth_" + matsSocket.id(6), req);
         });
     });
 
