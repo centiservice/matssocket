@@ -22,7 +22,7 @@
   "scripts": {
     "prebuild": "tsc",
     "build": "rollup --config",
-    "jsdoc": "jsdoc --destination jsdoc/ lib/*"
+    "jsdoc": "jsdoc --destination jsdoc/ lib/"
   },
 
   "dependencies": {

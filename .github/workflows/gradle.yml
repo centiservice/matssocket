@@ -18,10 +18,33 @@ permissions:
   contents: read
 
 jobs:
+  java_versions:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        javaversion: [11, 17, 21]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ matrix.javaversion }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.javaversion }}
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+    - name: Build with Gradle
+      run: ./gradlew -Pmats.build.java_version=${{ matrix.javaversion }} distclean build
+
+
   alternative_os:
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [macos-latest, windows-latest]
         javaversion: [11]
 
     runs-on: ${{ matrix.os }}
@@ -38,4 +61,26 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Build with Gradle
-        run: ./gradlew distclean build --info --stacktrace
+        run: ./gradlew distclean build
+
+  with_artemis:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        javaversion: [11]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.javaversion }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.javaversion }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Build with Gradle
+        run: ./gradlew -Pmats.test.broker=artemis distclean build
