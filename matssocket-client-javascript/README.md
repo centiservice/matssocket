@@ -1,9 +1,22 @@
-# MatsSocket client for JavaScript
+# MatsSocket JavaScript client library
 
-Compatible with web browsers and Node.js.
+**The main [README.md](client/README.md) and [README-development.md](client/README-development.md) is in
+the [client](client/) submodule!**
 
-For info about the NPM package, read the [NPM README.md](./client/README.md) inside the 'client' folder.
+_(The README.md and README-development.md resides in the client submodule so that they will be part of the npm
+package.)_
 
-The build is done using Gradle with the node plugin, using Yarn for package management. The client is coded using EcmaScript Modules (ESM), and bundled into USM modules, also minified, using Rollup.
+This is the JavaScript client library for MatsSocket. Compatible with web browsers and Node.js. The client is coded
+using EcmaScript Modules (ESM), and bundled into USM (Universal Module Definition) modules, also minified, using Rollup.
 
-You may access the ESM JavaScript files directly - both the client and the unit/integration tests - using the MatsSocketTestServer inside the matssocket-server-impl subproject. Run [MatsSocketTestServer.java](../matssocket-server-impl/src/test/java/io/mats3/matssocket/MatsSocketTestServer.java) directly from e.g. IntelliJ, and access it on http://localhost:8080/. Here you can run the unit and integration tests in the browser, and it maps directly to the source files. Also available is a test-run using the UMD-files of both the client and the tests, but then you first need to build the project so that they exist.
+## Layout
+
+There are three sub modules: `client`, `tests_esm`, and `tests_umd`. The `client` module contains the actual MatsSocket
+client code in the 'lib' directory, coded as EcmaScript Modules (ESM) - and its build step creates EMD and UMD bundles,
+both full and minified. The `tests_esm` module contains the unit and integration tests in the 'src' directory. The
+`tests_umd` module bundles up the tests from the 'tests_esm' module as a UMD module, and then runs them using the UMD
+bundle of the client. This is to ensure that the bundled UMD client works as expected.
+
+
+
+

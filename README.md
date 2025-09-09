@@ -1,23 +1,29 @@
 # MatsSocket - Mats<sup>3</sup> to the client over WebSocket
 
 MatsSocket is a WebSocket-based client-server solution which bridges the asynchronous message based nature
-of [Mats<sup>3</sup>](https://github.com/centiservice/mats3) all the way out to your end user client applications,
-featuring bidirectional communication. It consists of a small MatsSocketServer API which is implemented on top of the 
-_Mats<sup>3</sup> API_ and _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client
-libraries - for which there currently exists JavaScript and Dart/Flutter implementations.
+of [Mats<sup>3</sup>](https://mats3.io/) all the way out to your end user client applications, featuring bidirectional
+communication. It consists of a small MatsSocketServer API which is implemented on top of the _Mats<sup>3</sup> API_ and
+_JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client libraries - for which
+there currently exists JavaScript and Dart/Flutter implementations.
 
 Java server API and implementation: [Maven Repository](https://mvnrepository.com/artifact/io.mats3.matssocket)  
 JavaScript client: [npm](https://www.npmjs.com/package/matssocket)  
 Dart/Flutter client: [pub.dev](https://pub.dev/packages/matssocket)
 
-**Instant boot after git clone**: To start the test server on localhost, run <code>./gradlew matsSocketTestServer</code>
-from project root, or run the <code>io.mats3.matssocket.MatsSocketTestServer</code> class from your IDE. Go
-to http://localhost:8080. It provides a menu of different examples, and can run the JS Client integration tests in the
-browser (which connects to the same server).
+**The Java server API and implementation runs on Java 11+.**
+
+There are also README files for the [JavaScript client](matssocket-client-javascript/client/README.md) and the
+[Dart/Flutter client](matssocket-client-dart/README.md).
+
+**Instant gratification after git clone**: _(You need Java 11 installed for development)_ To start the test server on
+localhost, run `./gradlew matsSocketTestServer` from project root, or run the `io.mats3.matssocket.MatsSocketTestServer`
+class from your IDE. Go to http://localhost:8080. It provides a webapp with a menu of different examples, and can run
+the JS Client integration tests in the browser (which connects to the same server).
 
 **A few Gradle tasks:**
 * `./gradlew matsSocketTestServer` - starts a test server, with a webapp on localhost:8080.
 * `./gradlew build` - builds the Java code, JS ESM and UMD bundles, and runs 'test' tasks.
+* `./gradlew build -x test` - build, not running tests.
 * `./gradlew test` - runs tests, both JS in ESM and UMD mode, and Dart in VM/Kernel mode. (You can run JS tests in
   the browser using the test server, see above.)
 * `./gradlew matssocket-client-dart:testAll` - runs the Dart tests for all platforms and compilers, including in chrome
@@ -30,7 +36,7 @@ browser (which connects to the same server).
 * `./gradlew dartOutdated` - check all Dart deps in pubspec.yaml for newer versions, `dartUpgradeUpdate` to force
   update.
 * `./gradlew publishDryRun` - runs dry-run publish of Dart (pub.dev) and JS (npm).
-* `./gradlew versions` - displays versions of all tooling.
+* `./gradlew versions` - displays versions of tooling: Java, Gradle, Groovy, Node, npm, Dart SDK.
 * `./gradlew allDeps` - Library dependencies for Java projects.
 
 ## Overview
@@ -111,7 +117,7 @@ It then sends a message to the "MatsSocketEndpoint", which is a named endpoint d
 endpoint will receive the message with its `IncomingAuthorizationAndAdapter`, and either act on it directly by denying,
 replying or rejecting, or forward the request to a Mats endpoint - in this example it either denies or forwards to a
 Mats endpoint. When the Mats endpoint replies, the reply will pass the MatsSocket endpoint's `ReplyAdapter`, which again
-decides whether to resolve or reject - in this example it choose resolve, which then resolves the Promise on the client.
+decides whether to resolve or reject - in this example it chooses resolve, which then resolves the Promise on the client.
 
 ## Bidirectional, Server-to-Client "Push", and Topics
 

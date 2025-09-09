@@ -15,10 +15,9 @@ void main() {
       expect(MatsSocketPlatform.create().version, isNotNull);
     });
 
-    test('Version contains dart version', () {
+    test('Version contains User-Agent (for web) or Host (for vm)', () {
       expect(MatsSocketPlatform.create().version, contains('MatsSocket.dart'));
       expect(MatsSocketPlatform.create().version, anyOf(contains('User-Agent:'), contains('Host:')));
     });
-
   });
 }

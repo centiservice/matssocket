@@ -3,7 +3,7 @@
 apply from: '../node.gradle'
 
 /*
- * Runs Rollup - via Yarn - to create the different distributions:
+ * Runs Rollup - via npm - to create the different distributions:
  * 1. Native EcmaScript Modules (ESM) - just use the files directly
  * 2. Native EcmaScript Modules (EMS) - bundled
  * 3. Native EcmaScript Modules (EMS) - bundled, minified
