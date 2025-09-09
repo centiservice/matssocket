@@ -2824,7 +2824,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                 }
             } catch (err) {
                 let stringified = JSON.stringify(envelope);
-                error("envelope processing", "Got unexoected error while handling incoming envelope of type '" + envelope.t + "': " + (stringified.length > 1024 ? stringified.substring(0, 1021) + "..." : stringified), err);
+                error("envelope processing", "Got unexpected error while handling incoming envelope of type '" + envelope.t + "': " + (stringified.length > 1024 ? stringified.substring(0, 1021) + "..." : stringified), err);
             }
         }
     }
