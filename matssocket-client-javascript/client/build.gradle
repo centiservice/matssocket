@@ -22,6 +22,30 @@ tasks.register('build', NpmTask) {
 }
 
 tasks.register('jsdoc', NpmTask) {
+    doFirst {
+        def listDir
+        listDir = { File f, int indentLevel = 0 ->
+            String indent = "  " * indentLevel
+            if (!f.exists()) {
+                println "${indent}[missing] ${f.absolutePath}"
+                return
+            }
+            if (f.isFile()) {
+                println "${indent}${f.name}"
+                return
+            }
+            println "${indent}${f.name}/"
+            if (indentLevel >= 3) {
+                return
+            }
+            def kids = f.listFiles()
+            kids?.sort { a, b -> a.name <=> b.name }?.each { child ->
+                listDir(child, indentLevel + 1)
+            }
+        }
+        println "=#=#= Module directory structure =#=#="
+        listDir(projectDir)
+    }
     dependsOn npmInstall
     args = ['run', 'jsdoc']
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
@@ -29,6 +53,19 @@ tasks.register('jsdoc', NpmTask) {
     outputs.dir('jsdoc')
     doLast {
         println("##### JavaScript Client API docs: " + file("$projectDir/jsdoc/index.html").toURI())
+    }
+}
+
+// Package up the JavaScript library
+tasks.register('archiveLib', Zip) {
+    from "$projectDir/lib"
+    into "matssocket-${project.version}-js"
+    def destinationDir = layout.buildDirectory.dir("dist").get().asFile
+    def archiveName = "matssocket-${project.version}-js.zip"
+    destinationDirectory = destinationDir
+    archiveFileName = archiveName
+    doLast {
+        println("##### JavaScript Client zip: " + destinationDir + "/" + archiveName)
     }
 }
 
@@ -62,19 +99,6 @@ tasks.register('publish', NpmTask) {
 tasks.register('javascriptTestWatch', NpmTask) {
     args = ['test', '--watch']
     workingDir = file('./tests')
-}
-
-// Package up the JavaScript library
-tasks.register('archiveLib', Zip) {
-    from "$projectDir/lib"
-    into "matssocket-${project.version}-js"
-    def destinationDir = layout.buildDirectory.dir("dist").get().asFile
-    def archiveName = "matssocket-${project.version}-js.zip"
-    destinationDirectory = destinationDir
-    archiveFileName = archiveName
-    doLast {
-        println("##### JavaScript Client zip: " + destinationDir + "/" + archiveName)
-    }
 }
 
 // Versions of Node

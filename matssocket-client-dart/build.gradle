@@ -74,33 +74,10 @@ tasks.register('updateDartDependencies') {
             into "$dartDownloadTemp"
         }
 
-        def listDir
-        listDir = { File f, String indent = "" ->
-            if (!f.exists()) {
-                println "${indent}[missing] ${f.absolutePath}"
-                return
-            }
-            if (f.isFile()) {
-                println "${indent}${f.name}"
-                return
-            }
-            println "${indent}${f.name}/"
-            def kids = f.listFiles()
-            kids?.sort { a, b -> a.name <=> b.name }?.each { child ->
-                listDir(child, indent + "  ")
-            }
-        }
-
-        println "TEMP DIRECTORY tree:"
-        listDir(dartDownloadTemp)
-
         // Move it into place - avoids problem if IntelliJ is set up to use the Dart SDK here ("Text file busy")
         // Note: If on Windows, you'll probably have to find another SDK location for IntelliJ, as it locks the files.
         println "Renaming Dart SDK download to '$dartDownload'"
         dartDownloadTemp.renameTo(dartDownload)
-
-        println "Dart SDK directory tree:"
-        listDir(dartDownload)
 
         // Update dart dependencies by executing 'pub get'
         println "Executing 'dart pub get' to resolve and fetch dependencies."
