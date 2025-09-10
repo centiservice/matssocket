@@ -137,8 +137,6 @@ extension MatsSocketCloseCodesExtension on MatsSocketCloseCodes {
         return 4004;
       case MatsSocketCloseCodes.UNKNOWN:
         return -1;
-      default:
-        throw ArgumentError.value(this, 'MatsSocketCloseCodes', 'No code defined for enum value');
     }
   }
 
@@ -164,8 +162,6 @@ extension MatsSocketCloseCodesExtension on MatsSocketCloseCodes {
         return 'MATS_SOCKET_PROTOCOL_ERROR';
       case MatsSocketCloseCodes.UNKNOWN:
         return 'UNKNOWN';
-      default:
-        throw ArgumentError.value(this, 'MatsSocketCloseCodes', 'No name defined for enum value');
     }
   }
 
@@ -319,8 +315,6 @@ extension CloseCodesExtension on CloseCodes {
         // know which integer to return here either. -1 seems like a good enough compromise
         // to represent this.
         return -1;
-      default:
-        throw ArgumentError.value(this, 'CloseCodes', 'No code defined for enum value');
     }
   }
 
@@ -358,8 +352,6 @@ extension CloseCodesExtension on CloseCodes {
         return 'TLS_HANDSHAKE_FAILURE';
       case CloseCodes.UNKNOWN:
         return 'UNKNOWN';
-      default:
-        throw ArgumentError.value(this, 'CloseCodes', 'No name defined for enum value');
     }
   }
 

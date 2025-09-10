@@ -90,8 +90,6 @@ extension ReceivedEventTypeExtension on ReceivedEventType {
         return 'TIMEOUT';
       case ReceivedEventType.SESSION_CLOSED:
         return 'SESSION_CLOSED';
-      default:
-        throw ArgumentError.value(this, 'ReceivedEventType', 'Unknown enum value');
     }
   }
 }

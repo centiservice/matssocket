@@ -172,8 +172,6 @@ extension DebugOptionMethods on DebugOption {
         return 1 << 6;
       case DebugOption.CUSTOM_B:
         return 1 << 7;
-      default:
-        throw ArgumentError.value(this, 'DebugOption', 'Invalid debug option');
     }
   }
 }

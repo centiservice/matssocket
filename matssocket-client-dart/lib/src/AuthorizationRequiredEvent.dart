@@ -53,8 +53,6 @@ extension AuthorizationRequiredEventTypeExtension on AuthorizationRequiredEventT
         return 'NOT_PRESENT';
       case AuthorizationRequiredEventType.REAUTHENTICATE:
         return 'REAUTHENTICATE';
-      default:
-        throw ArgumentError.value(this, 'ConnectionEventType', 'Unknown enum value');
     }
   }
 }

@@ -115,7 +115,11 @@ class IoWebSocket extends WebSocket {
         handleClose(_ioWebSocket!.closeCode, _ioWebSocket!.closeReason, closeEvent);
         _ioWebSocket = null;
       });
-    }).catchError(handleError);
+    }).catchError((error, stack) {
+      // Ensure the handler returns a value matching FutureOr<Null>
+      handleError(error);
+      return null;
+    });
   }
 
   @override

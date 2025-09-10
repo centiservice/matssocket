@@ -196,8 +196,6 @@ extension ConnectionEventTypeExtension on ConnectionEventType {
         return 'CONNECTED';
       case ConnectionEventType.SESSION_ESTABLISHED:
         return 'SESSION_ESTABLISHED';
-      default:
-        throw ArgumentError.value(this, 'ConnectionEventType', 'Unknown enum value');
     }
   }
 

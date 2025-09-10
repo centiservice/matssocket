@@ -58,8 +58,6 @@ extension SubscriptionEventTypeExtension on SubscriptionEventType {
         return 'NOT_AUTHORIZED';
       case SubscriptionEventType.LOST_MESSAGES:
         return 'LOST_MESSAGES';
-      default:
-        throw ArgumentError.value(this, 'SubscriptionEventType', 'Unknown enum value');
     }
   }
 }
