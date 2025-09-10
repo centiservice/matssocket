@@ -26,19 +26,16 @@ ext {
 }
 
 dependencies {
-    def os = org.gradle.internal.os.OperatingSystem.current();
-    if (os.isWindows()) {
-        dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:windows-x64@zip"
+    def currentOs = org.gradle.internal.os.OperatingSystem.current()
+    def platformClassifier =
+            currentOs.isWindows() ? "windows-x64" :
+            currentOs.isMacOsX()  ? "macos-x64"   :
+            currentOs.isLinux()   ? "linux-x64"   : null
+    if (platformClassifier == null) {
+        throw new GradleException("Unsupported OS for Dart SDK: ${currentOs}")
     }
-    else if (os.isMacOsX()) {
-        dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:macos-x64@zip"
-    }
-    else if (os.isLinux()) {
-        dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:linux-x64@zip"
-    }
-    else {
-        throw new GradleException("Unsupported OS for Dart SDK: ${os.toString()}")
-    }
+    dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:${platformClassifier}@zip"
+}
 }
 
 tasks.register('build') {
