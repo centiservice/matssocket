@@ -1027,10 +1027,10 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
     /**
      * Shall be one instance per socket (i.e. from the docs: "..there will be precisely one endpoint instance per active
-     * client connection"), thus there should be 1:1 correlation between this instance and the single Session object for
+     * client connection"), thus there will be 1:1 correlation between this instance and the single Session object for
      * the same cardinality (per client:server connection).
      */
-    static class MatsWebSocketInstance extends Endpoint {
+    public static class MatsWebSocketInstance extends Endpoint {
         private final DefaultMatsSocketServer _matsSocketServer;
         private final SessionAuthenticator _sessionAuthenticator;
         private final HandshakeRequestResponse _handshakeRequestResponse;
