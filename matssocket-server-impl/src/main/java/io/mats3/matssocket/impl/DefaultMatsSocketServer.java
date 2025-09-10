@@ -228,19 +228,20 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
             @Override
             @SuppressWarnings("unchecked") // The cast to (T) is not dodgy.
             public <T> T getEndpointInstance(Class<T> endpointClass) {
-                if (endpointClass != MatsWebSocketInstance.class) {
+                if (endpointClass != MatsWebSocketEndpointInstance.class) {
                     throw new AssertionError("Cannot create Endpoints of type [" + endpointClass.getName()
-                            + "]");
+                            + "], only of type [" + MatsWebSocketEndpointInstance.class.getName() + "].");
                 }
-                log.info(" \\- Instantiating a " + MatsWebSocketInstance.class.getSimpleName() + "!");
                 HandshakeRequestResponse handshakeRequestResponse = _threadLocal_HandShake.get();
                 _threadLocal_HandShake.remove();
-                return (T) new MatsWebSocketInstance(matsSocketServer, getSessionAuthenticator(),
-                        handshakeRequestResponse);
+                MatsWebSocketEndpointInstance instance = new MatsWebSocketEndpointInstance(matsSocketServer,
+                        getSessionAuthenticator(), handshakeRequestResponse);
+                log.info(" \\- Created Mats WebSocket Endpoint instance: " + id(instance) + "!");
+                return (T) instance;
             }
         };
         try {
-            serverContainer.addEndpoint(Builder.create(MatsWebSocketInstance.class, websocketPath)
+            serverContainer.addEndpoint(Builder.create(MatsWebSocketEndpointInstance.class, websocketPath)
                     .subprotocols(Collections.singletonList("matssocket"))
                     .configurator(configurator)
                     .build());
@@ -318,7 +319,8 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         _webSocketOutboxForwarder = new WebSocketOutboxForwarder(this,
                 clusterStoreAndForward, forwarder_corePoolSize, forwarder_maxPoolSize);
 
-        _webSocketOutgoingEnvelopes = new WebSocketOutgoingEnvelopes(this, forwarder_corePoolSize, forwarder_maxPoolSize);
+        _webSocketOutgoingEnvelopes = new WebSocketOutgoingEnvelopes(this, forwarder_corePoolSize,
+                forwarder_maxPoolSize);
 
         _incomingSrrMsgHandler = new IncomingSrrMsgHandler(this,
                 forwarder_corePoolSize, forwarder_maxPoolSize);
@@ -535,12 +537,12 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         long now = System.currentTimeMillis();
         // :: Create ServerMessageId
         /*
-         * NOTE: On 'replyHandler' and S2C Send, we rely on unique constraint violation to retry if we choose an
-         * already existing ServerMessageId (and can thus employ rather small ids). Due to the need to store the
-         * correlation information /before/ storing the message in the outbox (due to the insanely unlikely situation
-         * that otherwise the forwarder would pick up the outgoing message AND the client reply /before/ we had gotten
-         * the correlation info stored), we instead create a much larger ServerMessageId for S2C REQUESTs, thus relying
-         * on statistics to not pick an already used id.
+         * NOTE: On 'replyHandler' and S2C Send, we rely on unique constraint violation to retry if we choose an already
+         * existing ServerMessageId (and can thus employ rather small ids). Due to the need to store the correlation
+         * information /before/ storing the message in the outbox (due to the insanely unlikely situation that otherwise
+         * the forwarder would pick up the outgoing message AND the client reply /before/ we had gotten the correlation
+         * info stored), we instead create a much larger ServerMessageId for S2C REQUESTs, thus relying on statistics to
+         * not pick an already used id.
          */
         String serverMessageId = serverMessageId() + serverMessageId() + serverMessageId();
 
@@ -1029,8 +1031,10 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      * Shall be one instance per socket (i.e. from the docs: "..there will be precisely one endpoint instance per active
      * client connection"), thus there will be 1:1 correlation between this instance and the single Session object for
      * the same cardinality (per client:server connection).
+     * <p />
+     * Needs to be public for Jetty 12, see https://github.com/centiservice/matssocket/issues/17
      */
-    public static class MatsWebSocketInstance extends Endpoint {
+    public static class MatsWebSocketEndpointInstance extends Endpoint {
         private final DefaultMatsSocketServer _matsSocketServer;
         private final SessionAuthenticator _sessionAuthenticator;
         private final HandshakeRequestResponse _handshakeRequestResponse;
@@ -1039,10 +1043,9 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         private String _connectionId;
         private MatsSocketSessionAndMessageHandler _matsSocketSessionAndMessageHandler;
 
-        public MatsWebSocketInstance(DefaultMatsSocketServer matsSocketServer,
+        public MatsWebSocketEndpointInstance(DefaultMatsSocketServer matsSocketServer,
                 SessionAuthenticator sessionAuthenticator,
                 HandshakeRequestResponse handshakeRequestResponse) {
-            log.info("Created MatsWebSocketEndpointInstance: " + id(this));
             _matsSocketServer = matsSocketServer;
             _sessionAuthenticator = sessionAuthenticator;
             _handshakeRequestResponse = handshakeRequestResponse;
