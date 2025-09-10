@@ -79,7 +79,7 @@ tasks.register('javascriptTestWatch', NpmTask) {
 
 // Versions of Node
 tasks.register('nodeVersion', NodeTask) {
-    script = file('./dummy_empty.js')
+    script = file('README.md') // Dummy file, we just want to run node --version
     options = ['--version']
 }
 
