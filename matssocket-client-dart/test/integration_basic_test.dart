@@ -134,12 +134,12 @@ void main() {
             'sleepTime': 50 // Sleeptime before replying
           };
           var receivedCallbackInvoked = false;
-          var reply = matsSocket.request('Test.slow', 'Timeout_request_${id(6)}', req,
+          matsSocket.request('Test.slow', 'Timeout_request_${id(6)}', req,
               // Low timeout to NOT get ReceivedEventType.ACK.
               timeout: Duration(milliseconds: 10), receivedCallback: (event) {
-            expect(event.type, equals(ReceivedEventType.TIMEOUT));
-            receivedCallbackInvoked = true;
-          }).catchError((event) {
+                expect(event.type, equals(ReceivedEventType.TIMEOUT));
+                receivedCallbackInvoked = true;
+              }).catchError((event) {
             standardStateAssert();
             expect(event.type, equals(MessageEventType.TIMEOUT));
             if (receivedCallbackInvoked) {
@@ -526,8 +526,10 @@ void main() {
         matsSocket.debug = DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag;
         var debug = await testDebugOptionsSend();
         expect(debug, isNotNull);
-        assertNodes(debug!);
-        assertTimestamps(debug!);
+        final d = debug as DebugDto;
+        assertNodes(d);
+        assertTimestamps(d);
+
       });
 
       test('When the user is allowed to debug, and request DebugOption.NODES via matsSocket.debug,'
@@ -536,8 +538,9 @@ void main() {
         matsSocket.debug = DebugOption.NODES.flag;
         var debug = await testDebugOptionsSend();
         expect(debug, isNotNull);
-        assertNodes(debug!);
-        assertTimestampsFromServerAreUndefined(debug!);
+        final d = debug as DebugDto;
+        assertNodes(d);
+        assertTimestampsFromServerAreUndefined(d);
       });
 
       test('When the user is allowed to debug, and request DebugOption.TIMINGS'
@@ -545,8 +548,10 @@ void main() {
           () async {
         matsSocket.debug = DebugOption.TIMESTAMPS.flag;
         var debug = await testDebugOptionsSend();
-        assertNodesUndefined(debug!);
-        assertTimestamps(debug!);
+        expect(debug, isNotNull);
+        final d = debug as DebugDto;
+        assertNodesUndefined(d);
+        assertTimestamps(d);
       });
 
       test("When the user is allowed to debug, and request all via message-specific config,"
@@ -554,8 +559,10 @@ void main() {
           () async {
         matsSocket.debug = null;
         var debug = await testDebugOptionsSend(debug: DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag);
-        assertNodes(debug!);
-        assertTimestamps(debug!);
+        expect(debug, isNotNull);
+        final d = debug as DebugDto;
+        assertNodes(d);
+        assertTimestamps(d);
       });
 
       test('When the user is NOT allowed to debug, and request all via matsSocket.debug,'
@@ -563,8 +570,10 @@ void main() {
           () async {
         matsSocket.debug = DebugOption.NODES.flag | DebugOption.TIMESTAMPS.flag;
         var debug = await testDebugOptionsSend(userId: 'userWithoutDebugOptions');
-        assertNodesUndefined(debug!);
-        assertTimestampsFromServerAreUndefined(debug!);
+        expect(debug, isNotNull);
+        final d = debug as DebugDto;
+        assertNodesUndefined(d);
+        assertTimestampsFromServerAreUndefined(d);
       });
 
       test('When the user is allowed to debug, but do not request any debug (undefined),'
