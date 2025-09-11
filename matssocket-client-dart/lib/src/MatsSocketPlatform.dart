@@ -1,6 +1,6 @@
 import 'MatsSocketPlatformStub.dart'
     if (dart.library.io) 'MatsSocketPlatformIo.dart'
-    if (dart.library.js_interop) 'MatsSocketPlatformWeb.dart';
+    if (dart.library.js_interop) 'MatsSocketPlatformJs.dart';
 
 typedef PreConnectOperation = ConnectResult Function(Uri?, String?);
 
@@ -17,6 +17,10 @@ abstract class MatsSocketPlatform {
   /// This method will delegate to appropriate implementation based on the current platform.
   factory MatsSocketPlatform.create() => createTransport();
 
+  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization);
+
+  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization);
+
   /// Send a MatsSocket close session signal.
   ///
   /// When a MatsSocket instance is closing, it also needs to instruct the server so that the sessionId
@@ -25,18 +29,15 @@ abstract class MatsSocketPlatform {
   /// from the current tab. In DartVM we don't have the same mechanism, as there is no mother process.
   /// Still, the process should not exit until the close request has completed, as we block on the future returned
   /// here.
-  Future<bool> closeSession(Uri closeUri, String sessionId);
-
-  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization);
-
-  String get version;
-
-  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization);
+  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId);
 
   void registerBeforeunload(Function(dynamic) beforeunloadHandler);
 
   void deregisterBeforeunload(Function(dynamic) beforeunloadHandler);
 
+  String get runningOnVersions;
+
+  /// Performance time in milliseconds, with sub-millisecond precision if available.
   double performanceTime();
 }
 

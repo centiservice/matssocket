@@ -45,7 +45,7 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
   });
 
   @override
-  Future<bool> closeSession(Uri closeUri, String sessionId) {
+  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) {
     closedSessions.add(sessionId);
     return Future.value(true);
   }
@@ -76,7 +76,7 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
   }
 
   @override
-  String get version => 'Mock Transport; dart,vMock';
+  String get runningOnVersions => 'Mock Transport; dart,vMock';
 
 }
 

@@ -10,3 +10,7 @@ dartsdk_download
 
 # Directory created by dartdoc
 doc/api/
+
+# Node for 'dart test -p node'
+node_modules/
+node_download/

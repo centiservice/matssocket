@@ -25,7 +25,7 @@ tasks.register('deleteNodeModules', Delete) {
 }
 
 // Clean out the downloaded node and modules
-tasks.register('distclean', Delete) {
+tasks.register('distcleanNode', Delete) {
     dependsOn clean, deleteNodeModules
     delete "$projectDir/node_download/"
     delete "$projectDir/.gradle/" // If Yarn is accidentally used, it puts stuff here.

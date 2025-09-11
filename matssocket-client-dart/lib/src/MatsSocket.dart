@@ -90,7 +90,7 @@ class MatsSocket {
 
   // If true, we're currently already trying to get a WebSocket
   bool _webSocketConnecting = false;
-  // If NOT undefined, we have an open WebSocket available.
+  // If NOT null, we have an open WebSocket available.
   WebSocket? _webSocket; // NOTE: It is set upon "onopen", and unset upon "onclose".
   // If false, we should not accidentally try to reconnect or similar
   bool _matsSocketOpen = false; // NOTE: Set to true upon enqueuing of information-bearing message.
@@ -607,8 +607,7 @@ class MatsSocket {
       throw ArgumentError.value(endpointId, 'endpointId',
           'The namespace "MatsSocket" is reserved, EndpointId [$endpointId] is illegal.');
     }
-    _logger.info(
-        'Registering Endpoint on id [$endpointId]:\n #endpointMessageHandler: $endpointMessageHandler');
+    _logger.info('Registering Endpoint on id [$endpointId]:\n #endpointMessageHandler: $endpointMessageHandler');
     _endpoints[endpointId] = endpointMessageHandler;
   }
 
@@ -927,7 +926,7 @@ class MatsSocket {
   }
 
   /// Closes any currently open WebSocket with MatsSocket-specific CloseCode CLOSE_SESSION (4000).
-  /// The session will also be closed out of band via [MatsSocketPlatform.closeSession]
+  /// The session will also be closed out of band via [MatsSocketPlatform.outOfBandCloseSession]
   /// Upon receiving the WebSocket close, the server terminates the MatsSocketSession.
   /// The MatsSocket instance's SessionId is made undefined. If there currently is a pipeline,
   /// this will be dropped (i.e. messages deleted), any outstanding receiveCallbacks
@@ -949,8 +948,8 @@ class MatsSocket {
   /// and must therefore be quite short (max 123 chars).
   Future close(String reason) async {
     // Fetch properties we need before clearing state
-    final webSocketUrl = _currentWebSocketUrl;
-    final existingSessionId = sessionId;
+    final Uri? webSocketUrl = _currentWebSocketUrl;
+    final String? existingSessionId = sessionId;
     _logger.info('close(): Closing MatsSocketSession, id:[$existingSessionId] due to [$reason], currently connected: [${_webSocket?.url ?? "not connected"}]');
 
     // :: In-band Session Close: Close the WebSocket itself with CLOSE_SESSION Close Code.
@@ -975,7 +974,7 @@ class MatsSocket {
           queryParameters: {'session_id': sessionId }
       );
 
-      await platform.closeSession(closeUri, existingSessionId);
+      await platform.outOfBandCloseSession(closeUri, existingSessionId);
     }
   }
 
@@ -1037,7 +1036,7 @@ class MatsSocket {
   }
 
   void _clearWebSocketStateAndInfrastructure() {
-    _logger.info('clearWebSocketStateAndInfrastructure(). Current WebSocket:$_webSocket');
+    _logger.info('clearWebSocketStateAndInfrastructure(). Current WebSocket: $_webSocket');
     // Stop pinger
     _stopPinger();
     // Remove beforeunload eventlistener
@@ -1059,7 +1058,7 @@ class MatsSocket {
   }
 
   void _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages() {
-    _logger.info('closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket:$_webSocket');
+    _logger.info('closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket: $_webSocket');
     // Clear state
     sessionId = null;
     _state = ConnectionState.NO_SESSION;
@@ -1091,6 +1090,7 @@ class MatsSocket {
 
   void _addInformationBearingEnvelopeToPipeline(MatsSocketEnvelopeDto envelope, String traceId,
       _Initiation initiation, _Request? request) {
+
     // This is an information-bearing message, so now this MatsSocket instance is open.
     _matsSocketOpen = true;
     var now = DateTime.now();
@@ -1296,13 +1296,13 @@ class MatsSocket {
           type: MessageType.HELLO,
           appName: appName,
           appVersion: appVersion,
-          clientLibAndVersion: '$CLIENT_LIB_NAME_AND_VERSION; ${platform.version}',
+          clientLibAndVersion: '$CLIENT_LIB_NAME_AND_VERSION; ${platform.runningOnVersions}',
           authorization: _authorization
           // This is guaranteed to be in place and valid, see above
       );
       // ?: Have we requested a reconnect?
       if (sessionId != null) {
-        _logger.info('HELLO not send, adding to pre-pipeline. HELLO (\"Reconnect\") to MatsSocketSessionId:$sessionId');
+        _logger.info('HELLO not send, adding to pre-pipeline. HELLO (\"Reconnect\") to MatsSocketSessionId: $sessionId');
         // -> Evidently yes, so add the requested reconnect-to-sessionId.
         helloMessage.sessionId = sessionId;
       } else {
@@ -1698,7 +1698,7 @@ class MatsSocket {
                   return;
               }
 
-              _logger.info('Create WebSocket: opened! InstanceId:[${target.webSocketInstanceId}].', event);
+              _logger.info('Create WebSocket: opened! InstanceId:[${target.webSocketInstanceId}].');
 
               // Store our brand new, soon-ready-for-business WebSocket.
               _webSocket = websocketAttempt;
@@ -1818,7 +1818,7 @@ class MatsSocket {
   }
 
   void _onclose(WebSocket target, int? code, String? reason, dynamic closeEvent) {
-      _logger.info('websocket.onclose, instanceId:[${target.webSocketInstanceId}]', closeEvent);
+      _logger.info('websocket.onclose, instanceId:[${target.webSocketInstanceId}]');
 
       // Note: Here (as opposed to matsSocket.close()) the WebSocket is already closed, so we don't have to close it..!
 

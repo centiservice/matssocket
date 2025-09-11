@@ -1,5 +1,9 @@
 // MatsSocket-Client-Dart
 
+
+// Hacky way to get Dart here for "platform=dart" tests
+apply from: '../matssocket-client-javascript/node.gradle' // For the "node" extension
+
 repositories {
     // Create a custom ivy repository that represents the dart sdk download, so that we
     // can download the SDK using gradles download mechanisms and cache.
@@ -14,10 +18,6 @@ repositories {
     }
 }
 
-configurations {
-    dartSdk
-}
-
 ext {
     dartSdkVersion = "$dartSdkVersion"
     dartDownloadTemp = file("$projectDir/dartsdk_download-temp")
@@ -25,18 +25,48 @@ ext {
     dartSdkPath = file("$dartDownload/dart-sdk")
 }
 
+configurations {
+    dartSdk
+}
+
 dependencies {
     def currentOs = org.gradle.internal.os.OperatingSystem.current()
     def platformClassifier =
             currentOs.isWindows() ? "windows-x64" :
-            currentOs.isMacOsX()  ? "macos-x64"   :
-            currentOs.isLinux()   ? "linux-x64"   : null
+            currentOs.isMacOsX() ? "macos-x64" :
+            currentOs.isLinux() ? "linux-x64" : null
     if (platformClassifier == null) {
         throw new GradleException("Unsupported OS for Dart SDK: ${currentOs}")
     }
     dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:${platformClassifier}@zip"
 }
+
+
+def nodeOut = new ByteArrayOutputStream()
+tasks.register('nodeBinDir', NodeTask) {
+    script = file('README.md') // node-gradle requires the script property, so just point to something harmless.
+    options = ['-p', "require('path').dirname(process.execPath)"]
+    // Capture stdout so we can use it later in the build.
+    execOverrides {
+        standardOutput = nodeOut
+    }
+    doLast {
+        def binDir = nodeOut.toString().trim()
+        println "Node bin dir: ${binDir}"
+        // Stash it for other tasks to use
+        project.ext.set('NODE_BIN_DIR', binDir);
+    }
 }
+
+tasks.register('dartTestNode', Exec) {
+    dependsOn nodeBinDir
+    doFirst {
+        println "NODE_BIN_DIR (from project.ext): ${project.ext.NODE_BIN_DIR}"
+        environment 'PATH', "${NODE_BIN_DIR}${File.pathSeparator}$dartSdkPath/bin${File.pathSeparator}${System.getenv('PATH')}"
+        commandLine 'bash', '-c', 'dart test -p node -c dart2js --reporter=expanded test/*.dart'
+    }
+}
+
 
 tasks.register('build') {
     dependsOn archiveLib, test
@@ -53,6 +83,7 @@ def dartExec(Closure body) {
         body()
     }
 }
+
 def dartExec(Object... cmd) {
     dartExec {
         args cmd
@@ -112,6 +143,9 @@ tasks.register('versions') { dependsOn dartVersion }
 def registerDartTestTask = { String name, String platform, String compiler ->
     tasks.register(name) {
         dependsOn 'updateDartDependencies', ':startMatsSocketTestServer'
+        if (platform == 'node') {
+            dependsOn 'nodeBinDir' // Need to have figured out where node is.
+        }
 
         def chromePath = providers.gradleProperty('chromePath')
 
@@ -133,6 +167,10 @@ def registerDartTestTask = { String name, String platform, String compiler ->
                 if (platform == 'chrome' && chromePath.isPresent()) {
                     environment("CHROME_EXECUTABLE", chromePath.get())
                 }
+                if (platform == 'node') {
+                    println "NODE_BIN_DIR (from project.ext): ${project.ext.NODE_BIN_DIR}"
+                    environment 'PATH', "${project.ext.NODE_BIN_DIR}${File.pathSeparator}$dartSdkPath/bin${File.pathSeparator}${System.getenv('PATH')}"
+                }
                 println "Executing 'dart ${args.join(" ")}' to run tests."
             }
         }
@@ -145,17 +183,23 @@ registerDartTestTask('testWebWasm', 'chrome', 'dart2wasm')
 registerDartTestTask('testVmExe', 'vm', 'exe')
 registerDartTestTask('testVmSource', 'vm', 'source')
 registerDartTestTask('testVmKernel', 'vm', 'kernel')
+registerDartTestTask('testNodeJs', 'node', 'dart2js')
+registerDartTestTask('testNodeWasm', 'node', 'dart2wasm')
 
-// Make 'test' be 'testVmKernel'
-tasks.register('test') { dependsOn 'testVmKernel' }
-
-// Aggregate tasks to run subset of, or all tests.
+// Subsets
 tasks.register('testWeb') { dependsOn 'testWebJs', 'testWebWasm' }
 tasks.register('testVm') { dependsOn 'testVmExe', 'testVmSource', 'testVmKernel' }
-tasks.register('testAll') {dependsOn 'testWeb', 'testVm' }
+tasks.register('testNode') { dependsOn 'testNodeJs', 'testNodeWasm'}
+
+// All tests
+tasks.register('testAll') { dependsOn 'testWeb', 'testVm', 'testNode' }
+
+// Make 'test' be both VM and Node
+tasks.register('test') { dependsOn 'testVm', 'testNode' }
 
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
-rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVmExe, testVmSource, testVmKernel, test, testAll)
+rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVmExe, testVmSource, testVmKernel,
+        testNodeJs, testNodeWasm, test, testAll)
 
 // 'dart publish --dry-run'
 tasks.register('publishDryRun') {
@@ -189,7 +233,7 @@ tasks.register('clean', Delete) {
 }
 
 tasks.register('distclean', Delete) {
-    dependsOn clean
+    dependsOn clean, distcleanNode
     delete "$dartDownload"
     delete "$dartDownloadTemp"
     delete "$projectDir/.dart_tool"

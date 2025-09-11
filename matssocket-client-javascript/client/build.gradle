@@ -96,3 +96,5 @@ tasks.register('clean', Delete) {
     delete "$projectDir/bundles/"
     delete "$projectDir/jsdoc/"
 }
+
+tasks.register('distclean', Delete) {dependsOn distcleanNode }

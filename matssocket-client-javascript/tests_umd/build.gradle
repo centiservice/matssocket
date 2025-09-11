@@ -31,3 +31,5 @@ tasks.register('clean', Delete) {
     delete layout.buildDirectory
     delete "$projectDir/bundles/"
 }
+
+tasks.register('distclean', Delete) {dependsOn distcleanNode }

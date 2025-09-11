@@ -12,12 +12,13 @@ void main() {
     });
 
     test('Able to access version', () {
-      expect(MatsSocketPlatform.create().version, isNotNull);
+      expect(MatsSocketPlatform.create().runningOnVersions, isNotNull);
     });
 
     test('Version contains User-Agent (for web) or Host (for vm)', () {
-      expect(MatsSocketPlatform.create().version, contains('MatsSocket.dart'));
-      expect(MatsSocketPlatform.create().version, anyOf(contains('User-Agent:'), contains('Host:')));
+      expect(MatsSocketPlatform.create().runningOnVersions, contains('Runtime:'));
+      expect(MatsSocketPlatform.create().runningOnVersions, anyOf(contains('Browser'),
+          contains('Dart VM/Exe'), contains('Node.js')));
     });
   });
 }

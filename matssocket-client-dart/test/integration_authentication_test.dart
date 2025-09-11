@@ -10,6 +10,9 @@ import 'lib/env.dart';
 void main() {
   configureLogging();
 
+  // Are we on Node.js?
+  const bool isNode = bool.fromEnvironment("node");
+
   final log = Logger('integration_authentication');
 
   group('MatsSocket integration-tests of Authentication & Authorization', () {
@@ -165,7 +168,7 @@ void main() {
 
       group('PreConnectionOperation - Authorization upon WebSocket HTTP Handshake', () {
         test('When preconnectoperations=true, we should get the initial AuthorizationValue presented in Cookie in the authPlugin.checkHandshake(..) function Server-side', () async {
-          // This is what we're going to test. Cannot be done in Node.js, as there is no common Cookie-jar there.
+          // We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
           matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
 
           var expiry = DateTime.now().add(Duration(milliseconds: 20000));
@@ -177,7 +180,7 @@ void main() {
         });
 
         test('When the test-servers PreConnectOperation HTTP Auth-to-Cookie Servlet repeatedly returns [400 <= status <= 599], we should eventually get SessionClosedEvent.VIOLATED_POLICY.', () async {
-          // This is what we're going to test. Cannot be done in Node.js, as there is no common Cookie-jar there.
+          // We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
           matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
           matsSocket.maxConnectionAttempts = 2; // "Magic option" that is just meant for integration testing.
           var testCompleter = Completer();
@@ -205,7 +208,7 @@ void main() {
         });
 
         test('When the test-servers authPlugin.checkHandshake(..) repeatedly returns false, we should eventually get SessionClosedEvent.VIOLATED_POLICY.', () async {
-          // This is what we're going to test. Cannot be done in Node.js, as there is no common Cookie-jar there.
+          // We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
           matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
           matsSocket.maxConnectionAttempts = 2; // "Magic option" that is just meant for integration testing.
           var testCompleter = Completer();
@@ -236,7 +239,7 @@ void main() {
 
           await testCompleter.future;
         }, timeout: Timeout.factor(10));
-      });
+      }, skip: isNode ? 'Cannot be done in Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.' : null);
     });
   });
 }

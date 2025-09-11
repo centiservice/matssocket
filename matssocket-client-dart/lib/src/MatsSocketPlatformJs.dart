@@ -1,0 +1,217 @@
+import 'package:logging/logging.dart';
+import 'package:web/web.dart' as web;
+import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart';
+
+import 'dart:async';
+import 'dart:js_interop';
+
+import 'MatsSocketPlatform.dart';
+
+final Logger _logger = Logger('MatsSocket.transportHtml');
+
+const bool isNode = bool.fromEnvironment("node");
+
+class MatsSocketPlatformJs extends MatsSocketPlatform {
+  String? cookies;
+
+  @override
+  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
+    _logger.fine('Creating HTML WebSocket to $webSocketUri with protocol: $protocol');
+    return WebWebSocket.create(webSocketUri.toString(), protocol, authorization);
+  }
+
+  @override
+  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
+    // 1. Create a Completer to trigger the abort action.
+    final abortTrigger = Completer<void>();
+    final client = BrowserClient()..withCredentials = true;
+
+    final authFuture = () async {
+      final httpUri = websocketUri!.scheme == 'wss'
+          ? websocketUri.replace(scheme: 'https')
+          : websocketUri.replace(scheme: 'http');
+
+      // 2. Create an AbortableRequest, passing the trigger's future.
+      final request = http.AbortableRequest(
+        'GET',
+        httpUri,
+        abortTrigger: abortTrigger.future,
+      );
+
+      if (authorization != null) {
+        request.headers['Authorization'] = authorization;
+      }
+
+      _logger.fine('Sending abortable authorization headers to $httpUri');
+
+      try {
+        // 3. Use client.send() for fine-grained control.
+        final streamedResponse = await client.send(request)
+            .timeout(const Duration(seconds: 10));
+
+        // Convert the streamed response to a regular response to get the body/status.
+        final response = await http.Response.fromStream(streamedResponse);
+
+        final status = response.statusCode;
+        if (status == 200 || status == 202 || status == 204) {
+          return status; // Success!
+        } else {
+          throw Exception('Server returned status $status');
+        }
+      } on http.RequestAbortedException {
+        // Handle the specific case where the request was aborted by our trigger.
+        _logger.fine('Authorization request to $httpUri was aborted.');
+        throw Exception('Request was aborted');
+      } finally {
+        client.close(); // Always close the client.
+      }
+    }();
+
+    // 4. The abort function now works by completing the trigger.
+    void abort() {
+      if (!abortTrigger.isCompleted) {
+        abortTrigger.complete();
+      }
+    }
+
+    return ConnectResult(abort, authFuture);
+  }
+  @override
+  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) async {
+    // ?: Node?
+    if (isNode) {
+      // We don't have async unload handling in Node.js, so we'll do a best-effort POST.
+      final client = BrowserClient()..withCredentials = true;
+      try {
+        await client
+            .post(closeUri, body: const <int>[]) // empty body
+            .timeout(const Duration(seconds: 3));
+      } catch (_) {
+        // Intentionally ignore - best effort only.
+      } finally {
+        client.close();
+      }
+      return true;
+    }
+    // E-> In browser, use sendBeacon:
+    return web.window.navigator.sendBeacon(closeUri.toString());
+  }
+
+  // Keep a mapping from the Dart handler to the JS handler so we can remove by the same reference.
+  final Map<Function, JSFunction> _beforeUnloadJsHandlers = {};
+
+  @override
+  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
+    final jsHandler = _beforeUnloadJsHandlers.remove(beforeunloadHandler);
+    if (jsHandler != null) {
+      if (isNode) {
+        // ?: Node?
+        // -> Node, no beforeunload to deregister.
+      } else {
+        // E-> Browser, so deregister:
+        web.window.removeEventListener('beforeunload', jsHandler);
+      }
+    }
+  }
+
+  @override
+  void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
+    // Wrap the Dart handler into a JS-compatible EventListener and store its reference.
+    final jsHandler = ((web.Event e) {
+      beforeunloadHandler(e);
+    }).toJS;
+    _beforeUnloadJsHandlers[beforeunloadHandler] = jsHandler;
+    if (isNode) {
+      // ?: Node?
+      // -> Node, no beforeunload to register.
+    } else {
+      // E-> Browser, so register:
+      web.window.addEventListener('beforeunload', jsHandler);
+    }
+  }
+
+  @override
+  String get runningOnVersions {
+    // ?: Node?
+    if (isNode) {
+      // -> Node, use our magic NodeInfo class:
+      return 'Runtime: Node.js ${NodeInfo.nodeVersion()}, V8 ${NodeInfo.v8Version()};'
+          ' Host: ${NodeInfo.platform()} on ${NodeInfo.arch()}';
+    }
+    // E-> Browser, so use web.window:
+    return 'Runtime: Browser, User-Agent ${web.window.navigator.userAgent}';
+  }
+
+  final _stopWatch = Stopwatch()..start();
+  double performanceTime() => isNode ? _stopWatch.elapsedMicroseconds / 1000.0 : web.window.performance.now();
+}
+
+/// Implementation of WebSocket using the browser's WebSocket API (package:web).
+class WebWebSocket extends WebSocket {
+  String? _url;
+  late web.WebSocket _htmlWebSocket;
+
+  WebWebSocket.create(String url, String protocol, String? authorization) {
+    _url = url;
+    _htmlWebSocket = web.WebSocket(url, protocol.toJS);
+    _htmlWebSocket.onClose.forEach((closeEvent) {
+      handleClose(closeEvent.code, closeEvent.reason, closeEvent);
+    });
+    _htmlWebSocket.onError.forEach(handleError);
+    _htmlWebSocket.onMessage.forEach((messageEvent) {
+      handleMessage(messageEvent.data?.toString(), messageEvent);
+    });
+    _htmlWebSocket.onOpen.forEach(handleOpen);
+  }
+
+  static WebWebSocket connect(String url, String protocol, String authorization) {
+    return WebWebSocket.create(url, protocol, authorization);
+  }
+
+  @override
+  void close(int code, String reason) {
+    _htmlWebSocket.close(code, reason);
+  }
+
+  @override
+  void send(String data) {
+    _htmlWebSocket.send(data.toJS);
+  }
+
+  @override
+  String? get url => _url;
+}
+
+MatsSocketPlatform createTransport() => MatsSocketPlatformJs();
+
+// ---- Node's global `process` ----
+@JS('process')
+external _Process get process;
+
+@JS()
+@staticInterop
+class _Process {}
+
+extension _ProcessExt on _Process {
+  external JSString get platform;         // property, not a function
+  external JSString get arch;             // property, not a function
+  external _Versions get versions;
+}
+
+@JS()
+@staticInterop
+class _Versions {}
+
+extension _VersionsExt on _Versions {
+  external JSString get v8;
+  external JSString get node;
+}
+
+// ---- Convenience API ----
+class NodeInfo {
+  static String platform() => process.platform.toDart;
+  static String arch() => process.arch.toDart;
+  static String nodeVersion() => process.versions.node.toDart;
+  static String v8Version() => process.versions.v8.toDart;
+}
