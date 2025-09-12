@@ -29,8 +29,8 @@ configurations {
     dartSdk
 }
 
+def currentOs = org.gradle.internal.os.OperatingSystem.current()
 dependencies {
-    def currentOs = org.gradle.internal.os.OperatingSystem.current()
     def platformClassifier =
             currentOs.isWindows() ? "windows-x64" :
             currentOs.isMacOsX() ? "macos-x64" :
@@ -194,8 +194,19 @@ tasks.register('testNode') { dependsOn 'testNodeJs', 'testNodeWasm'}
 // All tests
 tasks.register('testAll') { dependsOn 'testWeb', 'testVm', 'testNode' }
 
-// Make 'test' be both VM and Node
-tasks.register('test') { dependsOn 'testVm', 'testNode' }
+// Make 'test' be both VM and Node.
+// ?:Are we running on Windows? (GHA)
+if (currentOs.isWindows()) {
+    // -> Yes, Windows, special handling. Avoid the testNodeWasm, as it fails due to bad path handling,
+    println "Windows OS detected ('${currentOs}'), thus avoiding task 'testNodeWasm' due to bad path handling," +
+            " where e.g. '/runner' becomes '<linefeed>unner', and fails."
+    tasks.register('test') { dependsOn 'testVm', 'testNodeJs' }
+}
+else {
+    // -> No, not Windows, so include all testVm and testNode tasks.
+    println "Non-Windows OS detected ('${currentOs}'), so including all 'testVM' and 'testNode' tasks."
+    tasks.register('test') { dependsOn 'testVm', 'testNode' }
+}
 
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
 rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVmExe, testVmSource, testVmKernel,
