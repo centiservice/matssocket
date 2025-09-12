@@ -15,10 +15,10 @@ void main() {
       expect(MatsSocketPlatform.create().runningOnVersions, isNotNull);
     });
 
-    test('Version contains User-Agent (for web) or Host (for vm)', () {
+    test('Version contains "Runtime:"; and "Dart VM/Exe", "Browser" or "Node.js"', () {
       expect(MatsSocketPlatform.create().runningOnVersions, contains('Runtime:'));
-      expect(MatsSocketPlatform.create().runningOnVersions, anyOf(contains('Browser'),
-          contains('Dart VM/Exe'), contains('Node.js')));
+      expect(MatsSocketPlatform.create().runningOnVersions,
+          anyOf(contains('Dart VM/Exe'), contains('Browser'), contains('Node.js')));
     });
   });
 }
