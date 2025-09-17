@@ -83,11 +83,11 @@ void main() {
         }
 
         /*
-                 *  This is a send. Order should be:
-                 *  - ReceivedEvent, by settling the returned Received-Promise from invocation of 'send'.
-                 *  - InitiationProcessedEvent on matsSocket.initiations
-                 *  - InitiationProcessedEvent on listeners
-                 */
+         *  This is a send. Order should be:
+         *  - ReceivedEvent, by settling the returned Received-Promise from invocation of 'send'.
+         *  - InitiationProcessedEvent on matsSocket.initiations
+         *  - InitiationProcessedEvent on listeners
+         */
 
         var receivedRoundTripMillisFromReceived;
         var initiationProcessedEventFromListener;

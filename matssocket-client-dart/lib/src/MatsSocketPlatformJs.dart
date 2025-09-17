@@ -144,6 +144,8 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
   }
 
   final _stopWatch = Stopwatch()..start();
+
+  @override
   double performanceTime() => isNode ? _stopWatch.elapsedMicroseconds / 1000.0 : web.window.performance.now();
 }
 
@@ -187,15 +189,15 @@ MatsSocketPlatform createTransport() => MatsSocketPlatformJs();
 
 // ---- Node's global `process` ----
 @JS('process')
-external _Process get process;
+external _Process get _process;
 
 @JS()
 @staticInterop
 class _Process {}
 
 extension _ProcessExt on _Process {
-  external JSString get platform;         // property, not a function
-  external JSString get arch;             // property, not a function
+  external JSString get platform;
+  external JSString get arch;
   external _Versions get versions;
 }
 
@@ -210,8 +212,8 @@ extension _VersionsExt on _Versions {
 
 // ---- Convenience API ----
 class NodeInfo {
-  static String platform() => process.platform.toDart;
-  static String arch() => process.arch.toDart;
-  static String nodeVersion() => process.versions.node.toDart;
-  static String v8Version() => process.versions.v8.toDart;
+  static String platform() => _process.platform.toDart;
+  static String arch() => _process.arch.toDart;
+  static String nodeVersion() => _process.versions.node.toDart;
+  static String v8Version() => _process.versions.v8.toDart;
 }

@@ -205,7 +205,7 @@ if (currentOs.isWindows()) {
 else {
     // -> No, not Windows, so include all testVm and testNode tasks.
     println "Non-Windows OS detected ('${currentOs}'), so including all 'testVM' and 'testNode' tasks."
-    tasks.register('test') { dependsOn 'testVm', 'testNode' }
+    tasks.register('test') { dependsOn 'testVm', 'testNodeJs', 'testNodeWasm' }
 }
 
 // We need to ensure that dart tests are run before stopping the test MatsSocketServer.
