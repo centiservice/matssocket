@@ -16,7 +16,9 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
   MatsSocketPlatformIo() {
     Isolate.current.addOnExitListener(_onExitPort.sendPort);
     _onExitPort.listen((data) {
-      _beforeUnloadHandles.forEach((handler) => handler(data));
+      for (var handler in _beforeUnloadHandles) {
+        handler(data);
+      }
     });
   }
 

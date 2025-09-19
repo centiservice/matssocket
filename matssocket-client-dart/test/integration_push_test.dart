@@ -245,7 +245,7 @@ void main() {
         var msg = await terminator.first;
 
         expect(msg.data['number'], equals(math.e));
-        expect(msg.traceId, equals(traceId + ':SentFromThread'));
+        expect(msg.traceId, equals('$traceId:SentFromThread'));
 
         // This is a server-initiated message, so these should be undefined in MessageEvent
         expect(msg.clientRequestTimestamp, isNull);

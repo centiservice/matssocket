@@ -21,20 +21,19 @@ typedef InitiationProcessedEventListener = Function(InitiationProcessedEvent);
 ///   * For Requests, the total experienced Request-to-Reply time.
 ///   * For Requests, the Reply [MessageEvent] object.
 ///
-/// You may "subscribe" to <code>InitiationProcessedEvents</code> using
+/// You may listen to <code>InitiationProcessedEvents</code> using
 /// [MatsSocket.addInitiationProcessedEventListener], and you may get the latest such events from the
 /// property [MatsSocket.initiations].
 ///
 /// **Note on event ordering**:
 ///
-///   * send: First [ReceivedEvent] is issued. Then nn [InitiationProcessedEvent] is added to
-///   [MatsSocket.initiations], and then all [InitiationProcessedEvent] listeners are invoked
-///   * request/requestReplyTo: First [ReceivedEvent] is issued (i.e. ack/nack), then when the reply
+/// * send: First [ReceivedEvent] is issued (i.e. ack/nack), immediately followed by an [InitiationProcessedEvent] added
+///   to [MatsSocket.initiations], and then all [InitiationProcessedEvent] listeners are invoked
+/// * request/requestReplyTo: First [ReceivedEvent] is issued (i.e. ack/nack). Then, when the reply
 ///   comes back to the server, an [InitiationProcessedEvent] is added to [MatsSocket.initiations], and
 ///   then all [InitiationProcessedEvent] listeners are invoked, and finally the [MessageEvent] is
 ///   delivered, either as settling of the return Reply-Promise (for 'request'), or invocation of the Terminator's
 ///   message- or rejectCallbacks (for 'requestReplyTo').
-///
 class InitiationProcessedEvent {
   /// Which initiation type of this flow, enum of [InitiationProcessedEventType].
   InitiationProcessedEventType? type;

@@ -215,25 +215,24 @@ extension ConnectionEventTypeExtension on ConnectionEventType {
   }
 }
 
-/// States for MatsSocket's {@link MatsSocket#state state}.
+/// States for [MatsSocket.state].
 enum ConnectionState {
-  /// This is the initial State of a MatsSocket. Also, the MatsSocket is re-set back to this State in a
-  /// Session-Closed-from-Server situation (which is communicated via listeners registered with
-  /// {@link MatsSocket#addSessionClosedEventListener(listener)}), OR if you have explicitly performed a
-  /// matsSocket.close().
+  /// Initial state of a MatsSocket. The MatsSocket is reset to this state when the session is
+  /// closed by the server (see [MatsSocket.addSessionClosedEventListener]) or when you explicitly
+  /// call [MatsSocket.close].
   ///
-  /// Only transition out of this state is into {@link #CONNECTING}.
+  /// Only transition out of this state is into [ConnectionState.CONNECTING].
   NO_SESSION,
 
-  /// Read doc at {@link ConnectionEventType#CONNECTING}.
+  /// See [ConnectionEventType.CONNECTING].
   CONNECTING,
 
-  /// Read doc at {@link ConnectionEventType#WAITING}.
+  /// See [ConnectionEventType.WAITING].
   WAITING,
 
-  /// Read doc at {@link ConnectionEventType#CONNECTED}.
+  /// See [ConnectionEventType.CONNECTED].
   CONNECTED,
 
-  /// Read doc at {@link ConnectionEventType#SESSION_ESTABLISHED}.
+  /// See [ConnectionEventType.SESSION_ESTABLISHED].
   SESSION_ESTABLISHED
 }

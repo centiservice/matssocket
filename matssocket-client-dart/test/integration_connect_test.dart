@@ -14,15 +14,6 @@ void main() {
   group('MatsSocket integration tests, basics', () {
     late MatsSocket matsSocket;
 
-    void setAuth([String userId = 'standard',
-      Duration duration = const Duration(seconds: 20),
-      roomForLatencyMillis = const Duration(seconds: 10)]) {
-      var now = DateTime.now();
-      var expiry = now.add(duration);
-      matsSocket.setCurrentAuthorization(
-          'DummyAuth:$userId:${expiry.millisecondsSinceEpoch}', expiry, roomForLatencyMillis);
-    }
-
     setUp(() => matsSocket = createMatsSocket());
 
     tearDown(() async  {

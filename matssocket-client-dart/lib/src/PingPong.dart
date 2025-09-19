@@ -1,6 +1,5 @@
 /// (Metric) A "holding struct" for pings and their experienced round-trip times - you may "subscribe" to ping results
-/// using {@link MatsSocket#addPingListener()}, and you may get the latest pings from the property
-/// {@link MatsSocket#pings}.
+/// using [MatsSocket.addPingListener], and you may get the latest pings from the property [MatsSocket.pings].
 class PingPong {
   /// Sequence of the ping.
   final String pingId;

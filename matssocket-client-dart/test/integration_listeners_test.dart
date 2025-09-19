@@ -89,8 +89,8 @@ void main() {
          *  - InitiationProcessedEvent on listeners
          */
 
-        var receivedRoundTripMillisFromReceived;
-        var initiationProcessedEventFromListener;
+        double? receivedRoundTripMillisFromReceived;
+        InitiationProcessedEvent? initiationProcessedEventFromListener;
 
         matsSocket.addInitiationProcessedEventListener((processedEvent) {
           listenerProcessed.complete(() {
@@ -157,7 +157,7 @@ void main() {
         var traceId = 'InitiationProcessedEvent_request_${id(6)}';
         var msg = {'string': 'The Strange', 'number': math.e};
 
-        var receivedRoundTripMillisFromReceived;
+        double? receivedRoundTripMillisFromReceived;
 
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST));
@@ -367,7 +367,7 @@ void main() {
           'sleepTime': 10 // Sleeptime before replying
         };
 
-        var receivedRoundTripMillisFromReceived;
+        double? receivedRoundTripMillisFromReceived;
 
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST_REPLY_TO));

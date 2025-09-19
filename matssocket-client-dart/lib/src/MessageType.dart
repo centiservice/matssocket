@@ -71,7 +71,7 @@ enum MessageType {
   SUB_OK,
 
   /// Reply from Server: Subscription went OK, but you've lost messages: The messageId that was referenced in the
-  /// {@link #SUB} was not known to the server, implying that there are at least one message that has expired, and
+  /// [SUB] was not known to the server, implying that there are at least one message that has expired, and
   /// as such it can be many - so you won't get any "replayed".
   SUB_LOST,
 

@@ -78,7 +78,7 @@ void main() {
         matsSocket.setCurrentAuthorization('Test', DateTime.now().add(Duration(minutes: 1)));
       });
 
-      await matsSocket.send('Test.authCallback', 'SEND_' + id(6), '');
+      await matsSocket.send('Test.authCallback', 'SEND_${id(6)}', '');
 
       expect(authCallbackCalled, true);
     });

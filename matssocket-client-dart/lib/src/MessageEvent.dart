@@ -11,7 +11,7 @@ class MessageEvent {
   /// Client Endpoint when targeted for a Server initiated Request); or {@link MessageEventType#RESOLVE "resolve"}
   /// or {@link MessageEventType#REJECT "reject"} (for settling of Promise from a Client-initiated Request, and
   /// for a Client Terminator when targeted as the reply-endpoint for a Client initiated Request) - <b>or
-  /// {@link MessageEventType#SESSION_CLOSED "sessionclosed"} if the session was closed with outstanding Requests
+  /// [MessageEventType.SESSION_CLOSED] if the session was closed with outstanding Requests
   /// and MatsSocket therefore "clears out" these Requests.</b>
   /// <p/>
   /// Notice: In the face of {@link MessageType#SESSION_CLOSED "sessionclosed"} or {@link MessageType#TIMEOUT "timeout"},
@@ -53,9 +53,9 @@ class MessageEvent {
   /// When the message was received on the Client, millis-since-epoch.
   final DateTime receivedTimestamp;
 
-  /// For {@link MatsSocket#request()} and {@link MatsSocket#requestReplyTo()} Requests: Round-trip time in
-  /// milliseconds from Request was performed to Reply was received, basically <code>{@link #receivedTimestamp} -
-  /// {@link #clientRequestTimestamp}</code>, but depending on the browser/runtime, you might get higher resolution
+  /// For [MatsSocket.request] and [MatsSocket.requestReplyTo] Requests: Round-trip time in
+  /// milliseconds from Request was performed to Reply was received, basically <code>[receivedTimestamp] -
+  /// [clientRequestTimestamp]</code>, but depending on the browser/runtime, you might get higher resolution
   /// than integer milliseconds (i.e. fractions of milliseconds, a floating point number) - it depends on the
   /// resolution of <code>performance.now()</code>.
   ///
@@ -98,16 +98,16 @@ enum MessageEventType {
   PUB,
 
   /// "Synthetic" event in that it is not a message from Server: A Client-to-Server
-  /// {@link MatsSocket#request() Request} was not replied to by the server within the
-  /// {@link MatsSocket#requestTimeoutMillis default request timeout} - or a specific timeout specified in the request
-  /// invocation. In these situations, the Request Promise is rejected with a {@link MessageEvent} of this type,
+  /// [MatsSocket.request] was not replied to by the server within the
+  /// [MatsSocket.requestTimeoutMillis] default request timeout - or a specific timeout specified in the request
+  /// invocation. In these situations, the Request Promise is rejected with a [MessageEvent] of this type,
   /// and the {@link MessageEvent#data} value is undefined.
   TIMEOUT,
 
   /// "Synthetic" event in that it is not a message from Server: This only happens if the MatsSocketSession is
-  /// closed with outstanding Client-to-Server {@link MatsSocket#request() Requests} not yet replied to by the
-  /// server. In these situations, the Request Promise is rejected with a {@link MessageEvent} of this type, and
-  /// the {@link MessageEvent#data} value is undefined.
+  /// closed with outstanding Client-to-Server [MatsSocket.request] not yet replied to by the
+  /// server. In these situations, the Request Promise is rejected with a [MessageEvent] of this type, and
+  /// the [MessageEvent.data] value is undefined.
   SESSION_CLOSED
 }
 

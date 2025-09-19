@@ -23,7 +23,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
 
   @override
   ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
-    // 1. Create a Completer to trigger the abort action.
+    // :: Make abortable request:
     final abortTrigger = Completer<void>();
     final client = BrowserClient()..withCredentials = true;
 
@@ -32,7 +32,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
           ? websocketUri.replace(scheme: 'https')
           : websocketUri.replace(scheme: 'http');
 
-      // 2. Create an AbortableRequest, passing the trigger's future.
+      // Create an AbortableRequest, passing the trigger's future.
       final request = http.AbortableRequest(
         'GET',
         httpUri,
@@ -43,16 +43,14 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
         request.headers['Authorization'] = authorization;
       }
 
-      _logger.fine('Sending abortable authorization headers to $httpUri');
+      _logger.fine('Sending Authorization headers to $httpUri');
 
       try {
-        // 3. Use client.send() for fine-grained control.
         final streamedResponse = await client.send(request)
-            .timeout(const Duration(seconds: 10));
+            .timeout(const Duration(seconds: 20));
 
         // Convert the streamed response to a regular response to get the body/status.
         final response = await http.Response.fromStream(streamedResponse);
-
         final status = response.statusCode;
         if (status == 200 || status == 202 || status == 204) {
           return status; // Success!
@@ -68,7 +66,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
       }
     }();
 
-    // 4. The abort function now works by completing the trigger.
+    // The abort function completes the abortTrigger, causing the request to be aborted.
     void abort() {
       if (!abortTrigger.isCompleted) {
         abortTrigger.complete();

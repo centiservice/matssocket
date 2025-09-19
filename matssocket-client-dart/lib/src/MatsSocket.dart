@@ -21,16 +21,12 @@ typedef ErrorEventListener = Function(ErrorEvent);
 
 final rnd = math.Random();
 
-/// Convenience method for making random strings meant for user reading, e.g. in TraceIds, since this
+/// Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
 /// alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
-/// finding it in a log system, a length of 6 should be plenty.
+/// finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
 ///
-/// [length] length how long the string should be. 6 should be enough to make a TraceId "unique enough"
-/// to uniquely find it in a log system. If you want "absolute certainty" that there never will be any collisions,
-/// go for 20.
-/// **returns** {string} a random string consisting of characters from from digits, lower and upper case letters
-/// (62 chars).
-String id([int length = 10]) {
+/// - [length] length how long the string should be, default is 6.
+String id([int length = 6]) {
   var result = '';
   for (var i = 0; i < length; i++) {
     result += ALPHABET[rnd.nextInt(ALPHABET.length)];
@@ -38,14 +34,12 @@ String id([int length = 10]) {
   return result;
 }
 
-/// Convenience method for making random strings for correlationIds, not meant for human reading ever
-/// (choose e.g. length=8), as the alphabet consist of all visible ACSII chars that won't be quoted in a JSON
-/// string. Should you want to make free-standing SessionIds or similar, you would want to have a longer length,
-/// use e.g. length=16.
+/// Convenience method for making random strings for correlationIds, not meant for human reading as the alphabet
+/// consist of all visible ACSII chars that won't be quoted in a JSON string. Should you want to make actual Session
+/// cookies or similar, that is, ids being very unique and hard to brute force, you would want to have a longer length,
+/// use e.g. length=16. The alphabet is 92 chars.
 ///
-/// [length] how long the string should be, e.g. 8 chars for a pretty safe correlationId.
-/// **returns** {string} a random string consisting of characters from all visible and non-JSON-quoted chars of
-/// ASCII (92 chars).
+/// - [length] how long the string should be, default is 10.
 String jid([int length = 10]) {
   var result = '';
   for (var i = 0; i < length; i++) {
@@ -129,7 +123,7 @@ class MatsSocket {
 
   // Outstanding Pings
   final Map<String, _OutstandingPing> _outstandingPings = {};
-  // Outstanding Request "futures", i.e. the resolve() and reject() functions of the returned Promise.
+  // Outstanding Request "futures", i.e. the resolve() and reject() functions of the returned Future.
   final Map<String, _Request> _outstandingRequests = {};
   // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
   final Map<String?, _Initiation> _outboxInitiations = {};
@@ -159,7 +153,6 @@ class MatsSocket {
   /// but this is very far from ideal, as a live authentication then could be stored in several ACCESS LOG style
   /// logging systems along the path of the WebSocket HTTP Handshake Request call.</i>
   ///
-  ///
   /// This can be set to any function fulfilling the PreConnectOperation typedef.
   PreConnectOperation? preconnectoperation;
 
@@ -180,7 +173,7 @@ class MatsSocket {
   /// message which resets the debug flags will therefore also have debug information attached).
   ///
   /// The value is a bit field (values in [DebugOption], so you bitwise-or (or simply add) together the
-  /// different things you want. Difference between <code>undefined</code> and <code>0</code> is that undefined
+  /// different things you want. Difference between `null` and `0` is that undefined
   /// turns debug totally off (the [DebugDto] instance won't be present in the [MessageEvent],
   /// while 0 means that the server is not requested to add debug info - but the Client will still create the
   /// [DebugDto] instance and populate it with what any local debug information.
@@ -189,32 +182,32 @@ class MatsSocket {
   /// gotten by the AuthenticationPlugin on the Server side.
   int? debug = 0;
 
-  /// When performing a [request] and [requestReplyTo], you may not
-  /// always get a (timely) answer: Either you can loose
+  /// When performing a [request] and [requestReplyTo], you may not always get a (timely) answer: Either you can loose
   /// the connection, thus lagging potentially forever - or, depending on the Mats message handling on the server
   /// (i.e. using "non-persistent messaging" for blazing fast performance for non-state changing operations),
   /// there is a minuscule chance that the message may be lost - or, if there is a massive backlog of messages
   /// for the particular Mats endpoint that is interfaced, you might not get an answer for 20 minutes. This setting
-  /// controls the default timeout in milliseconds for Requests, and is default 45000 milliseconds (45 seconds),
-  /// but you may override this per Request by specifying a different timeout in the config object for the request.
-  /// When the timeout is hit, the Promise of a [request()] - or the specified ReplyTo Terminator for a
-  /// [requestReplyTo()] - will be rejected with a [MessageEvent] of type
-  /// [MessageEventType.TIMEOUT]. In addition, if the Received acknowledgement has not gotten in
-  /// either, this will also (*before* the Promise reject!) be NACK'ed with [ReceivedEventType.TIMEOUT]
+  /// controls the default timeout as a [Duration] for Requests, and is default 45 seconds. You may override this
+  /// per Request by specifying a different timeout in the config object for the request.
+  ///
+  /// When the timeout is hit, the Future of a [request] - or the specified ReplyTo Terminator for a
+  /// [requestReplyTo] - will be rejected with a [MessageEvent] of type [MessageEventType.TIMEOUT].
+  ///
+  /// In addition, if the Received acknowledgement has not gotten in either, this will also be NACK'ed with
+  /// [ReceivedEventType.TIMEOUT] - this happens *before* the Future rejects)
   Duration requestTimeout = Duration(seconds: 45);
 
-  /// Creates a MatsSocket, requiring the using Application's name and version, and which URLs to connect to.
+  /// Creates a MatsSocket, requiring the Application's name and version, and which URLs to connect to.
   ///
-  /// [appName] the name of the application using this MatsSocket.dart client library
-  /// [appVersion] the version of the application using this MatsSocket.dart client library
-  /// [urls] a List of WebSocket URLs speaking 'matssocket' protocol - one, or multiple for high availability.
-  /// @param {object} config an optional object carrying extra configuration. Current sole key: 'webSocketFactory': how to
-  /// make WebSockets, not required in a browser setting as it will use window.WebSocket if not set.
-  /// @class
-  ///
-  MatsSocket(this.appName, this.appVersion, List<Uri> urls, [MatsSocketPlatform? platform])
+  /// - [appName] the name of the application using this MatsSocket.dart client library
+  /// - [appVersion] the version of the application using this MatsSocket.dart client library
+  /// - [urls] a List of WebSocket URLs speaking 'matssocket' protocol - one, or multiple for high availability.
+  /// - [MatsSocketPlatform] the platform implementation to use, if not specified, it will be
+  ///     [MatsSocketPlatform.create()]d based on conditional import between JS and IO, and further runtime checks
+  ///     of whether the JS version runs in a browser or e.g. NodeJS.
+  MatsSocket(this.appName, this.appVersion, List<Uri> urls, [MatsSocketPlatform? matsSocketPlatform])
       : _useUrls = List.of(urls),
-        platform = platform ?? MatsSocketPlatform.create(),
+        platform = matsSocketPlatform ?? MatsSocketPlatform.create(),
         _connectionTimeoutMin = (urls.length > 1
             ? _connectionTimeoutBase
             : _connectionTimeoutMinIfSingleUrl) {
@@ -275,20 +268,20 @@ class MatsSocket {
   ///
   /// Note that when this event listener is invoked, the MatsSocketSession is just as closed as if you invoked
   /// [MatsSocket.close()] on it: All outstanding send/requests are NACK'ed (with
-  /// [ReceivedEventType.SESSION_CLOSED]), all request Promises are rejected
+  /// [ReceivedEventType.SESSION_CLOSED]), all request Futures are rejected
   /// (with [MessageEventType.SESSION_CLOSED]), and the MatsSocket object is as if just constructed and
   /// configured. You may "boot it up again" by sending a new message where you then will get a new MatsSocket
   /// SessionId. However, you should consider restarting the application if this happens, or otherwise "reboot"
   /// it as if it just started up (gather all required state and null out any other that uses lazy fetching).
-  /// Realize that any outstanding "addOrder" request's Promise will now have been rejected - and you don't really
+  /// Realize that any outstanding e.g. "addOrder" request's Future will now have been rejected - and you don't really
   /// know whether the order was placed or not, so you should get the entire order list. On the received event,
-  /// the property 'outstandingInitiations' details the number of outstanding send/requests and Promises that was
+  /// the property 'outstandingInitiations' details the number of outstanding send/requests and Futures that was
   /// rejected: If this is zero, you *might* actually be in sync (barring failed/missing Server-to-Client
   /// SENDs or REQUESTs), and could *consider* to just "act as if nothing happened" - by sending a new message
   /// and thus get a new MatsSocket Session going.
   ///
-  /// @param {function<CloseEvent>} sessionClosedEventListener a function that is invoked when the library gets the current
-  /// MatsSocketSession closed from the server. The event object is the WebSocket's [MatsSocketCloseEvent].
+  /// - [sessionClosedEventListener] a function taking [MatsSocketCloseEvent] that is invoked when the library gets the current
+  ///      MatsSocketSession closed from the server.
   void addSessionClosedEventListener(SessionClosedEventListener sessionClosedEventListener) {
     _sessionClosedEventListeners.add(sessionClosedEventListener);
   }
@@ -306,8 +299,8 @@ class MatsSocket {
   ///
   /// Read more at [ConnectionEvent] and [ConnectionEventType].
   ///
-  /// @param {function<ConnectionEvent>} connectionEventListener a function that is invoked when the library issues
-  /// [ConnectionEvent]s.
+  /// - [connectionEventListener] a function taking [ConnectionEvent] that is invoked when the library progresses
+  ///     through the different connection states.
   void addConnectionEventListener(ConnectionEventListener connectionEventListener) {
     _connectionEventListener.add(connectionEventListener);
   }
@@ -318,8 +311,8 @@ class MatsSocket {
   ///
   /// Read more at [SubscriptionEvent] and [SubscriptionEventType].
   ///
-  /// @param {function<SubscriptionEvent>} subscriptionEventListener a function that is invoked when the library
-  /// gets information from the Server wrt. subscriptions.
+  /// - [subscriptionEventListener] a function taking [SubscriptionEvent] that is invoked when the library
+  ///     gets information from the Server wrt. subscriptions.
   void addSubscriptionEventListener(SubscriptionEventListener subscriptionEventListener) {
     _subscriptionEventListeners.add(subscriptionEventListener);
   }
@@ -330,23 +323,24 @@ class MatsSocket {
   /// inspection - it is best to do this via out-of-band means, e.g. via HTTP. For browsers, consider
   /// window.sendBeacon(..).
   ///
-  /// The event object is [ErrorEvent].
-  ///
-  /// @param {function<ErrorEvent>} errorEventListener
+  /// - [errorEventListener] a function taking [ErrorEvent] that is invoked when the library catches
+  ///     errors of different kinds.
   void addErrorEventListener(ErrorEventListener errorEventListener) {
     _errorEventListeners.add(errorEventListener);
   }
 
   /// If this MatsSockets client realizes that the expiration time (minus the room for latency) of the authorization
   /// has passed when about to send a message, it will invoke this callback function. A new authorization must then
-  /// be provided by invoking the 'setCurrentAuthorization' function - only when this is invoked, the MatsSocket
+  /// be provided by invoking the [setCurrentAuthorization] method - only when this is invoked, the MatsSocket
   /// will send messages. The MatsSocket will queue up any messages that are initiated while waiting for new
   /// authorization, and send them all at once in a single pipeline when the new authorization is in.
   ///
-  /// @param {function<AuthorizationRequiredEvent>} authorizationExpiredCallback function which will be invoked
-  /// when about to send a new message *if*
-  /// '<code>Date.now() > (expirationTimeMillisSinceEpoch - roomForLatencyMillis)</code>' from the paramaters of
-  /// the last invocation of [setCurrentAuthorization()].
+  /// **If you do not set this callback, but still set Authorization using [setCurrentAuthorization] with an expiration
+  /// time, and the authorization expires, the MatsSocket will error out and close the session!**
+  ///
+  /// - [authorizationExpiredCallback] function taking [AuthorizationRequiredEvent] which will be invoked when about to
+  ///     send a new message *if* '<code>Date.now() > (expirationTimeMillisSinceEpoch - roomForLatencyMillis)</code>' from
+  ///     the paramaters of the last invocation of [setCurrentAuthorization].
   void setAuthorizationExpiredCallback(AuthorizationExpiredCallback authorizationExpiredCallback) {
     _authorizationExpiredCallback = authorizationExpiredCallback;
 
@@ -356,37 +350,59 @@ class MatsSocket {
   }
 
 
-  /// Sets an authorization String, which for several types of authorization must be invoked on a regular basis with
-  /// fresh authorization - this holds for a OAuth/JWT/OIDC-type system where an access token will expire within a short time
-  /// frame (e.g. expires within minutes). For an Oauth2-style authorization scheme, this could be "Bearer: ......".
-  /// This must correspond to what the server side authorization plugin expects.
+  /// Sets an authorization String, which must correspond to what the server side authorization plugin expects. It
+  /// is up to the server side AuthorizationPlugin to resolve the String to a UserId and Principal. This String may
+  /// represent a cookie-style value that on the server resolves to an already authenticated user (e.g. where the
+  /// app has done the authentication with the server, and the server stores a cookie that the server side
+  /// AuthorizationPlugin then can resolve to the user when presented by the MatsSocket).
+  /// The String may also be an actual authentication token, e.g. a JWT or OAuth2 access token, which the app has
+  /// fetched from an Authorization server. The MatsSocket client library will not interpret the String in
+  /// any way, it is just a String to it: It is up to the server side AuthorizationPlugin to interpret the
+  /// String.
   ///
-  /// **NOTE: This SHALL NOT be used to CHANGE the user!** It should only refresh an existing authorization for the
-  /// initially authenticated user. One MatsSocket (Session) shall only be used by a single user: If changing
-  /// user, you should ditch the existing MatsSocket after invoking [close()] to properly clean up the current
-  /// MatsSocketSession on the server side too, and then make a new MatsSocket thus getting a new Session.
+  /// For several types of authorization this method must be invoked on a regular basis with fresh authorization -
+  /// for example for a OAuth/JWT/OIDC-type system where an access token will expire within a short time frame
+  /// (e.g. expires within minutes). For an Oauth2-style authorization scheme, this String could be "Bearer: ...",
+  /// which the server side AuthorizationPlugin then can parse as a Bearer token.
   ///
-  /// Note: If the underlying WebSocket has not been established and HELLO sent, then invoking this method will NOT
-  /// do that - only the first actual MatsSocket message will start the WebSocket and perform the HELLO/WELCOME
-  /// handshake.
+  /// **Note: If you set Authorization with an expiration time, but do not set the [authorizationExpiredCallback],
+  /// and the authorization expires, the MatsSocket will error out and close the session!** So either set
+  /// Authorization without expiration time, or also set the callback. You may also yourself keep the
+  /// authorization fresh by invoking this method on a regular basis. You may even do a combination, whereby you
+  /// preemptively keep the authorization fresh as long as the user is active in the application to avoid
+  /// the extra latency of waiting for the callback to provide new authorization - but if the user goes idle
+  /// for a longer period, you let the authorization expire and rely on the callback to provide fresh authorization.
   ///
-  /// [authorizationValue] the string Value which will be transferred to the Server and there resolved
-  ///        to a Principal and UserId on the server side by the AuthorizationPlugin. Note that this value potentially
-  ///        also will be forwarded to other resources that requires authorization.
-  /// [expirationTimestamp] the DateTime at which this authorization expires
-  ///        (in case of OAuth-style tokens), or null if it never expires or otherwise has no defined expiration mechanism.
-  /// [roomForLatencyDuration] the Duration which is subtracted from the 'expirationTimestamp' to
-  ///        find the point in time where the MatsSocket will refuse to use the authorization and instead invoke the
-  ///        [setAuthorizationExpiredCallback] and wait for a new authorization
-  ///        being set by invocation of the present method. Depending on what the usage of the Authorization string
-  ///        is on server side is, this should probably **at least** be 10 seconds - but if the Mats
-  ///        endpoints uses the Authorization string to do further accesses, both latency and queue time must be
-  ///        taken into account (e.g. for calling into another API that also needs a valid token). If
-  ///        expirationTimestamp is null, then this parameter is not used. *Default value is 30 seconds.*
-  void setCurrentAuthorization(String authorizationValue, DateTime? expirationTimestamp,
-      [Duration roomForLatencyDuration = const Duration(seconds: 30)]) {
-    _logger.fine(() => 'Got Authorization which ' + (expirationTimestamp != null ? 'Expires in [${expirationTimestamp.difference(DateTime.now())}]' : '[Never expires]')
-        + ', roomForLatencyMillis: $roomForLatencyDuration');
+  /// **Note: This SHALL NOT be used to CHANGE the user!** It should only refresh an existing authorization for the
+  /// initially authenticated user. One MatsSocket with its corresponding MatsSocketSession shall only be used by a
+  /// single user: If changing user, you should ditch the existing MatsSocket after invoking [close] to properly clean
+  /// up the current MatsSocketSession on the server side too, and then make a new MatsSocket thus getting a new
+  /// Session.
+  ///
+  /// Note: If there are no messages yet in the pipeline, invoking this method will not actually start the WebSocket
+  /// connection and HELLO/WELCOME handshake. Only when there both is an authorization and a message to send, the
+  /// connection will be made. Realize that this logic allows for the app to start sending messages as soon as it has
+  /// created the MatsSocket, even if the authorization takes some time to get hold of (e.g. by doing an async
+  /// fetch() to an OAuth2/OIDC token endpoint).
+  ///
+  /// - [authorizationValue] the string Value which will be transferred to the Server and there resolved
+  ///     to a Principal and UserId on the server side by the AuthorizationPlugin. Note that this value potentially
+  ///     also will be forwarded to other resources that requires authorization.
+  /// - [expirationTimestamp] the DateTime at which this authorization expires (in case of OAuth-style tokens), or
+  ///     not set / `null` if it never expires or otherwise has no defined expiration mechanism.
+  /// - [roomForLatencyDuration] the Duration which is subtracted from the 'expirationTimestamp' to
+  ///     find the point in time where the MatsSocket will refuse to use the authorization and instead invoke the
+  ///     [setAuthorizationExpiredCallback] and wait for a new authorization
+  ///     being set by invocation of the present method. Depending on what the usage of the Authorization string
+  ///     is on server side is, this should probably **at least** be 10 seconds - but if the MatsSocket
+  ///     endpoint (or downstream Mats endpoints) uses the Authorization string to do further accesses, both latency and
+  ///     queue time must be taken into account (e.g. for calling into another API that also needs a valid token). If
+  ///     [expirationTimestamp] is null, then this parameter is not used. *Default value is 30 seconds.*
+  void setCurrentAuthorization(String authorizationValue, [DateTime? expirationTimestamp,
+      Duration roomForLatencyDuration = const Duration(seconds: 30)]) {
+    _logger.fine(() => 'Got Authorization which ${expirationTimestamp != null
+        ? 'Expires in [${expirationTimestamp.difference(DateTime.now())}]'
+        : '[Never expires]'}, roomForLatencyMillis: $roomForLatencyDuration');
 
     for (var i=0; i < authorizationValue.length; i++) {
       if (authorizationValue.codeUnitAt(i) > 160) {
@@ -420,8 +436,6 @@ class MatsSocket {
   /// messages SEND, REQUEST or Replies) in that timespan, you stop doing continuous authentication refresh, falling
   /// back to the "on demand" based logic, where when the user does something, the 'authorizationExpiredCallback'
   /// is invoked if the authentication is expired.
-  ///
-  /// [DateTime] of last message enqueued.
   DateTime get lastMessageEnqueuedTimestamp {
     return _lastMessageEnqueuedTimestamp;
   }
@@ -429,7 +443,7 @@ class MatsSocket {
   /// Returns whether this MatsSocket *currently* have a WebSocket connection open. It can both go down
   /// by lost connection (driving through a tunnel), where it will start to do reconnection attempts, or because
   /// you (the Client) have closed this MatsSocketSession, or because the *Server* has closed the
-  /// MatsSocketSession. In the latter cases, where the MatsSocketSession is closed, the WebSocket connection will
+  /// MatsSocketSession. In these latter cases, where the MatsSocketSession is closed, the WebSocket connection will
   /// stay down - until you open a new MatsSocketSession.
   ///
   /// Pretty much the same as <code>([state] === [ConnectionState.CONNECTED])
@@ -447,11 +461,6 @@ class MatsSocket {
   ///  * [ConnectionState.WAITING] - if the "new WebSocket(..)" invocation ended in the socket closing, i.e. connection failed, but we're still counting down to next (re)connection attempt.
   ///  * [ConnectionState.CONNECTED] - if the "new WebSocket(..)" resulted in the socket opening. We still have not established the MatsSocketSession with the server, though.
   ///  * [ConnectionState.SESSION_ESTABLISHED] - when we're open for business: Connected, authenticated, and established MatsSocketSession with the server.
-  ///
-  ///
-  /// @member {string} state
-  /// @memberOf MatsSocket
-  /// @readonly
   ConnectionState? get state {
     return _state;
   }
@@ -463,11 +472,7 @@ class MatsSocket {
   /// roundTripMillis set. This is opposed to the [addPingPongListener], which only gets invoked when
   /// the pong has arrived.
   ///
-  /// @see #addPingPongListener()
-  ///
-  /// @member {array<PingPong>}
-  /// @memberOf MatsSocket
-  /// @readonly
+  /// See also [addPingPongListener]
   List<PingPong> get pings {
     return _pings;
   }
@@ -481,7 +486,8 @@ class MatsSocket {
   /// and thus get a big hit. Thus, you should consider this when interpreting the results - a high outlier should
   /// be seen in conjunction with a message that was sent at the same time.
   ///
-  /// @param {function<PingPong>} pingPongListener a function that is invoked when the library issues
+  /// - [pingPongListener] a function taking [PingPong] that is invoked when the library receives a PONG from the
+  ///     server.
   void addPingPongListener(PingPongListener pingPongListener) {
     _pingPongListeners.add(pingPongListener);
   }
@@ -493,11 +499,7 @@ class MatsSocket {
   /// [InitiationProcessedEvent.replyMessageEvent] set, as opposed to the events issued to
   /// [addInitiationProcessedEventListener], which can decide whether to include them.
   ///
-  /// @see #addInitiationProcessedEventListener()
-  ///
-  /// @member {InitiationProcessedEvent<InitiationProcessedEvent>}
-  /// @memberOf MatsSocket
-  /// @readonly
+  /// See also [addInitiationProcessedEventListener]
   List<InitiationProcessedEvent> get initiations {
     return _initiationProcessedEvents;
   }
@@ -536,14 +538,13 @@ class MatsSocket {
   /// Note: Each listener gets its own instance of [InitiationProcessedEvent], which also is different from
   /// the ones in the [initiations] array.
   ///
-  /// @param {function<InitiationProcessedEvent>} initiationProcessedEventListener a function that is invoked when
-  /// the library issues [InitiationProcessedEvent]s.
-  /// [includeInitiationMessage] whether to include the [InitiationProcessedEvent.initiationMessage]
-  /// [includeReplyMessageEvent] whether to include the [InitiationProcessedEvent.replyMessageEvent]
-  /// Reply [MessageEvent]s.
-  void addInitiationProcessedEventListener(
-      InitiationProcessedEventListener initiationProcessedEventListener,
-      bool includeInitiationMessage, bool includeReplyMessageEvent) {
+  /// - [initiationProcessedEventListener] a function taking [InitiationProcessedEvent] that is invoked when
+  ///     the library has fully processed an initiation (i.e. a Send or Request).
+  /// - [includeInitiationMessage] whether to include the [InitiationProcessedEvent.initiationMessage]
+  /// - [includeReplyMessageEvent] whether to include the [InitiationProcessedEvent.replyMessageEvent]
+  ///     Reply [MessageEvent]s.
+  void addInitiationProcessedEventListener(InitiationProcessedEventListener initiationProcessedEventListener,
+      [bool includeInitiationMessage = false, bool includeReplyMessageEvent = false]) {
     _initiationProcessedEventListeners.add(_InitiationProcessedEventListenerRegistration(
         initiationProcessedEventListener,
         includeInitiationMessage,
@@ -555,12 +556,13 @@ class MatsSocket {
 
   /// Registers a Terminator, on the specified terminatorId, and with the specified callbacks. A Terminator is
   /// the target for Server-to-Client SENDs, and the Server's REPLYs from invocations of
-  /// <code>requestReplyTo(terminatorId ..)</code> where the terminatorId points to this Terminator.
+  /// [requestReplyTo] where the terminatorId points to this Terminator.
   ///
   /// Note: You cannot register any Terminators, Endpoints or Subscriptions starting with "MatsSocket".
   ///
-  /// [terminatorId] the id of this client side Terminator.
-  /// **returns** a Stream that will receive MessageEvent as they arrive for the terminator. Reject messages will be
+  /// - [terminatorId] the id of this client side Terminator.
+  ///
+  /// **returns** a Stream that will receive [MessageEvent]s as they arrive for the terminator. Reject messages will be
   /// also added as MessageEvent, but must be captured from the [Stream.listen] onError.
   Stream<MessageEvent> terminator(String terminatorId) {
     // :: Assert for double-registrations
@@ -584,14 +586,14 @@ class MatsSocket {
 
   /// Registers an Endpoint, on the specified endpointId, with the specified "promiseProducer". An Endpoint is
   /// the target for Server-to-Client REQUESTs. The promiseProducer is a function that takes a message event
-  /// (the incoming REQUEST) and produces a Promise, whose return (resolve or reject) is the return value of the
+  /// (the incoming REQUEST) and produces a Future, whose return (resolve or reject) is the return value of the
   /// endpoint.
   ///
   /// Note: You cannot register any Terminators or Endpoints starting with "MatsSocket".
   ///
-  /// [endpointId] the id of this client side Endpoint.
-  /// [endpointMessageHandler] a function that takes a Message Event and returns a Promise which when
-  /// later either Resolve or Reject will be the return value of the endpoint call.
+  /// - [endpointId] the id of this client side Endpoint.
+  /// - [endpointMessageHandler] a function that takes a [MessageEvent] and returns a Future which when
+  ///     later either Resolve or Reject will be the return value of the endpoint call.
   void endpoint(String endpointId, EndpointMessageHandler endpointMessageHandler) {
     // :: Assert for double-registrations
     if (_terminators.containsKey(endpointId)) {
@@ -657,13 +659,16 @@ class MatsSocket {
   /// reconnects.
   ///
   /// Note: You cannot register any Terminators, Endpoints or Subscriptions starting with "MatsSocket".
+  ///
+  /// - [topicId] what topic Id to subscribe to.
+  /// - [messageCallback] callback function taking [MessageEvent] to be called when a message arrives on the topic
   void subscribe(String topicId, MessageEventHandler messageCallback) {
       // :: Assert that the namespace "MatsSocket" is not used
       if (topicId.startsWith('MatsSocket')) {
-          throw ArgumentError.value(topicId, 'The namespace "MatsSocket" is reserved, Topic [' + topicId + '] is illegal.');
+          throw ArgumentError.value(topicId, 'The namespace "MatsSocket" is reserved, Topic [$topicId] is illegal.');
       }
       if (topicId.startsWith('!')) {
-          throw ArgumentError.value(topicId, 'Topic cannot start with "!" (and why would you use chars like that anyway?!), Topic [' + topicId + '] is illegal.');
+          throw ArgumentError.value(topicId, 'Topic cannot start with "!" (and why would you use chars like that anyway?!), Topic [$topicId] is illegal.');
       }
       _logger.fine('Registering Subscription on Topic [$topicId]:\n #messageCallback: $messageCallback');
       // ?: Check if we have an active subscription holder here already
@@ -712,8 +717,8 @@ class MatsSocket {
   /// it is de-subscribed from the server. If the 'messageCallback' was not already registered, an error is
   /// emitted, but the method otherwise returns silently.
   ///
-  /// [topicId]
-  /// [messageCallback]
+  /// - [topicId] the topic id to unsubscribe from.
+  /// - [messageCallback] the messageCallback to remove - must be the same as added with [subscribe].
   void deleteSubscription(String topicId, MessageEventHandler messageCallback) {
       var subs = _subscriptions[topicId];
       if (subs == null) {
@@ -745,17 +750,17 @@ class MatsSocket {
   /// "Fire-and-forget"-style send-a-message. The returned promise is Resolved when the Server receives and accepts
   /// the message for processing, while it is Rejected if the Server denies it.
   ///
-  /// The config object has a single key - *which is optional*:
+  /// Single named parameter for config:
   ///
   ///  * suppressInitiationProcessedEvent: If <code>true</code>, no event will be sent to listeners added
   ///         using [addInitiationProcessedEventListener()].
   ///
   ///
-  /// [endpointId] the Server MatsSocket Endpoint/Terminator that this message should go to.
-  /// [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.
-  /// [message] the actual message for the Server MatsSocket Endpoint.
-  /// [suppressInitiationProcessedEvent] If [:true:], no event will be sent to listeners added
-  ///         using [addInitiationProcessedEventListener()]
+  /// - [endpointId] the Server MatsSocket Endpoint/Terminator that this message should go to.
+  /// - [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.
+  /// - [message] the actual message for the Server MatsSocket Endpoint.
+  /// - [suppressInitiationProcessedEvent] If [:true:], no event will be sent to listeners added
+  ///     using [addInitiationProcessedEventListener()]
   Future<ReceivedEvent> send(String endpointId, String traceId, dynamic message,
       {bool suppressInitiationProcessedEvent = false}) {
     final handler = Completer<ReceivedEvent>();
@@ -773,43 +778,39 @@ class MatsSocket {
   }
 
 
-  /// Perform a Request, and have the reply come back via the returned Promise. As opposed to Send, where the
-  /// returned Promise is resolved when the server accepts the message, the Promise is now resolved by the Reply.
+  /// Perform a Request, and have the reply come back via the returned Future. As opposed to Send, where the
+  /// returned Future is resolved when the server accepts the message, the Future is now resolved by the Reply.
   /// To get information of whether the server accepted or did not accept the message, you can provide either
   /// a receivedCallback function (set the 'config' parameter to this function) or set the two config properties
   /// 'ackCallback' and 'nackCallback' to functions. If you supply the single function variant, this is equivalent
   /// to setting both ack- and nackCallback to the same function. The [ReceivedEvent]'s type will distinguish
   /// between [ReceivedEventType.ACK] or [ReceivedEventType.NACK].
   ///
-  /// The config object has keys as such - *all are optional*:
+  /// The request can be configured using the named parameters as follows:
   ///
-  ///  * **<code>receivedCallback</code>**: {function} invoked when the Server receives the event and either ACK or NACKs it
-  ///         - or when [MessageEventType.TIMEOUT] or [MessageEventType.SESSION_CLOSED] happens.
-  ///         This overrides the ack- and nackCallbacks.
-  ///  * **<code>ackCallback</code>**: {function} invoked when the Server receives the event and ACKs it.
-  ///  * **<code>nackCallback</code>**: {function} invoked when the Server receives the event and NACKs it
-  ///         - or when [MessageEventType.TIMEOUT] or [MessageEventType.SESSION_CLOSED] happens.
-  ///  * **<code>timeout</code>**: number of milliseconds before the Client times out the Server reply. When this happens,
-  ///         the 'nackCallback' (or receivedCallback if this is used) is invoked with a [ReceivedEvent] of
-  ///         type [ReceivedEventType.TIMEOUT], and the Request's Promise will be *rejected* with a
-  ///         [MessageEvent] of type [MessageEventType.TIMEOUT].
-  ///  * **<code>suppressInitiationProcessedEvent</code>**: if <code>true</code>, no event will be sent to listeners added
-  ///         using [addInitiationProcessedEventListener()].
-  ///  * **<code>debug</code>**: If set, this specific call flow overrides the global [MatsSocket.debug] setting, read
-  ///         more about debug and [DebugOption]s there.
-  ///
+  /// * **<code>receivedCallback</code>**: {function} invoked when the Server receives the event and either ACK or NACKs it
+  ///    - or when [MessageEventType.TIMEOUT] or [MessageEventType.SESSION_CLOSED] happens.
+  ///    This overrides the ack- and nackCallbacks.
+  /// * **<code>ackCallback</code>**: {function} invoked when the Server receives the event and ACKs it.
+  /// * **<code>nackCallback</code>**: {function} invoked when the Server receives the event and NACKs it
+  ///    - or when [MessageEventType.TIMEOUT] or [MessageEventType.SESSION_CLOSED] happens.
+  /// * **<code>timeout</code>**: number of milliseconds before the Client times out the Server reply. When this happens,
+  ///    the 'nackCallback' (or receivedCallback if this is used) is invoked with a [ReceivedEvent] of
+  ///    type [ReceivedEventType.TIMEOUT], and the Request's Future will be *rejected* with a
+  ///    [MessageEvent] of type [MessageEventType.TIMEOUT].
+  /// * **<code>suppressInitiationProcessedEvent</code>**: if <code>true</code>, no event will be sent to listeners
+  ///    added using [addInitiationProcessedEventListener].
+  /// * **<code>debug</code>**: If set, this specific call flow overrides the global [MatsSocket.debug] setting, read
+  ///    more about debug and [DebugOption]s there.
   ///
   /// **Note on event ordering:** [ReceivedEvent]s shall always be delivered *before* [MessageEvent]s.
   /// This means that for a *request*, if receivedCallback (or ack- or nackCallback) is provided, it shall be
-  /// invoked *before* the return Reply-Promise will be settled. For more on event ordering wrt. message
+  /// invoked *before* the return Reply-Future will be settled. For more on event ordering wrt. message
   /// processing, read [InitiationProcessedEvent].
   ///
-  /// [endpointId] the Server MatsSocket Endpoint that this message should go to.
-  /// [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.
-  /// [message] the actual message for the Server MatsSocket Endpoint.
-  /// @param {function|object} configOrCallback (optional) either directly a "receivedCallback" function as
-  ///        described in the config object, or a config object - read JSDoc above.
-  /// **returns** {Promise<MessageEvent>}
+  /// - [endpointId] the Server MatsSocket Endpoint that this message should go to.
+  /// - [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.
+  /// - [message] the actual message for the Server MatsSocket Endpoint.
   Future<MessageEvent> request(String endpointId, String traceId, dynamic message, {
     Function(ReceivedEvent)? receivedCallback,
     Function(ReceivedEvent)? ackCallback,
@@ -841,23 +842,22 @@ class MatsSocket {
         timeout: timeout
     );
 
-
     _addInformationBearingEnvelopeToPipeline(envelope, traceId, initiation, request);
 
     return request.future;
   }
 
   /// Perform a Request, but send the reply to a specific client terminator registered on this MatsSocket instance.
-  /// The returned Promise functions as for Send, since the reply will not go to the Promise, but to the
+  /// The returned Future functions as for Send, since the reply will not go to the Future, but to the
   /// terminator. Notice that you can set any CorrelationInformation object which will be available for the Client
   /// terminator when it receives the reply - this is kept on the client (not serialized and sent along with
   /// request and reply), so it can be any object: An identifier, some object to apply the result on, or even a
   /// function.
   ///
-  /// The config object has keys as such - *all are optional*:
+  /// The request can be configured using the named parameters as follows:
   ///
   ///  * **<code>timeout</code>**: number of milliseconds before the Client times out the Server reply. When this happens,
-  ///         the returned Promise is <i>rejected</> with a [ReceivedEvent] of
+  ///         the returned Future is <i>rejected</> with a [ReceivedEvent] of
   ///         type [ReceivedEventType.TIMEOUT], and the specified Client Terminator will have its
   ///         rejectCallback invoked with a [MessageEvent] of type [MessageEventType.TIMEOUT].
   ///  * **<code>suppressInitiationProcessedEvent</code>**: if <code>true</code>, no event will be sent to listeners added
@@ -865,20 +865,18 @@ class MatsSocket {
   ///  * **<code>debug</code>**: If set, this specific call flow overrides the global [MatsSocket.debug] setting, read
   ///         more about debug and [DebugOption]s there.
   ///
-  ///
   /// **Note on event ordering:** [ReceivedEvent]s shall always be delivered before [MessageEvent]s. This means
-  /// that for a *requestReplyTo*, the returned Received-Promise shall be settled *before* the
+  /// that for a *requestReplyTo*, the returned Received-Future shall be settled *before* the
   /// Terminator gets its resolve- or rejectCallback invoked. For more on event ordering wrt. message
   /// processing, read [InitiationProcessedEvent].
   ///
-  /// [endpointId] the Server MatsSocket Endpoint that this message should go to.
-  /// [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.
-  /// [message] the actual message for the Server MatsSocket Endpoint.
-  /// [replyToTerminatorId] which Client Terminator the reply should go to
-  /// [correlationInformation] information that will be available to the Client Terminator
-  ///        (in [MessageEvent.correlationInformation]) when the reply comes back.
-  /// [timeout] optional timeout to wait for before sending a reject error to the [replyToTerminatorId].
-  /// **returns** {Promise<ReceivedEvent>}
+  /// - [endpointId] the Server MatsSocket Endpoint that this message should go to.
+  /// - [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.
+  /// - [message] the actual message for the Server MatsSocket Endpoint.
+  /// - [replyToTerminatorId] which Client Terminator the reply should go to
+  /// - [correlationInformation] information that will be available to the Client Terminator
+  ///     (in [MessageEvent.correlationInformation]) when the reply comes back.
+  /// - [timeout] optional timeout to wait for before sending a reject error to the [replyToTerminatorId].
   Future<ReceivedEvent> requestReplyTo(String endpointId, String traceId, dynamic message, replyToTerminatorId, {
     dynamic correlationInformation,
     bool suppressInitiationProcessedEvent = false,
@@ -888,7 +886,7 @@ class MatsSocket {
     // ?: Do we have the Terminator the client requests reply should go to?
     if (!_terminators.containsKey(replyToTerminatorId)) {
       // -> No, we do not have this. Programming error from app.
-      throw ArgumentError.value(replyToTerminatorId, 'replyToTerminatorId', 'The Client Terminator [$replyToTerminatorId] is not present, !');
+      throw ArgumentError.value(replyToTerminatorId, 'replyToTerminatorId', 'The Client Terminator [$replyToTerminatorId] is not present!');
     }
     final receiveHandler = Completer<ReceivedEvent>.sync();
 
@@ -909,7 +907,6 @@ class MatsSocket {
         timeout: timeout
     );
 
-
     _addInformationBearingEnvelopeToPipeline(envelope, traceId, initiation, request);
 
     return receiveHandler.future;
@@ -917,7 +914,7 @@ class MatsSocket {
 
   /// Synchronously flush any pipelined messages, i.e. when the method exits, webSocket.send(..) has been invoked
   /// with the serialized pipelined messages, *unless* the authorization had expired (read more at
-  /// [setCurrentAuthorization()] and [setAuthorizationExpiredCallback()]).
+  /// [setCurrentAuthorization] and [setAuthorizationExpiredCallback]).
   void flush() {
     // Clear the "auto-pipelining" timer
     _evaluatePipelineLater_timer?.cancel();
@@ -930,8 +927,8 @@ class MatsSocket {
   /// Upon receiving the WebSocket close, the server terminates the MatsSocketSession.
   /// The MatsSocket instance's SessionId is made undefined. If there currently is a pipeline,
   /// this will be dropped (i.e. messages deleted), any outstanding receiveCallbacks
-  /// (from Requests) are invoked, and received Promises (from sends) are rejected, with type
-  /// [ReceivedEventType.SESSION_CLOSED], outstanding Reply Promises (from Requests)
+  /// (from Requests) are invoked, and received Futures (from sends) are rejected, with type
+  /// [ReceivedEventType.SESSION_CLOSED], outstanding Reply Futures (from Requests)
   /// are rejected with [MessageEventType.SESSION_CLOSED]. The effect is to cleanly shut down the
   /// MatsSocketSession (all session data removed from server), and also clean the MatsSocket instance.
   ///
@@ -944,8 +941,8 @@ class MatsSocket {
   /// <b>Note: A 'beforeunload' event handler is registered on 'window' (if present), which invokes this
   /// method</b>, so that if the user navigates away, the session will be closed.
   ///
-  /// [reason] reason short descriptive string. Will be supplied with the webSocket close reason string,
-  /// and must therefore be quite short (max 123 chars).
+  /// - [reason] reason short descriptive string. Will be supplied with the webSocket close reason string,
+  ///     and must therefore be quite short (max 123 chars).
   Future close(String reason) async {
     // Fetch properties we need before clearing state
     final Uri? webSocketUrl = _currentWebSocketUrl;
@@ -965,11 +962,14 @@ class MatsSocket {
     _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages();
 
     // :: Out-of-band Session Close
-    // ?: Do we have a sessionId?
-    if (existingSessionId != null) {
+    // ?: Do we have a sessionId and a webSocketUrl?
+    if ((existingSessionId != null) && (webSocketUrl != null)) {
       // Yes -> inform the transport to close the session.
-      final closeUri = webSocketUrl!.replace(
-          scheme: webSocketUrl.scheme.replaceAll('ws', 'http'),
+      final httpUri = webSocketUrl.scheme == 'wss'
+          ? webSocketUrl.replace(scheme: 'https')
+          : webSocketUrl.replace(scheme: 'http');
+
+      final closeUri = httpUri.replace(
           path: '${webSocketUrl.path}/close_session',
           queryParameters: {'session_id': sessionId }
       );
@@ -979,15 +979,15 @@ class MatsSocket {
   }
 
 
-  /// Effectively emulates "lost connection". Used in testing.
+  /// Effectively emulates "lost connection" - **Used in testing**.
   ///
   /// If the "disconnect" parameter is true, it will disconnect with [MatsSocketCloseCodes.DISCONNECT]
   /// instead of [MatsSocketCloseCodes.RECONNECT], which will result in the MatsSocket not immediately
   /// starting the reconnection procedure until a new message is added.
   ///
-  /// [reason] {String} a string saying why.
-  /// [disconnect] {Boolean} whether to close with [MatsSocketCloseCodes.DISCONNECT] instead of
-  /// [MatsSocketCloseCodes.RECONNECT] - default <code>false</code>. AFAIK, only useful in testing..!
+  /// - [reason] {String} a string saying why.
+  /// - [disconnect] {Boolean} whether to close with [MatsSocketCloseCodes.DISCONNECT] instead of
+  ///     [MatsSocketCloseCodes.RECONNECT] - default <code>false</code>. AFAIK, only useful in testing..!
   void reconnect(String reason, [bool disconnect = false]) {
     var closeCode = disconnect ? MatsSocketCloseCodes.DISCONNECT : MatsSocketCloseCodes.RECONNECT;
     _logger.info(() => 'reconnect(): Closing WebSocket with CloseCode \'${closeCode.name} (${closeCode.code})\','
@@ -1011,21 +1011,21 @@ class MatsSocket {
     _webSocket!.close(closeCode.code, reason);
   }
 
-  void _beforeunloadHandler(event) {
-    close(CLIENT_LIB_NAME_AND_VERSION + ' unload');
+  void _beforeunloadHandler(dynamic event) {
+    close('$CLIENT_LIB_NAME_AND_VERSION unload');
   }
 
   void error(String type, String msg, [Object? error]) {
     final event = ErrorEvent(type, msg, error);
     // Notify ErrorEvent listeners, synchronously.
 
-    _errorEventListeners.forEach((listener) {
+    for (var listener in _errorEventListeners) {
       try {
         listener(event);
       } catch (err, stack) {
         _logger.severe('Caught error when notifying ErrorEvent listeners [$listener] - NOT notifying using ErrorEvent in fear of creating infinite recursion.', err, stack);
       }
-    });
+    }
 
     if (error is Error) {
       _logger.severe('$type: $msg', error, error.stackTrace);
@@ -1163,15 +1163,15 @@ class MatsSocket {
 
         /*
          * NOTICE!! HACK-ALERT! The ordering of events wrt. Requests is as such:
-         * 1. ReceivedEvent (receivedCallback for requests, and Received-Promise for requestReplyTo)
+         * 1. ReceivedEvent (receivedCallback for requests, and Received-Future for requestReplyTo)
          * 2. InitiationProcessedEvent stored on matsSocket.initiations
          * 3. InitiationProcessedEvent listeners
-         * 4. MessageEvent (Reply-Promise for requests, Terminator callbacks for requestReplyTo)
+         * 4. MessageEvent (Reply-Future for requests, Terminator callbacks for requestReplyTo)
          *
          * WITH a requestReplyTo, the ReceivedEvent becomes async in nature, since requestReplyTo returns
-         * a Promise<ReceivedEvent>. Also, with a requestReplyTo, the completing of the requestReplyTo is
+         * a Future<ReceivedEvent>. Also, with a requestReplyTo, the completing of the requestReplyTo is
          * then done on a Terminator, using its specified callbacks - and this is done using
-         * setTimeout(.., 0) to "emulate" the same async-ness as a Reply-Promise with ordinary requests.
+         * setTimeout(.., 0) to "emulate" the same async-ness as a Reply-Future with ordinary requests.
          * However, the timing between the ReceivedEvent and InitiationProcessedEvent then becomes
          * rather shaky. Therefore, IF the initiation is still in place (ReceivedEvent not yet issued),
          * AND this is a requestReplyTo, THEN we delay the completion of the Request (i.e. issue
@@ -1191,7 +1191,7 @@ class MatsSocket {
           // -> No, either the initiation was already gone (ReceivedEvent already issued), OR it was
           // not a requestReplyTo:
           // Therefore, we run the completion right away (InitiationProcessedEvent is sync, while
-          // MessageEvent is a Promise settling).
+          // MessageEvent is a Future settling).
           _completeRequest(request, MessageEventType.TIMEOUT, MatsSocketEnvelopeDto.empty(), DateTime.now());
         }
       });
@@ -1209,11 +1209,11 @@ class MatsSocket {
       // ?: Should we add it to the pre-pipeline, or the ordinary?
       if (prePipeline) {
           // -> To pre-pipeline
-          _logger.fine('ENQUEUE: Envelope of type ${envelope!.type} enqueued to PRE-pipeline: ' + jsonEncode(envelope));
+          _logger.fine(() => 'ENQUEUE: Envelope of type ${envelope!.type} enqueued to PRE-pipeline: ${jsonEncode(envelope)}');
           _prePipeline.add(envelope);
       } else {
           // -> To ordinary pipeline.
-          _logger.fine('ENQUEUE: Envelope of type ${envelope!.type} enqueued to pipeline: ' + jsonEncode(envelope));
+          _logger.fine(() => 'ENQUEUE: Envelope of type ${envelope!.type} enqueued to pipeline: ${jsonEncode(envelope)}');
           _pipeline.add(envelope);
       }
       // Perform "auto-pipelining", by waiting a minimal amount of time before actually sending.
@@ -1302,12 +1302,12 @@ class MatsSocket {
       );
       // ?: Have we requested a reconnect?
       if (sessionId != null) {
-        _logger.info('HELLO not send, adding to pre-pipeline. HELLO (\"Reconnect\") to MatsSocketSessionId: $sessionId');
+        _logger.info('HELLO not send, adding to pre-pipeline. HELLO ("Reconnect") to MatsSocketSessionId: $sessionId');
         // -> Evidently yes, so add the requested reconnect-to-sessionId.
         helloMessage.sessionId = sessionId;
       } else {
         // -> We want a new session (which is default anyway)
-        _logger.info('HELLO not sent, adding to pre-pipeline. HELLO (\"New\"), we will get assigned a MatsSocketSessionId upon WELCOME.');
+        _logger.info('HELLO not sent, adding to pre-pipeline. HELLO ("New"), we will get assigned a MatsSocketSessionId upon WELCOME.');
       }
       // Add the HELLO to the prePipeline
       _prePipeline.insert(0, helloMessage);
@@ -1364,14 +1364,14 @@ class MatsSocket {
     // :: Send PRE-pipeline messages, if there are any
     // (Before the HELLO is sent and sessionId is established, the max size of message is low on the server)
     if (_prePipeline.isNotEmpty) {
-      _logger.info('Flushing prePipeline of ${_prePipeline.length} messages: ' + jsonEncode(_prePipeline));
+      _logger.info('Flushing prePipeline of ${_prePipeline.length} messages: ${jsonEncode(_prePipeline)}');
       _webSocket!.send(jsonEncode(_prePipeline));
       // Clear prePipeline
       _prePipeline.length = 0;
     }
     // :: Send any pipelined messages.
     if (_pipeline.isNotEmpty) {
-      _logger.fine('Flushing pipeline of ${_pipeline.length} messages: ' + jsonEncode(_pipeline));
+      _logger.fine('Flushing pipeline of ${_pipeline.length} messages: ${jsonEncode(_pipeline)}');
       _webSocket!.send(jsonEncode(_pipeline));
       // Clear pipeline
       _pipeline.length = 0;
@@ -1470,24 +1470,24 @@ class MatsSocket {
       }
 
       // :: Notify all ConnectionEvent listeners.
-      _connectionEventListener.forEach((listener) {
+      for (var listener in _connectionEventListener) {
         try {
           listener(connectionEvent);
         } catch (err) {
           error('notify ConnectionEvent listeners', 'Caught error when notifying ConnectionEvent listeners [$listener] about [${connectionEvent.type}].', err);
         }
-      });
+      }
   }
 
   void _notifySessionClosedEventListeners(MatsSocketCloseEvent closeEvent) {
       _logger.fine(() => 'Sending SessionClosedEvent to listeners: [$closeEvent]');
-      _sessionClosedEventListeners.forEach((listener) {
+      for (var listener in _sessionClosedEventListeners) {
         try {
           listener(closeEvent);
         } catch (err) {
           error('notify SessionClosedEvent listeners', 'Caught error when notifying SessionClosedEvent listeners [$listener] about [$closeEvent].', err);
         }
-      });
+      }
   }
 
 
@@ -1532,9 +1532,9 @@ class MatsSocket {
       var attemptStart = DateTime.now();
       var currentCountdownTargetTimestamp = attemptStart;
       var targetTimeoutTimestamp = currentCountdownTargetTimestamp.add(timeout);
-      var elapsed = () {
+      Duration elapsed() {
           return DateTime.now().difference(attemptStart);
-      };
+      }
 
       // About to create WebSocket, so notify our listeners about this.
       _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTING, _currentWebSocketUrl, null, timeout, elapsed(), _connectionAttempt));
@@ -1588,7 +1588,7 @@ class MatsSocket {
           if (preConnectOperationAbortFunction != null) {
               // -> Evidently still doing PreConnectionRequest - kill it.
               _logger.fine('  \\- Within PreConnectionOperation phase - invoking preConnectOperationFunction\'s abort() function.');
-              // null out the 'preConnectOperationAbortFunction', as this is used for indication for whether the preConnectRequestPromise's resolve&reject should act.
+              // null out the 'preConnectOperationAbortFunction', as this is used for indication for whether the preConnectRequestFuture's resolve&reject should act.
               var abortFunctionTemp = preConnectOperationAbortFunction!;
               // Clear out
               preConnectOperationAbortFunction = null;
@@ -1616,14 +1616,14 @@ class MatsSocket {
 
       w_attemptPreConnectionOperation = () {
           // :: Decide based on type of 'preconnectoperation' how to do the .. PreConnectOperation..!
-          var abortAndPromise = preconnectoperation!(_currentWebSocketUrl, _authorization);
+          var abortAndFuture = preconnectoperation!(_currentWebSocketUrl, _authorization);
 
           // Deconstruct the return
-          preConnectOperationAbortFunction = abortAndPromise.abortFunction as dynamic Function()?;
-          var preConnectRequestPromise = abortAndPromise.responseStatusCode;
+          preConnectOperationAbortFunction = abortAndFuture.abortFunction as dynamic Function()?;
+          var preConnectRequestFuture = abortAndFuture.responseStatusCode;
 
           // Handle the resolve or reject from the preConnectionOperation
-          preConnectRequestPromise
+          preConnectRequestFuture
               .then((statusMessage) {
                   // -> Yes, good return - so go onto next phase, which is creating the WebSocket
                   // ?: Are we still trying to perform the preConnectOperation? (not timed out)
@@ -2045,7 +2045,7 @@ class MatsSocket {
             if (request != null && (envelope.type != MessageType.ACK)) {
               // -> Yes, this was a REQUEST that got an !ACK
               // We have to reject the REQUEST too - it was never processed, and will thus never get a Reply
-              // (Note: This is either a reject for a Promise, or errorCallback on Endpoint).
+              // (Note: This is either a reject for a Future, or errorCallback on Endpoint).
               _completeRequest(request, MessageEventType.REJECT, MatsSocketEnvelopeDto(), receivedTimestamp);
             }
           }
@@ -2112,9 +2112,9 @@ class MatsSocket {
             var messageEvent = _createMessageEventForIncoming(envelope, receivedTimestamp);
             terminatorOrEndpoint(messageEvent);
           } else {
-            // No, this is REQUEST - so invoke the Endpoint to get a Promise, and send its settling using RESOLVE or REJECT.
+            // No, this is REQUEST - so invoke the Endpoint to get a Future, and send its settling using RESOLVE or REJECT.
             // :: Create a Resolve and Reject handler
-            var fulfilled = (resolveReject, msg) {
+            void fulfilled(resolveReject, msg) {
               // Update timestamp of last "information bearing message" sent.
               _lastMessageEnqueuedTimestamp = DateTime.now();
               // Create the Reply message
@@ -2133,9 +2133,9 @@ class MatsSocket {
               );
               // Send it down the wire
               _addEnvelopeToPipeline_EvaluatePipelineLater(replyEnvelope);
-            };
+            }
 
-            // :: Invoke the Endpoint, getting a Promise back.
+            // :: Invoke the Endpoint, getting a Future back.
             var messageEvent = _createMessageEventForIncoming(envelope, receivedTimestamp);
             var promise = terminatorOrEndpoint(messageEvent);
 
@@ -2179,20 +2179,20 @@ class MatsSocket {
           // Ensure that the timeout is killed now. NOTICE: MUST do this here, since we might delay the delivery even more, check crazy stuff below.
           request.timer!.cancel();
 
-          // Complete the Promise on a REQUEST-with-Promise, or messageCallback/errorCallback on Endpoint for REQUEST-with-ReplyTo
+          // Complete the Future on a REQUEST-with-Future, or messageCallback/errorCallback on Endpoint for REQUEST-with-ReplyTo
           var messageEventType = (envelope.type == MessageType.RESOLVE ? MessageEventType.RESOLVE : MessageEventType.REJECT);
 
           /*
            * NOTICE!! HACK-ALERT! The ordering of events wrt. Requests is as such:
-           * 1. ReceivedEvent (receivedCallback for requests, and Received-Promise for requestReplyTo)
+           * 1. ReceivedEvent (receivedCallback for requests, and Received-Future for requestReplyTo)
            * 2. InitiationProcessedEvent stored on matsSocket.initiations
            * 3. InitiationProcessedEvent listeners
-           * 4. MessageEvent (Reply-Promise for requests, Terminator callbacks for requestReplyTo)
+           * 4. MessageEvent (Reply-Future for requests, Terminator callbacks for requestReplyTo)
            *
            * WITH a requestReplyTo, the ReceivedEvent becomes async in nature, since requestReplyTo returns
-           * a Promise<ReceivedEvent>. Also, with a requestReplyTo, the completing of the requestReplyTo is
+           * a Future<ReceivedEvent>. Also, with a requestReplyTo, the completing of the requestReplyTo is
            * then done on a Terminator, using its specified callbacks - and this is done using
-           * setTimeout(.., 0) to "emulate" the same async-ness as a Reply-Promise with ordinary requests.
+           * setTimeout(.., 0) to "emulate" the same async-ness as a Reply-Future with ordinary requests.
            * However, the timing between the ReceivedEvent and InitiationProcessedEvent then becomes
            * rather shaky. Therefore, IF the initiation is still in place (ReceivedEvent not yet issued),
            * AND this is a requestReplyTo, THEN we delay the completion of the Request (i.e. issue
@@ -2212,7 +2212,7 @@ class MatsSocket {
             // -> No, either the initiation was already gone (ReceivedEvent already issued), OR it was
             // not a requestReplyTo:
             // Therefore, we run the completion right away (InitiationProcessedEvent is sync, while
-            // MessageEvent is a Promise settling).
+            // MessageEvent is a Future settling).
             _completeRequest(request, messageEventType, envelope, receivedTimestamp);
           }
         } else if (envelope.type == MessageType.PING) {
@@ -2228,7 +2228,7 @@ class MatsSocket {
             (envelope.type == MessageType.SUB_NO_AUTH)) {
           // -> Result of SUB
           // Notify PingPong listeners, synchronously.
-          var eventType;
+          SubscriptionEventType eventType;
           if (envelope.type == MessageType.SUB_OK) {
             eventType = SubscriptionEventType.OK;
           } else if (envelope.type == MessageType.SUB_LOST) {
@@ -2296,7 +2296,7 @@ class MatsSocket {
         var stringified = jsonEncode(envelope);
         error('envelope processing',
             'Got unexpected error while handling incoming envelope of type \'${envelope.type}\': '
-                '${(stringified.length > 1024 ? stringified.substring(0, 1021) + '...' : stringified)}',
+                '${(stringified.length > 1024 ? '${stringified.substring(0, 1021)}...' : stringified)}',
             err);
       }
     }
@@ -2399,7 +2399,7 @@ class MatsSocket {
     var performanceNow = platform.performanceTime();
     initiation.messageAcked_PerformanceNow = performanceNow;
 
-    // NOTICE! We do this SYNCHRONOUSLY, to ensure that we come in front of Request Promise settling (specifically, Promise /rejection/ if NACK).
+    // NOTICE! We do this SYNCHRONOUSLY, to ensure that we come in front of Request Future settling (specifically, Future /rejection/ if NACK).
     _outboxInitiations.remove(initiation.envelope!.clientMessageId);
     var receivedEvent = ReceivedEvent(receivedEventType, initiation.envelope!.traceId, initiation.sentTimestamp, receivedTimestamp, _roundTiming(performanceNow - initiation.messageSent_PerformanceNow), description);
     // ?: Was it a ACK (not NACK)?
@@ -2426,7 +2426,7 @@ class MatsSocket {
     // ?: Should we issue InitiationProcessedEvent? (SEND is finished processed at ACK time, while REQUEST waits for REPLY from server before finished processing)
     if (initiation.envelope!.type == MessageType.SEND) {
         // -> Yes, we should issue - and to get this in a order where "Received is always invoked before
-        // InitiationProcessedEvents", we'll have to delay it, as the Promise settling above is async)
+        // InitiationProcessedEvents", we'll have to delay it, as the Future settling above is async)
         Timer(Duration(milliseconds: 50), () {
             _issueInitiationProcessedEvent(initiation);
         });
@@ -2470,7 +2470,7 @@ class MatsSocket {
           // -> Yes, this is a REQUEST-with-ReplyTo
           // Find the (client) Terminator which the Reply should go to
           var terminator = _terminators[request.replyToTerminatorId!];
-          // "Emulate" asyncness as if with Promise settling with setTimeout(.., 0).
+          // "Emulate" asyncness as if with Future settling with setTimeout(.., 0).
           Timer.run(() {
               if (messageEventType == MessageEventType.RESOLVE) {
                   try {
@@ -2487,10 +2487,10 @@ class MatsSocket {
               }
           });
       } else {
-          // -> No, this is a REQUEST-with-Promise (missing (client) EndpointId)
+          // -> No, this is a REQUEST-with-Future (missing (client) EndpointId)
           // Delete the outstanding request, as we will complete it now.
           _outstandingRequests.remove(request.envelope.clientMessageId);
-          // :: Note, resolving/rejecting a Promise is always async (happens "next tick").
+          // :: Note, resolving/rejecting a Future is always async (happens "next tick").
           // ?: Was it RESOLVE or REJECT?
           if (messageEventType == MessageEventType.RESOLVE) {
               request.resolve(event);
@@ -2554,7 +2554,7 @@ class MatsSocket {
       _pinger_TimeoutId?.cancel();
   }
 
-  void _pingLater(initialPingDelay) {
+  void _pingLater(int initialPingDelay) {
       _pinger_TimeoutId = Timer(Duration(milliseconds: initialPingDelay), () {
           _logger.fine(() => "Ping-'thread': About to send ping. ConnectionState:[$state], matsSocketOpen:[$_matsSocketOpen].");
           if ((state == ConnectionState.SESSION_ESTABLISHED) && _matsSocketOpen) {
@@ -2573,7 +2573,6 @@ class MatsSocket {
           }
       });
   }
-
 }
 
 class _InitiationProcessedEventListenerRegistration {
@@ -2583,7 +2582,6 @@ class _InitiationProcessedEventListenerRegistration {
 
   _InitiationProcessedEventListenerRegistration(this.listener,
       this.includeInitiationMessage, this.includeReplyMessageEvent);
-
 }
 
 class _Initiation {
@@ -2607,7 +2605,6 @@ class _Initiation {
   final createTrace = StackTrace.current;
 
   _Initiation(this.suppressInitiationProcessedEvent, this.debug, this.ack, this.nack);
-
 }
 
 class _Request {
@@ -2629,7 +2626,6 @@ class _Request {
 
   void resolve(MessageEvent event) => _completer.complete(event);
   void reject(MessageEvent event) => _completer.completeError(event);
-
 }
 
 class _Subscription {
@@ -2639,7 +2635,6 @@ class _Subscription {
   String? lastSmid;
 
   _Subscription(this.topic);
-
 }
 
 class _OutstandingPing {
@@ -2647,7 +2642,6 @@ class _OutstandingPing {
   final PingPong pingPong;
 
   _OutstandingPing(this.createTime, this.pingPong);
-
 }
 
 class _OutboxReply {
@@ -2655,6 +2649,4 @@ class _OutboxReply {
   int attempt;
 
   _OutboxReply({required this.envelope, required this.attempt});
-
-
 }

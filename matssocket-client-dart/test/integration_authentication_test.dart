@@ -130,7 +130,7 @@ void main() {
       group('Server side invokes "magic" Client-side endpoint MatsSocket.renewAuth', () {
         test('Test.renewAuth: This endpoint forces invocation of authorizationExpiredCallback, the reply is held until new auth present, and then resolves on Server.', () async {
           setAuth();
-          var authValue;
+          String? authValue;
           var authCallbackCalledCount = 0;
           var testCompleter = Completer();
 
@@ -141,7 +141,7 @@ void main() {
               Timer(Duration(milliseconds: 50), () {
                   var expiry = DateTime.now().add(Duration(milliseconds: 20000));
                   authValue = 'DummyAuth:MatsSocket.renewAuth_${id(10)}:${expiry.millisecondsSinceEpoch}';
-                  matsSocket.setCurrentAuthorization(authValue, expiry, Duration.zero);
+                  matsSocket.setCurrentAuthorization(authValue!, expiry, Duration.zero);
               });
           });
 

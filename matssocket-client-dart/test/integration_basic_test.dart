@@ -175,7 +175,7 @@ void main() {
         var receivedRejectInvoked = false;
 
         // :: The actual test
-        var test = () {
+        void test() {
           var req = {
             'string': 'test',
             'number': -2,
@@ -198,7 +198,7 @@ void main() {
             return event; // Satisfy Dart3
           });
           matsSocket.flush();
-        };
+        }
 
         // Create Terminator to receive the return
         var messageCallbackInvoked = false;
@@ -476,7 +476,7 @@ void main() {
         // Set special userId that gives us all DebugOptions
         setAuth(userId);
 
-        var receivedEventReceived;
+        ReceivedEvent? receivedEventReceived;
         var messageEvent = await matsSocket
             .request('Test.single', 'Request_DebugObject_${debug}_${matsSocket.debug}_${id(6)}', {},
                 receivedCallback: (receivedEvent) {
@@ -582,7 +582,7 @@ void main() {
         // Set special userId that gives us all DebugOptions
         setAuth('enableAllDebugOptions');
 
-        var receivedEventReceived;
+        ReceivedEvent? receivedEventReceived;
         var messageEvent = await matsSocket.request('Test.single', 'Request_DebugObject_non_requested_${id(6)}', {},
             receivedCallback: (receivedEvent) {
           standardStateAssert();
@@ -600,7 +600,7 @@ void main() {
 
         matsSocket.debug = 0;
 
-        var receivedEventReceived;
+        ReceivedEvent? receivedEventReceived;
         var messageEvent = await matsSocket.request('Test.single', 'Request_DebugObject_non_requested_${id(6)}', {},
             receivedCallback: (receivedEvent) {
           standardStateAssert();
