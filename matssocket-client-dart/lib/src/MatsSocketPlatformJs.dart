@@ -8,16 +8,18 @@ import 'dart:js_interop';
 
 import 'MatsSocketPlatform.dart';
 
-final Logger _logger = Logger('MatsSocket.transportHtml');
+final Logger _logger = Logger('MatsSocketPlatformJs');
 
 const bool isNode = bool.fromEnvironment("node");
+
+MatsSocketPlatform createTransport() => MatsSocketPlatformJs();
 
 class MatsSocketPlatformJs extends MatsSocketPlatform {
   String? cookies;
 
   @override
   WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
-    _logger.fine('Creating HTML WebSocket to $webSocketUri with protocol: $protocol');
+    _logger.fine('Creating web:web WebSocket to $webSocketUri with protocol: $protocol');
     return WebWebSocket.create(webSocketUri.toString(), protocol, authorization);
   }
 
@@ -97,35 +99,36 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
   }
 
   // Keep a mapping from the Dart handler to the JS handler so we can remove by the same reference.
-  final Map<Function, JSFunction> _beforeUnloadJsHandlers = {};
+  JSFunction? _beforeUnloadJsHandler;
 
   @override
-  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
-    final jsHandler = _beforeUnloadJsHandlers.remove(beforeunloadHandler);
-    if (jsHandler != null) {
-      if (isNode) {
-        // ?: Node?
-        // -> Node, no beforeunload to deregister.
-      } else {
-        // E-> Browser, so deregister:
-        web.window.removeEventListener('beforeunload', jsHandler);
-      }
+  void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
+    // ?: Is this web or node?
+    if (isNode) {
+      // -> Node, we don't have a way to register beforeunload.
+    }
+    else {
+      // -> Browser, so register unload handler
+      // Make JS Function to register
+      final jsHandler = ((web.Event e) {
+        beforeunloadHandler(e);
+      }).toJS;
+      _beforeUnloadJsHandler = jsHandler;
+      web.window.addEventListener('beforeunload', jsHandler);
     }
   }
 
   @override
-  void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
-    // Wrap the Dart handler into a JS-compatible EventListener and store its reference.
-    final jsHandler = ((web.Event e) {
-      beforeunloadHandler(e);
-    }).toJS;
-    _beforeUnloadJsHandlers[beforeunloadHandler] = jsHandler;
+  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
+    // ?: Is this web or node?
     if (isNode) {
-      // ?: Node?
-      // -> Node, no beforeunload to register.
-    } else {
-      // E-> Browser, so register:
-      web.window.addEventListener('beforeunload', jsHandler);
+      // -> Node, nothing to do.
+    }
+    else {
+      // -> Browser, so deregister:
+      if (_beforeUnloadJsHandler != null) {
+        web.window.removeEventListener('beforeunload', _beforeUnloadJsHandler);
+      }
     }
   }
 
@@ -182,8 +185,6 @@ class WebWebSocket extends WebSocket {
   @override
   String? get url => _url;
 }
-
-MatsSocketPlatform createTransport() => MatsSocketPlatformJs();
 
 // ---- Node's global `process` ----
 @JS('process')

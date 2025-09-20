@@ -2,28 +2,21 @@ import 'package:logging/logging.dart';
 
 import 'dart:io' as io;
 import 'dart:async';
-import 'dart:isolate';
 
 import 'MatsSocketPlatform.dart';
 
-final Logger _logger = Logger('MatsSocket.transportIO');
+final Logger _logger = Logger('MatsSocketPlatformIo');
+
+MatsSocketPlatform createTransport() => MatsSocketPlatformIo();
 
 class MatsSocketPlatformIo extends MatsSocketPlatform {
-  final ReceivePort _onExitPort = ReceivePort();
-  final List<Function(dynamic)> _beforeUnloadHandles = [];
   final List<io.Cookie> _cookies = [];
 
-  MatsSocketPlatformIo() {
-    Isolate.current.addOnExitListener(_onExitPort.sendPort);
-    _onExitPort.listen((data) {
-      for (var handler in _beforeUnloadHandles) {
-        handler(data);
-      }
-    });
-  }
+  MatsSocketPlatformIo();
 
   @override
   WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
+    _logger.fine('Creating dart:io WebSocket to $webSocketUri with protocol: $protocol');
     return IoWebSocket.create(webSocketUri.toString(), protocol, authorization, _cookies);
   }
 
@@ -76,14 +69,51 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
     }, response);
   }
 
+  Function(dynamic)? _beforeUnloadHandler;
+  StreamSubscription<io.ProcessSignal>? _sigintSub;
+  StreamSubscription<io.ProcessSignal>? _sigtermSub;
+
   @override
   void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
-    _beforeUnloadHandles.add(beforeunloadHandler);
+    _beforeUnloadHandler = beforeunloadHandler;
+
+    void listenAndFire(io.ProcessSignal signal, String name, void Function(StreamSubscription<io.ProcessSignal>) store) {
+      final sub = signal.watch().listen((_) {
+        _logger.info('Received $name signal');
+        final h = _beforeUnloadHandler;
+        // Ensure single-fire: clear handler before invoking.
+        _beforeUnloadHandler = null;
+        _sigintSub?.cancel();
+        _sigtermSub?.cancel();
+        _sigintSub = null;
+        _sigtermSub = null;
+        if (h != null) {
+          try {
+            h(null);
+          } catch (e, st) {
+            _logger.severe('beforeUnload handler threw on $name', e, st);
+          }
+        }
+      });
+      store(sub);
+    }
+
+    // ?: Is this NOT Windows? (Windows cannot handle SIGTERM)
+    if (!io.Platform.isWindows) {
+      // -> Not Windows, install handler for SIGTERM
+      listenAndFire(io.ProcessSignal.sigterm, 'SIGTERM', (s) => _sigtermSub = s);
+    }
+    listenAndFire(io.ProcessSignal.sigint, 'SIGINT', (s) => _sigintSub = s);
   }
 
   @override
   void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
-    _beforeUnloadHandles.remove(beforeunloadHandler);
+    // Only one handler is supported. If it matches (or regardless, since single), clear and cancel watches.
+    _beforeUnloadHandler = null;
+    try { _sigintSub?.cancel(); } catch (_) {}
+    try { _sigtermSub?.cancel(); } catch (_) {}
+    _sigintSub = null;
+    _sigtermSub = null;
   }
 
   @override
@@ -129,12 +159,10 @@ class IoWebSocket extends WebSocket {
 
   @override
   void send(String data) {
-    assert(_ioWebSocket != null, 'Cannot send to web socket unless it is open');
+    assert(_ioWebSocket != null, 'Cannot send to web socket unless it is present and open');
     _ioWebSocket!.add(data);
   }
 
   @override
   String? get url => _url;
 }
-
-MatsSocketPlatform createTransport() => MatsSocketPlatformIo();

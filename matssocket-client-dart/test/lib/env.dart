@@ -1,7 +1,7 @@
 import 'package:matssocket/matssocket.dart';
 import 'package:logging/logging.dart';
 
-import 'env_html.dart' if (dart.library.io) 'env_io.dart' as delegate;
+import 'env_js.dart' if (dart.library.io) 'env_io.dart' as delegate;
 
 var logContext = 'none';
 var serverUris = delegate.loadServerUris();

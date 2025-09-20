@@ -38,19 +38,7 @@ void main() {
       // Set a valid authorization before each request
       setUp(setAuth);
 
-      // NOTE: There used to be a "fire-and-forget" variant here. The problem is that when matsSocket.close() is
-      // invoked, it rejects all outstanding messages - and since this happens earlier than the acknowledge actually
-      // coming back, Node gets angry with the following information:
-      //
-      // (node:30412) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by
-      //              throwing inside of an async function without a catch block, or by rejecting a promise which was
-      //              not handled with .catch(). (rejection id: 1)
-      // (node:30412) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future,
-      //              promise rejections that are not handled will terminate the Node.js process with a non-zero exit
-      //              code.
-
       test('Should have a promise that resolves when received', () async {
-        // Return a promise, that mocha will watch and resolve
         await matsSocket.send('Test.single', 'SEND_${id(6)}', {'string': 'The String', 'number': math.pi});
       });
 
@@ -70,7 +58,6 @@ void main() {
       setUp(setAuth);
 
       test('Request should resolve Promise', () async {
-        // Return a promise, that mocha will watch and resolve
         await matsSocket
             .request('Test.single', 'REQUEST-with-Promise_${id(6)}', {'string': 'Request String', 'number': math.e});
       });
@@ -404,8 +391,7 @@ void main() {
 
       // FOR ALL: Both the received callback should be invoked, and the Promise resolved/rejected
 
-      test(
-          'Ignored (handler did nothing) should NACK when Request handled in adaptReply(..) (thus nack receivedCallback, and reject Promise)',
+      test('Ignored (handler did nothing) should NACK when Request handled in adaptReply(..) (thus nack receivedCallback, and reject Promise)',
           () async {
         var received = false;
         var rejected = false;

@@ -155,7 +155,7 @@ def registerDartTestTask = { String name, String platform, String compiler ->
                 environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
                 // Checking which log level is enabled to pass on to the tests, so that they log if needed.
                 if (logger.isEnabled(LogLevel.DEBUG)) {
-                    environment("LOG_LEVEL", "DEBUG")
+                    environment("LOG_LEVEL", "ALL")
                 } else if (logger.isEnabled(LogLevel.INFO)) {
                     environment("LOG_LEVEL", "INFO")
                 } else {
@@ -178,17 +178,17 @@ def registerDartTestTask = { String name, String platform, String compiler ->
 }
 
 // Define the various test tasks with their platform/compiler variants.
-registerDartTestTask('testWebJs', 'chrome', 'dart2js')
-registerDartTestTask('testWebWasm', 'chrome', 'dart2wasm')
 registerDartTestTask('testVmExe', 'vm', 'exe')
 registerDartTestTask('testVmSource', 'vm', 'source')
 registerDartTestTask('testVmKernel', 'vm', 'kernel')
+registerDartTestTask('testWebJs', 'chrome', 'dart2js')     // Might want to set -PchromePath=
+registerDartTestTask('testWebWasm', 'chrome', 'dart2wasm') // Might want to set -PchromePath=
 registerDartTestTask('testNodeJs', 'node', 'dart2js')
 registerDartTestTask('testNodeWasm', 'node', 'dart2wasm')
 
 // Subsets
-tasks.register('testWeb') { dependsOn 'testWebJs', 'testWebWasm' }
 tasks.register('testVm') { dependsOn 'testVmExe', 'testVmSource', 'testVmKernel' }
+tasks.register('testWeb') { dependsOn 'testWebJs', 'testWebWasm' }  // Might want to set -PchromePath=
 tasks.register('testNode') { dependsOn 'testNodeJs', 'testNodeWasm'}
 
 // All tests
@@ -248,4 +248,5 @@ tasks.register('distclean', Delete) {
     delete "$dartDownload"
     delete "$dartDownloadTemp"
     delete "$projectDir/.dart_tool"
+    delete "$projectDir/pubspec.lock"
 }

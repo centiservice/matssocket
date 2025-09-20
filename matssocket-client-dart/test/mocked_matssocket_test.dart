@@ -1,32 +1,32 @@
 import 'package:test/test.dart';
 
-import 'lib/MatsSocketTransportMock.dart';
 import 'lib/env.dart';
 import 'package:matssocket/matssocket.dart';
+import 'package:matssocket/src/MatsSocketPlatformMock.dart';
 
 void main() {
-  late MatsSocketTransportMock transportMock;
+  late MatsSocketPlatformMock platformMock;
 
   configureLogging();
 
   setUp(() {
-    transportMock = MatsSocketTransportMock.noop();
+    platformMock = MatsSocketPlatformMock.noop();
   });
 
   group('MatsSocket constructor', () {
 
     test('Should fail on empty url list', () {
-      expect(() => MatsSocket('', '', [], transportMock), throwsA(TypeMatcher<ArgumentError>()));
+      expect(() => MatsSocket('', '', [], platformMock), throwsA(TypeMatcher<ArgumentError>()));
     });
 
     test('Should accept a single wsUrl', () {
-      MatsSocket('', '', [Uri.dataFromString('ws://test/')], transportMock);
+      MatsSocket('', '', [Uri.dataFromString('ws://test/')], platformMock);
     });
   });
 
   group('Authorization', () {
     test('Should invoke authorization callback before making calls', () async {
-      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], transportMock);
+      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], platformMock);
       var authCallbackCalled = false;      
       matsSocket.setAuthorizationExpiredCallback((event) {
         authCallbackCalled = true;
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('Should not invoke authorization callback if authorization present', () async {
-      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], transportMock);
+      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], platformMock);
       var authCallbackCalled = false;      
       matsSocket.setCurrentAuthorization('Test', DateTime.now().add(Duration(minutes: 1)));
       matsSocket.setAuthorizationExpiredCallback((event) {
@@ -52,7 +52,7 @@ void main() {
     });
 
     test('Should invoke authorization callback when expired', () async {
-      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], transportMock);
+      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], platformMock);
 
       var authCallbackCalled = false;
 
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('Should invoke authorization callback when room for latency expired', () async {
-      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], transportMock);
+      var matsSocket = MatsSocket('Test', '1.0', [Uri.dataFromString('ws://localhost:8080/')], platformMock);
 
       var authCallbackCalled = false;
 

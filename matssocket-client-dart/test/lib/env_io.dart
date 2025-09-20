@@ -23,8 +23,9 @@ Level logLevel() {
   // setting the level from gradle.
   var envLogLevel = Platform.environment['LOG_LEVEL'] ?? 'INFO';
   switch (envLogLevel) {
-    case 'DEBUG': return Level.ALL;
+    case 'ALL': return Level.ALL;
     case 'INFO': return Level.INFO;
-    default: return Level.SEVERE;
+    case 'SEVERE': return Level.SEVERE;
+    default: return Level.INFO;
   }
 }

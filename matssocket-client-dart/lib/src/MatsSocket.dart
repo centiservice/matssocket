@@ -220,6 +220,8 @@ class MatsSocket {
     // .. Invoke resetConnectStateVars() right away to get URL set.
     _resetReconnectStateVars();
 
+    _logger.info('MatsSocket created for app: $appName, version: $appVersion, using urls: $_useUrls, platform: $platform');
+
     // Make an endpoint for the server to ask for new auth, read more at: AuthorizationRequiredEventType.REAUTHENTICATE
     _endpoints['MatsSocket.renewAuth'] = (messageEvent) {
           // Immediately ask for new Authorization
@@ -263,8 +265,8 @@ class MatsSocket {
   ///   - but one would think that the Authentication session (the one giving you Authorization headers) had timed
   ///   out long before.
   ///
-  /// Again, note: No such error should happen if this client is used properly, and the server does not get
-  /// problems with its data store.
+  /// Again, note: In normal operation of the MatsSocket, these events should not be fired. The listeners are not
+  /// invoked by `matsSocket.close()` from the client.
   ///
   /// Note that when this event listener is invoked, the MatsSocketSession is just as closed as if you invoked
   /// [MatsSocket.close()] on it: All outstanding send/requests are NACK'ed (with
@@ -947,13 +949,13 @@ class MatsSocket {
     // Fetch properties we need before clearing state
     final Uri? webSocketUrl = _currentWebSocketUrl;
     final String? existingSessionId = sessionId;
-    _logger.info('close(): Closing MatsSocketSession, id:[$existingSessionId] due to [$reason], currently connected: [${_webSocket?.url ?? "not connected"}]');
+    _logger.info(() => 'close(): Closing MatsSocketSession, id:[$existingSessionId] due to [$reason], currently connected: [${_webSocket?.url ?? "not connected"}]');
 
     // :: In-band Session Close: Close the WebSocket itself with CLOSE_SESSION Close Code.
     // ?: Do we have _webSocket?
     if (_webSocket != null) {
       // -> Yes, so close WebSocket with MatsSocket-specific CloseCode CLOSE_SESSION 4000.
-      _logger.fine(' \\-> WebSocket is open, so we perform in-band Session Close by closing the WebSocket with MatsSocketCloseCode.CLOSE_SESSION (4000).');
+      _logger.info(' \\-> WebSocket is open, so we perform in-band Session Close by closing the WebSocket with MatsSocketCloseCode.CLOSE_SESSION (4000), and reason: \'From client: $reason\'');
       // Perform the close
       _webSocket!.close(MatsSocketCloseCodes.CLOSE_SESSION.code, 'From client: $reason');
     }
@@ -974,6 +976,7 @@ class MatsSocket {
           queryParameters: {'session_id': sessionId }
       );
 
+      _logger.info(() => ' \\-> Sending out-of-band close-session request to: [$closeUri]');
       await platform.outOfBandCloseSession(closeUri, existingSessionId);
     }
   }
@@ -1036,7 +1039,7 @@ class MatsSocket {
   }
 
   void _clearWebSocketStateAndInfrastructure() {
-    _logger.info('clearWebSocketStateAndInfrastructure(). Current WebSocket: $_webSocket');
+    _logger.info('clearWebSocketStateAndInfrastructure(). Current WebSocket: [$_webSocket] - nulling.');
     // Stop pinger
     _stopPinger();
     // Remove beforeunload eventlistener
@@ -1058,7 +1061,7 @@ class MatsSocket {
   }
 
   void _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages() {
-    _logger.info('closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket: $_webSocket');
+    _logger.info('closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket: [$_webSocket].');
     // Clear state
     sessionId = null;
     _state = ConnectionState.NO_SESSION;

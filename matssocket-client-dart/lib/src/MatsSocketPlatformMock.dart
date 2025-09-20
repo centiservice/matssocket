@@ -5,17 +5,17 @@ import 'package:matssocket/src/MatsSocketEnvelopeDto.dart';
 import 'package:matssocket/src/MatsSocketPlatform.dart';
 import 'package:matssocket/src/MessageType.dart';
 
-MatsSocketPlatform createTransport() => MatsSocketTransportMock.noop();
+MatsSocketPlatform createTransport() => MatsSocketPlatformMock.noop();
 
-class MatsSocketTransportMock extends MatsSocketPlatform {
+class MatsSocketPlatformMock extends MatsSocketPlatform {
 
   Function(dynamic)? beforeunloadHandler;
   final List<String> closedSessions = [];
   final MessageHandler websocketMessageHandler;
 
-  MatsSocketTransportMock(this.websocketMessageHandler);
+  MatsSocketPlatformMock(this.websocketMessageHandler);
 
-  MatsSocketTransportMock.noop(): this((envelope, sink) {
+  MatsSocketPlatformMock.noop(): this((envelope, sink) {
     switch (envelope.type) {
       case MessageType.HELLO:
         {
@@ -79,6 +79,7 @@ class MatsSocketTransportMock extends MatsSocketPlatform {
   String get runningOnVersions => 'Mock Transport; dart,vMock';
 
 }
+
 
 typedef MessageHandler = Function(MatsSocketEnvelopeDto, Function(Iterable<MatsSocketEnvelopeDto>));
 
