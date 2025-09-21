@@ -13,41 +13,38 @@ class MessageEvent {
   /// for a Client Terminator when targeted as the reply-endpoint for a Client initiated Request) - <b>or
   /// [MessageEventType.SESSION_CLOSED] if the session was closed with outstanding Requests
   /// and MatsSocket therefore "clears out" these Requests.</b>
-  /// <p/>
+  ///
   /// Notice: In the face of {@link MessageType#SESSION_CLOSED "sessionclosed"} or {@link MessageType#TIMEOUT "timeout"},
   /// the {@link #data} property (i.e. the actual message from the server) will be <code>undefined</code>.
   /// Wrt. "sessionclosed", this is <i>by definition</i>: The Request was outstanding, meaning that an answer from the
   /// Server had yet to come. This is opposed to a normal REJECT settling from the Server-side MatsSocketEndpoint,
   /// which may choose to include data with a rejection. The same basically goes wrt. "timeout", as the Server
   /// has not replied yet.
-  ///
   final MessageEventType type;
 
   /// The actual data from the other peer.
-  /// <p/>
+  ///
   /// Notice: In the face of {@link MessageType#SESSION_CLOSED "sessionclosed"} or {@link MessageType#TIMEOUT "timeout"},
   /// this value will be <code>undefined</code>.
   /// Wrt. "sessionclosed", this is <i>by definition</i>: The Request was outstanding, meaning that an answer from the
   /// Server had yet to come. This is opposed to a normal REJECT settling from the Server-side MatsSocketEndpoint,
   /// which may choose to include data with a rejection. The same basically goes wrt. "timeout", as the Server
   /// has not replied yet.
-  ///
   final dynamic data;
 
   /// When a Terminator gets invoked to handle a Reply due to a Client initiated {@link MatsSocket#requestReplyTo},
   /// this holds the 'correlationInformation' object that was supplied in the requestReplyTo(..) invocation.
-  ///
   dynamic correlationInformation;
 
   /// The TraceId for this call / message.
-  final String? traceId;
+  final String traceId;
 
   /// Either the ClientMessageId if this message is a Reply to a Client-initiated Request (i.e. this message is a
   /// RESOLVE or REJECT), or ServerMessageId if this originated from the Server (i.e. SEND or REQUEST);
-  final String? messageId;
+  final String messageId;
 
   /// millis-since-epoch when the Request, for which this message is a Reply, was sent from the
-  /// Client. If this message is not a Reply to a Client-initiated Request, it is undefined.
+  /// Client. If this message is not a Reply to a Client-initiated Request, it is `null`.
   DateTime? clientRequestTimestamp;
 
   /// When the message was received on the Client, millis-since-epoch.

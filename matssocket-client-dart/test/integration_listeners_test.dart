@@ -44,7 +44,7 @@ void main() {
 
       test('PingPong listener.', () async {
         var testCompleter = Completer();
-        // matsSocket.initialPingDelay = 50;
+        matsSocket.initialPingDelay = 50;
         matsSocket.addPingPongListener((pingPong) {
           testCompleter.complete(() {
             expect(pingPong.pingId, equals(0));
@@ -162,7 +162,7 @@ void main() {
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST));
           expect(init.endpointId, 'Test.single');
-          expect(init.sentTimestamp!.millisecondsSinceEpoch, greaterThan(1585259649178));
+          expect(init.sentTimestamp.millisecondsSinceEpoch, greaterThan(1585259649178));
           expect(init.sessionEstablishedOffsetMillis, lessThan(0.0),
               reason: 'sessionEstablishedOffsetMillis should be negative since sent before WELCOME, was [${init.sessionEstablishedOffsetMillis}]');
           expect(init.traceId, traceId);
@@ -271,7 +271,7 @@ void main() {
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST_REPLY_TO));
           expect(init.endpointId, equals('Test.single'));
-          expect(init.sentTimestamp!.millisecondsSinceEpoch, greaterThan(1585259649178));
+          expect(init.sentTimestamp.millisecondsSinceEpoch, greaterThan(1585259649178));
           expect(init.sessionEstablishedOffsetMillis, lessThan(0.0),
               reason: 'sessionEstablishedOffsetMillis should be negative since sent before WELCOME, was [${init.sessionEstablishedOffsetMillis}]');
           expect(init.traceId, equals(traceId));
@@ -372,7 +372,7 @@ void main() {
         void assertCommon(InitiationProcessedEvent init) {
           expect(init.type, equals(InitiationProcessedEventType.REQUEST_REPLY_TO));
           expect(init.endpointId, equals('Test.slow'));
-          expect(init.sentTimestamp!.millisecondsSinceEpoch, greaterThan(1585259649178));
+          expect(init.sentTimestamp.millisecondsSinceEpoch, greaterThan(1585259649178));
           // Note: Will be zero if session is not established yet.
           expect(init.sessionEstablishedOffsetMillis, lessThanOrEqualTo(0.0),
               reason: 'sessionEstablishedOffsetMillis should be zero or negative, since sent before WELCOME, was [${init.sessionEstablishedOffsetMillis}]');

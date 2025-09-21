@@ -195,7 +195,7 @@ void main() {
             expect(event.type, equals(MatsSocketCloseCodes.VIOLATED_POLICY));
             expect(event.code, equals(MatsSocketCloseCodes.VIOLATED_POLICY.code));
             expect(event.type.name, equals('VIOLATED_POLICY'));
-            expect(event.reason!.toLowerCase(), contains('too many consecutive'));
+            expect(event.reason.toLowerCase(), contains('too many consecutive'));
             testCompleter.complete();
           });
 
@@ -227,7 +227,7 @@ void main() {
             expect(event.type, equals(MatsSocketCloseCodes.VIOLATED_POLICY));
             expect(event.code, equals(MatsSocketCloseCodes.VIOLATED_POLICY.code));
             expect(event.type.name, equals('VIOLATED_POLICY'));
-            expect(event.reason!.toLowerCase(), contains('too many consecutive'));
+            expect(event.reason.toLowerCase(), contains('too many consecutive'));
             testCompleter.complete();
           });
 

@@ -210,6 +210,7 @@ extension ConnectionEventTypeExtension on ConnectionEventType {
       case ConnectionEventType.SESSION_ESTABLISHED:
         return ConnectionState.SESSION_ESTABLISHED;
       default:
+        // If not one of the ConnectionStates, return null - used to update the MatsSocket's state field.
         return null;
     }
   }

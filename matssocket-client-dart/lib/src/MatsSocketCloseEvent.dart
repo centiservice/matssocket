@@ -1,8 +1,8 @@
 import 'package:matssocket/src/mats_socket_util.dart';
 
 class MatsSocketCloseEvent {
-  final int? code;
-  final String? reason;
+  final int code;
+  final String reason;
   final int outstandingInitiations;
   final dynamic nativeEvent;
 

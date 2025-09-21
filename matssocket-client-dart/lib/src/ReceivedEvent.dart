@@ -10,10 +10,10 @@ class ReceivedEvent {
   final ReceivedEventType type;
 
   /// TraceId for this call / message.
-  final String? traceId;
+  final String traceId;
 
   /// Millis-since-epoch when the message was sent from the Client.
-  final DateTime? sentTimestamp;
+  final DateTime sentTimestamp;
 
   /// Millis-since-epoch when the ACK or NACK was received on the Client, millis-since-epoch.
   final DateTime receivedTimestamp;

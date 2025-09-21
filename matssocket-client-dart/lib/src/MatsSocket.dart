@@ -60,86 +60,25 @@ void _shuffleList(List items) {
 
 class MatsSocket {
 
-  // Public members
+  // ==============================================================================================
+  // PUBLIC fields
+  // ==============================================================================================
 
+  /// Application name the MatsSocket was created with.
   final String appName;
+  /// Application version the MatsSocket was created with.
   final String appVersion;
+  /// The MatsSocketPlatform in use, either IO (for VM) or JS (for Node and Browser).
   final MatsSocketPlatform platform;
 
+  /// The current session id.  Will be null until a session is established.
   String? sessionId;
 
-  // :: Message handling
-  final Map<String, StreamController<MessageEvent>> _terminators = {};
-  final Map<String, EndpointMessageHandler> _endpoints = {};
-
-  // ==============================================================================================
-  // PRIVATE
-  // ==============================================================================================
-
-  final List<Uri> _useUrls;
-  final matsSocketInstanceId = id(3);
-
-  DateTime _lastMessageEnqueuedTimestamp = DateTime.now(); // Start by assuming that it was just used.
-  double? _initialSessionEstablished_PerformanceNow;
-
-  // If true, we're currently already trying to get a WebSocket
-  bool _webSocketConnecting = false;
-  // If NOT null, we have an open WebSocket available.
-  WebSocket? _webSocket; // NOTE: It is set upon "onopen", and unset upon "onclose".
-  // If false, we should not accidentally try to reconnect or similar
-  bool _matsSocketOpen = false; // NOTE: Set to true upon enqueuing of information-bearing message.
-
-  final List<MatsSocketEnvelopeDto?> _prePipeline = [];
-  final List<MatsSocketEnvelopeDto?> _pipeline = [];
-
-  // :: Event listeners.
-
-  final List<SessionClosedEventListener> _sessionClosedEventListeners = [];
-  final List<ConnectionEventListener> _connectionEventListener = [];
-  final List<PingPongListener> _pingPongListeners = [];
-  final List<_InitiationProcessedEventListenerRegistration> _initiationProcessedEventListeners = [];
-  final List<SubscriptionEventListener> _subscriptionEventListeners = [];
-  final List<ErrorEventListener> _errorEventListeners = [];
-
-
-  ConnectionState? _state = ConnectionState.NO_SESSION;
-
-  bool _helloSent = false;
-
-  // :: Authorization fields
-  String? _authorization;
-  String? _lastAuthorizationSentToServer;
-  int _lastDebugOptionsSentToServer = 0;
-  bool _forcePipelineProcessing = false;
-
-  DateTime? _expirationTimestamp;
-  late Duration _roomForLatencyDuration;
-  AuthorizationExpiredCallback? _authorizationExpiredCallback;
-
-  int _messageSequenceId = 0; // Increases for each SEND, REQUEST and REPLY
-
-  // When we've informed the app that we need auth, we do not need to do it again until it has set it.
-  AuthorizationRequiredEventType? _authExpiredCallbackInvoked_EventType;
-
-  // Outstanding Pings
-  final Map<String, _OutstandingPing> _outstandingPings = {};
-  // Outstanding Request "futures", i.e. the resolve() and reject() functions of the returned Future.
-  final Map<String, _Request> _outstandingRequests = {};
-  // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
-  final Map<String?, _Initiation> _outboxInitiations = {};
-  // .. "guard object" to avoid having to retransmit messages sent /before/ the WELCOME is received for the HELLO handshake
-  String _outboxInitiations_RetransmitGuard = jid(5);
-  // Outbox for REPLYs
-  final Map<String?, _OutboxReply> _outboxReplies = {};
-  // The Inbox - to be able to catch double deliveries from Server
-  final _inbox = {};
-
-  // :: STATS
-  // Last 100 PingPong instances
-  final List<PingPong> _pings = [];
-  // Last X InitationProcessedEvent instances.
-  int _numberOfInitiationsKept = 10;
-  final List<InitiationProcessedEvent> _initiationProcessedEvents = [];
+  /// Default is 3-7 seconds for the initial ping delay, and then 15 seconds for subsequent pings. Can be overridden
+  /// for tests.
+  int initialPingDelay = 3000 + rnd.nextInt(4000);
+  /// The time between pings, 15 seconds.
+  int pingInterval = 15000;
 
   /// "Pre Connection Operation" refers to a hack whereby the MatsSocket performs a specified operation before
   /// initiating the WebSocket connection. The goal of this solution is to overcome a deficiency with the
@@ -196,6 +135,79 @@ class MatsSocket {
   /// In addition, if the Received acknowledgement has not gotten in either, this will also be NACK'ed with
   /// [ReceivedEventType.TIMEOUT] - this happens *before* the Future rejects)
   Duration requestTimeout = Duration(seconds: 45);
+
+  // ==============================================================================================
+  // PRIVATE fields
+  // ==============================================================================================
+
+  // :: Message handling
+  final Map<String, StreamController<MessageEvent>> _terminators = {};
+  final Map<String, EndpointMessageHandler> _endpoints = {};
+
+  final List<Uri> _useUrls;
+  final matsSocketInstanceId = id(3);
+
+  DateTime _lastMessageEnqueuedTimestamp = DateTime.now(); // Start by assuming that it was just used.
+  double? _initialSessionEstablished_PerformanceNow;
+
+  // If true, we're currently already trying to get a WebSocket
+  bool _webSocketConnecting = false;
+  // If NOT null, we have an open WebSocket available.
+  WebSocket? _webSocket; // NOTE: It is set upon "onopen", and unset upon "onclose".
+  // If false, we should not accidentally try to reconnect or similar
+  bool _matsSocketOpen = false; // NOTE: Set to true upon enqueuing of information-bearing message.
+
+  final List<MatsSocketEnvelopeDto?> _prePipeline = [];
+  final List<MatsSocketEnvelopeDto?> _pipeline = [];
+
+  // :: Event listeners.
+
+  final List<SessionClosedEventListener> _sessionClosedEventListeners = [];
+  final List<ConnectionEventListener> _connectionEventListener = [];
+  final List<PingPongListener> _pingPongListeners = [];
+  final List<_InitiationProcessedEventListenerRegistration> _initiationProcessedEventListeners = [];
+  final List<SubscriptionEventListener> _subscriptionEventListeners = [];
+  final List<ErrorEventListener> _errorEventListeners = [];
+
+
+  ConnectionState _state = ConnectionState.NO_SESSION;
+
+  bool _helloSent = false;
+
+  // :: Authorization fields
+  String? _authorization;
+  String? _lastAuthorizationSentToServer;
+  int _lastDebugOptionsSentToServer = 0;
+  bool _forcePipelineProcessing = false;
+
+  DateTime? _expirationTimestamp;
+  late Duration _roomForLatencyDuration;
+  AuthorizationExpiredCallback? _authorizationExpiredCallback;
+
+  int _messageSequenceId = 0; // Increases for each SEND, REQUEST and REPLY
+
+  // When we've informed the app that we need auth, we do not need to do it again until it has set it.
+  AuthorizationRequiredEventType? _authExpiredCallbackInvoked_EventType;
+
+  // Outstanding Pings
+  final Map<String, _OutstandingPing> _outstandingPings = {};
+  // Outstanding Request "futures", i.e. the resolve() and reject() functions of the returned Future.
+  final Map<String, _Request> _outstandingRequests = {};
+  // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
+  final Map<String?, _Initiation> _outboxInitiations = {};
+  // .. "guard object" to avoid having to retransmit messages sent /before/ the WELCOME is received for the HELLO handshake
+  String _outboxInitiations_RetransmitGuard = jid(5);
+  // Outbox for REPLYs
+  final Map<String?, _OutboxReply> _outboxReplies = {};
+  // The Inbox - to be able to catch double deliveries from Server
+  final _inbox = {};
+
+  // :: STATS
+  // Last 100 PingPong instances
+  final List<PingPong> _pings = [];
+  // Last X InitationProcessedEvent instances.
+  int _numberOfInitiationsKept = 10;
+  final List<InitiationProcessedEvent> _initiationProcessedEvents = [];
 
   /// Creates a MatsSocket, requiring the Application's name and version, and which URLs to connect to.
   ///
@@ -463,7 +475,7 @@ class MatsSocket {
   ///  * [ConnectionState.WAITING] - if the "new WebSocket(..)" invocation ended in the socket closing, i.e. connection failed, but we're still counting down to next (re)connection attempt.
   ///  * [ConnectionState.CONNECTED] - if the "new WebSocket(..)" resulted in the socket opening. We still have not established the MatsSocketSession with the server, though.
   ///  * [ConnectionState.SESSION_ESTABLISHED] - when we're open for business: Connected, authenticated, and established MatsSocketSession with the server.
-  ConnectionState? get state {
+  ConnectionState get state {
     return _state;
   }
 
@@ -1466,9 +1478,10 @@ class MatsSocket {
           _logger.fine('Sending ConnectionEvent to listeners [$connectionEvent]');
       }
       // ?: Is this a state?
-      if (connectionEvent.type.connectionState != null) {
+      ConnectionState? currentConnectionState = connectionEvent.type.connectionState;
+      if (currentConnectionState != null) {
           // -> Yes, this is a state - so update the state..!
-          _state = connectionEvent.type.connectionState;
+          _state = currentConnectionState;
           _logger.fine('The ConnectionEventType [${connectionEvent.type}] is also a ConnectionState - setting MatsSocket state [$_state].');
       }
 
@@ -1824,6 +1837,11 @@ class MatsSocket {
       _logger.info('websocket.onclose, instanceId:[${target.webSocketInstanceId}]');
 
       // Note: Here (as opposed to matsSocket.close()) the WebSocket is already closed, so we don't have to close it..!
+
+      // If code or reason is null, set it to 'unknown' (Should hopefully never happen - but we don't control the
+      // WebSocket implementation)
+      code = code ?? MatsSocketCloseCodes.UNKNOWN.code; // -1
+      reason = reason ?? 'unknown';
 
       // ?: Special codes, that signifies that we should close (terminate) the MatsSocketSession.
       if ((code == MatsSocketCloseCodes.UNEXPECTED_CONDITION.code)
@@ -2252,7 +2270,7 @@ class MatsSocket {
         } else if (envelope.type == MessageType.PUB) {
           // -> Server publishes a Topic message
           var event = MessageEvent(
-              MessageEventType.PUB, envelope.message, envelope.traceId, envelope.serverMessageId, receivedTimestamp);
+              MessageEventType.PUB, envelope.message, envelope.traceId!, envelope.serverMessageId!, receivedTimestamp);
 
           var subs = _subscriptions[envelope.endpointId!];
           // ?: Did we find any listeners?
@@ -2404,7 +2422,7 @@ class MatsSocket {
 
     // NOTICE! We do this SYNCHRONOUSLY, to ensure that we come in front of Request Future settling (specifically, Future /rejection/ if NACK).
     _outboxInitiations.remove(initiation.envelope!.clientMessageId);
-    var receivedEvent = ReceivedEvent(receivedEventType, initiation.envelope!.traceId, initiation.sentTimestamp, receivedTimestamp, _roundTiming(performanceNow - initiation.messageSent_PerformanceNow), description);
+    var receivedEvent = ReceivedEvent(receivedEventType, initiation.envelope!.traceId!, initiation.sentTimestamp!, receivedTimestamp, _roundTiming(performanceNow - initiation.messageSent_PerformanceNow), description);
     // ?: Was it a ACK (not NACK)?
     if (receivedEventType == ReceivedEventType.ACK) {
       // -> Yes, it was "ACK" - so Server was happy.
@@ -2437,7 +2455,7 @@ class MatsSocket {
   }
 
   MessageEvent _createMessageEventForIncoming(MatsSocketEnvelopeDto envelope, DateTime receivedTimestamp) {
-      var messageEvent = MessageEvent(envelope.type.messageEventType, envelope.message, envelope.traceId, envelope.serverMessageId, receivedTimestamp);
+      var messageEvent = MessageEvent(envelope.type.messageEventType, envelope.message, envelope.traceId!, envelope.serverMessageId!, receivedTimestamp);
       // Set the debug details from the envelope, if present
       if (envelope.receivedDebug) {
         messageEvent.debug = envelope.debug(null, null, receivedTimestamp);
@@ -2455,7 +2473,7 @@ class MatsSocket {
       _outstandingRequests.remove(request.envelope.clientMessageId);
 
       // Create the event
-      var event = MessageEvent(messageEventType, incomingEnvelope.message, request.envelope.traceId, request.envelope.clientMessageId, receivedTimestamp);
+      var event = MessageEvent(messageEventType, incomingEnvelope.message, request.envelope.traceId!, request.envelope.clientMessageId!, receivedTimestamp);
       event.clientRequestTimestamp = request.initiation.sentTimestamp;
       event.roundTripMillis = performanceNow - request.initiation.messageSent_PerformanceNow;
       // .. add CorrelationInformation from request if requestReplyTo
@@ -2515,8 +2533,8 @@ class MatsSocket {
       var requestRoundTripTime = (replyMessageEvent != null ? _roundTiming(platform.performanceTime() - initiation.messageSent_PerformanceNow) : null);
       var replyMessageEventType = replyMessageEvent?.type;
       if (_numberOfInitiationsKept > 0) {
-          var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId, initiation.envelope!.clientMessageId, initiation.sentTimestamp,
-              sessionEstablishedOffsetMillis, initiation.envelope!.traceId, initiation.envelope!.message, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEvent);
+          var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId!, initiation.envelope!.clientMessageId!, initiation.sentTimestamp!,
+              sessionEstablishedOffsetMillis, initiation.envelope!.traceId!, initiation.envelope!.message, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEvent);
           _initiationProcessedEvents.add(initiationProcessedEvent);
           while (_initiationProcessedEvents.length > _numberOfInitiationsKept) {
               _initiationProcessedEvents.removeAt(0);
@@ -2534,8 +2552,8 @@ class MatsSocket {
               var registration = _initiationProcessedEventListeners[i];
               var initiationMessageIncluded = (registration.includeInitiationMessage ? initiation.envelope!.message : null);
               var replyMessageEventIncluded = (registration.includeReplyMessageEvent ? replyMessageEvent : null);
-              var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId, initiation.envelope!.clientMessageId, initiation.sentTimestamp, sessionEstablishedOffsetMillis,
-                  initiation.envelope!.traceId, initiationMessageIncluded, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEventIncluded);
+              var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId!, initiation.envelope!.clientMessageId!, initiation.sentTimestamp!, sessionEstablishedOffsetMillis,
+                  initiation.envelope!.traceId!, initiationMessageIncluded, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEventIncluded);
               _logger.fine(() => 'Sending InitiationProcessedEvent to listener [${(i + 1)}/${_initiationProcessedEventListeners.length}]', initiationProcessedEvent);
               registration.listener(initiationProcessedEvent);
           } catch (err) {
@@ -2549,7 +2567,7 @@ class MatsSocket {
 
   void _startPinger() {
       _logger.fine('Starting PING\'er!');
-      _pingLater(3000 + rnd.nextInt(4000));
+      _pingLater(initialPingDelay);
   }
 
   void _stopPinger() {

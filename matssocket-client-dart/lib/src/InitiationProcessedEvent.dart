@@ -36,17 +36,17 @@ typedef InitiationProcessedEventListener = Function(InitiationProcessedEvent);
 ///   message- or rejectCallbacks (for 'requestReplyTo').
 class InitiationProcessedEvent {
   /// Which initiation type of this flow, enum of [InitiationProcessedEventType].
-  InitiationProcessedEventType? type;
+  final InitiationProcessedEventType type;
 
   /// Target Server MatsSocket Endpoint or Terminator Id  (envelope's 'eid').
-  final String? endpointId;
+  final String endpointId;
 
   /// The Client MessageId of the Initiation  (envelope's 'cmid'). For this particular MatsSocket library, this
   /// is currently an integer sequence id.
-  final String? clientMessageId;
+  final String clientMessageId;
 
   /// Millis-from-epoch when this initiation was sent.
-  final DateTime? sentTimestamp;
+  final DateTime sentTimestamp;
 
   /// The number of milliseconds offset for sending this message from the initial [ConnectionEventType.SESSION_ESTABLISHED] event for
   /// this MatsSocket - **this number will typically be negative for the first messages**: A negative number
@@ -61,7 +61,7 @@ class InitiationProcessedEvent {
   final double sessionEstablishedOffsetMillis;
 
   /// TraceId for the initiation - which follows through all parts of the processing  (envelope's 'tid').
-  final String? traceId;
+  final String traceId;
 
   /// The message object that was sent with the initiation, i.e. on send(), request() or requestReplyTo()  (outgoing envelope's 'msg').
   final dynamic initiationMessage;
@@ -99,22 +99,19 @@ class InitiationProcessedEvent {
       this.replyMessageEventType,
       this.replyToTerminatorId,
       this.requestReplyRoundTripMillis,
-      this.replyMessageEvent) {
-    if (replyToTerminatorId != null) {
-      type = InitiationProcessedEventType.REQUEST_REPLY_TO;
-    } else if (replyMessageEventType != null) {
-      type = InitiationProcessedEventType.REQUEST;
-    } else {
-      type = InitiationProcessedEventType.SEND;
-    }
-  }
+      this.replyMessageEvent)
+      : type = (replyToTerminatorId != null)
+      ? InitiationProcessedEventType.REQUEST_REPLY_TO
+      : (replyMessageEventType != null
+         ? InitiationProcessedEventType.REQUEST
+         : InitiationProcessedEventType.SEND);
 
   Map<String, dynamic> toJson() {
     return removeNullValues({
       'type' : type.name,
       'endpointId' : endpointId,
       'clientMessageId' : clientMessageId,
-      'sentTimestamp' : sentTimestamp!.millisecondsSinceEpoch,
+      'sentTimestamp' : sentTimestamp.millisecondsSinceEpoch,
       'sessionEstablishedOffsetMillis' : sessionEstablishedOffsetMillis,
       'traceId' : traceId,
       'initiationMessage' : initiationMessage,
