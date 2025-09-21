@@ -148,7 +148,7 @@ tasks.register('dartPana') {
 
 // 'dart publish --dry-run'
 tasks.register('dartPublishDryRun') {
-    dependsOn downloadDartAndDeps
+    dependsOn downloadDartAndDeps, build
     doLast {
         dartExec 'pub', 'publish', '--dry-run'
     }
@@ -156,7 +156,7 @@ tasks.register('dartPublishDryRun') {
 
 // 'dart publish --force'
 tasks.register('dartPublish') {
-    dependsOn downloadDartAndDeps
+    dependsOn downloadDartAndDeps, build
     doLast {
         dartExec 'pub', 'publish', '--force'
     }

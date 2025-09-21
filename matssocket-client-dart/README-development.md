@@ -23,15 +23,16 @@ integration tests, setting the Chrome path to `/snap/bin/chromium`.
 ./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:testAll
 ```
 
-There are also separate tasks `testVmKernel`, `testVmSource`, `testVmExe`, `testWebJs`, and `testWebWasm` if you want to
-run a specific combination, and `testVm` and `testWeb` for subsets. The default `test` task only runs the `testVmKernel`
-task. The VM tasks don't need Chrome.
+There are also separate tasks `testVmKernel`, `testVmSource`, `testVmExe`, `testWebJs`, `testWebWasm`, `testNodeJs` and
+`testNodeWasm` if you want to run a specific combination, and `testVm`, `testWeb` and `testNode` for subsets.
+The default `test` task only runs the `testVm` and `testNode` task (don't depend on Chrome on DI server).
+The VM tasks don't need Chrome, while the Node tasks need Node which Gradle installs.
 
 ### From command line using Gradle/downloaded Dart SDK
 
 You may use the Gradle-downloaded Dart SDK to run the tests directly from command line. The Dart SDK will be downloaded
 by most tasks in this module's build.gradle, but you may run it specifically by executing the Gradle task
-`./gradlew matssocket-client-dart:updateDartDependencies` from project root. _(Note that it is also possible to let
+`./gradlew matssocket-client-dart:downloadDartAndDeps` from project root. _(Note that it is also possible to let
 IntelliJ use this downloaded Dart SDK - but you might have to restart the analyzer each time after the Gradle download
 task runs, since the SDK will be overwritten and the analyzer thus crashes)_
 
@@ -59,6 +60,8 @@ The platform/compiler combinations are (The Dart default is '-p vm -c kernel'):
 * `-p vm -c kernel` (VM, compiled to kernel - default)
 * `-p vm -c source` (VM, run from source)
 * `-p vm -c exe` (VM, compiled to native executable)
+* `-p chrome -c dart2js` (Web, compiled to JS)
+* `-p chrome -c dart2wasm` (Web, compiled to Wasm)
 * `-p chrome -c dart2js` (Web, compiled to JS)
 * `-p chrome -c dart2wasm` (Web, compiled to Wasm)
 

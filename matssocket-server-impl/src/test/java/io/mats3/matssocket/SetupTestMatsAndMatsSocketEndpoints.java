@@ -128,7 +128,7 @@ public class SetupTestMatsAndMatsSocketEndpoints {
         // :: Make simple single Mats Endpoint
         matsFactory.single(STANDARD_ENDPOINT, MatsDataTO.class, MatsDataTO.class,
                 (processContext, incomingDto) -> new MatsDataTO(
-                        incomingDto.number,
+                        incomingDto.number * 2,
                         incomingDto.string + ":FromSingle",
                         incomingDto.sleepTime));
     }

@@ -1096,7 +1096,7 @@ class MatsSocket {
   }
 
   void _clearWebSocketStateAndInfrastructure() {
-    _logger.info('clearWebSocketStateAndInfrastructure(). Current WebSocket: [$_webSocket] - nulling.');
+    _logger.fine(() => 'clearWebSocketStateAndInfrastructure(). Current WebSocket: [$_webSocket] - nulling.');
     // Stop pinger
     _stopPinger();
     // Remove beforeunload eventlistener
@@ -1118,7 +1118,7 @@ class MatsSocket {
   }
 
   void _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages() {
-    _logger.info('closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket: [$_webSocket].');
+    _logger.fine(() => 'closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket: [$_webSocket].');
     // Clear state
     sessionId = null;
     _state = ConnectionState.NO_SESSION;
@@ -1408,12 +1408,10 @@ class MatsSocket {
       // -> Yes, it has changed, so add it to some envelope - either last in pipeline, or if empty pipe, then make an AUTH message.
       if (_pipeline.isNotEmpty) {
         var lastEnvelope = _pipeline[_pipeline.length - 1]!;
-        _logger
-            .fine("Authorization has changed, and there is a message in pipeline of type ${lastEnvelope.type}, so so we add 'auth' to it.");
+        _logger.fine("Authorization has changed, and there is a message in pipeline of type ${lastEnvelope.type}, so so we add 'auth' to it.");
         lastEnvelope.authorization = _authorization;
       } else {
-        _logger
-            .fine('Authorization has changed, but there is no message in pipeline, so we add an AUTH message now.');
+        _logger.fine('Authorization has changed, but there is no message in pipeline, so we add an AUTH message now.');
         _pipeline.add(MatsSocketEnvelopeDto(type: MessageType.AUTH, authorization: _authorization));
       }
       // The current authorization is now sent
@@ -1426,14 +1424,30 @@ class MatsSocket {
     // :: Send PRE-pipeline messages, if there are any
     // (Before the HELLO is sent and sessionId is established, the max size of message is low on the server)
     if (_prePipeline.isNotEmpty) {
-      _logger.info('Flushing prePipeline of ${_prePipeline.length} messages: ${jsonEncode(_prePipeline)}');
+      if (_logger.isLoggable(Level.FINEST)) {
+        _logger.finest('Flushing prePipeline of ${_prePipeline.length} messages: ${jsonEncode(_prePipeline)}');
+      }
+      else {
+        _logger.info(() => 'Flushing prePipeline of ${_prePipeline.length} messages: ${_prePipeline
+            .where((m) => m!.type != null)
+            .map((m) => m!.type.name)
+            .join(', ')}');
+      }
       _webSocket!.send(jsonEncode(_prePipeline));
       // Clear prePipeline
       _prePipeline.length = 0;
     }
     // :: Send any pipelined messages.
     if (_pipeline.isNotEmpty) {
-      _logger.fine('Flushing pipeline of ${_pipeline.length} messages: ${jsonEncode(_pipeline)}');
+      if (_logger.isLoggable(Level.FINEST)) {
+        _logger.finest('Flushing pipeline of ${_pipeline.length} messages: ${jsonEncode(_pipeline)}');
+      }
+      else {
+        _logger.info(() => 'Flushing pipeline of ${_pipeline.length} messages: ${_pipeline
+            .where((m) => m!.type != null)
+            .map((m) => m!.type.name)
+            .join(', ')}');
+      }
       _webSocket!.send(jsonEncode(_pipeline));
       // Clear pipeline
       _pipeline.length = 0;
@@ -1506,7 +1520,7 @@ class MatsSocket {
           _connectionAttemptRound++;
       }
       _currentWebSocketUrl = _useUrls[_urlIndexCurrentlyConnecting];
-      _logger.fine('## _increaseReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] = $_currentWebSocketUrl');
+      _logger.fine('_increaseReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] = $_currentWebSocketUrl');
   }
 
   void _resetReconnectStateVars() {
@@ -1514,7 +1528,7 @@ class MatsSocket {
       _urlIndexCurrentlyConnecting = 0;
       _connectionAttemptRound = 0;
       _currentWebSocketUrl = _useUrls[_urlIndexCurrentlyConnecting];
-      _logger.fine('## _resetReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] =  $_currentWebSocketUrl');
+      _logger.fine('_resetReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] =  $_currentWebSocketUrl');
   }
 
   void _updateStateAndNotifyConnectionEventListeners(ConnectionEvent connectionEvent) {
@@ -1991,8 +2005,7 @@ class MatsSocket {
         if (envelope.type == MessageType.WELCOME) {
           // Fetch our assigned MatsSocketSessionId
           sessionId = envelope.sessionId;
-          _logger
-              .fine(() => 'We\'re WELCOME! SessionId:$sessionId, there are [${_outboxInitiations
+          _logger.fine(() => 'We\'re WELCOME! SessionId:$sessionId, there are [${_outboxInitiations
               .length}] outstanding sends-or-requests, and [${_outboxReplies
               .length}] outstanding replies.');
           // If this is the very first time we get SESSION_ESTABLISHED, then record time (can happen again due to reconnects)
@@ -2261,8 +2274,7 @@ class MatsSocket {
 
           var request = _outstandingRequests[envelope.clientMessageId!];
           if (request == null) {
-            _logger
-                .fine(() => 'Double delivery: Evidently we\'ve already completed the Request for cmid:[${envelope.clientMessageId}], traiceId: [${envelope.traceId}], ignoring.');
+            _logger.fine(() => 'Double delivery: Evidently we\'ve already completed the Request for cmid:[${envelope.clientMessageId}], traiceId: [${envelope.traceId}], ignoring.');
             continue;
           }
 
@@ -2623,7 +2635,7 @@ class MatsSocket {
               var replyMessageEventIncluded = (registration.includeReplyMessageEvent ? replyMessageEvent : null);
               var initiationProcessedEvent = InitiationProcessedEvent(initiation.envelope!.endpointId!, initiation.envelope!.clientMessageId!, initiation.sentTimestamp!, sessionEstablishedOffsetMillis,
                   initiation.envelope!.traceId!, initiationMessageIncluded, acknowledgeRoundTripTime, replyMessageEventType, replyToTerminatorId, requestRoundTripTime, replyMessageEventIncluded);
-              _logger.fine(() => 'Sending InitiationProcessedEvent to listener [${(i + 1)}/${_initiationProcessedEventListeners.length}]', initiationProcessedEvent);
+              _logger.fine(() => 'Sending InitiationProcessedEvent to listener [${(i + 1)}/${_initiationProcessedEventListeners.length}]');
               registration.listener(initiationProcessedEvent);
           } catch (err) {
               error('notify InitiationProcessedEvent listeners', 'Caught error when notifying one of the [${_initiationProcessedEventListeners.length}] InitiationProcessedEvent listeners.', err);

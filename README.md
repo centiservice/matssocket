@@ -21,13 +21,14 @@ class from your IDE. Go to http://localhost:8080. It provides a webapp with a me
 the JS Client integration tests in the browser (which connects to the same server).
 
 **A few Gradle tasks:**
-* `./gradlew matsSocketTestServer` - starts a test server, with a webapp on localhost:8080.
+* `./gradlew matsSocketTestServer` - starts a test server, with a test/examples webapp on localhost:8080.
 * `./gradlew build` - builds the Java code, JS ESM and UMD bundles, and runs 'test' tasks.
 * `./gradlew build -x test` - build, not running tests.
-* `./gradlew test` - runs tests, both JS in ESM and UMD mode, and Dart in VM/Kernel mode. (You can run JS tests in
-  the browser using the test server, see above.)
+* `./gradlew test` - runs tests, both JS in ESM and UMD modes, and Dart in VM(Kernel,Src,Exe) and Node(JS,Wasm) modes.
+  (You can run JS tests in the browser using the test server, see above.)
 * `./gradlew matssocket-client-dart:testAll` - runs the Dart tests for all platforms and compilers, including in chrome
-  (headless), read more in [matssocket-client-dart/README.md](matssocket-client-dart/README.md).
+  (headless), read more in [matssocket-client-dart/README.md](matssocket-client-dart/README.md). _(Path to
+  Chrome/Chromium can be set using `-PchromePath`)._
 * `./gradlew clean` - deletes all build output.
 * `./gradlew distclean` - .. also deletes all downloaded dependencies like Node and Dart SDKs - `distclean build` for a
   fully fresh build.
