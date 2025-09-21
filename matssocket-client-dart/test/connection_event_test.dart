@@ -8,7 +8,7 @@ void main() {
       test('On timeout 5 seconds with 100 microseconds elapsed, should return 5.0', () {
         var event = ConnectionEvent(
             ConnectionEventType.CONNECTING,
-            null,
+            Uri.parse("wss://vg.no"),
             null,
             Duration(seconds: 5),
             Duration(microseconds: 100)
@@ -19,7 +19,7 @@ void main() {
       test('On timeout 5 seconds with 1 millisecond elapsed, should return 5.0', () {
         var event = ConnectionEvent(
             ConnectionEventType.CONNECTING,
-            null,
+            Uri.parse("wss://vg.no"),
             null,
             Duration(seconds: 5),
             Duration(milliseconds: 1)
@@ -30,7 +30,7 @@ void main() {
       test('On timeout 5 seconds with 100 millisecond elapsed, should return 4.9', () {
         var event = ConnectionEvent(
             ConnectionEventType.CONNECTING,
-            null,
+            Uri.parse("wss://vg.no"),
             null,
             Duration(seconds: 5),
             Duration(milliseconds: 100)
@@ -41,7 +41,7 @@ void main() {
       test('On timeout 5 seconds with 151 millisecond elapsed, should return 4.8', () {
         var event = ConnectionEvent(
             ConnectionEventType.CONNECTING,
-            null,
+            Uri.parse("wss://vg.no"),
             null,
             Duration(seconds: 5),
             Duration(milliseconds: 151)
@@ -52,7 +52,7 @@ void main() {
       test('On timeout 5 seconds with 1 second elapsed, should return 4.0', () {
         var event = ConnectionEvent(
             ConnectionEventType.CONNECTING,
-            null,
+            Uri.parse("wss://vg.no"),
             null,
             Duration(seconds: 5),
             Duration(seconds: 1)

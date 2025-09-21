@@ -51,7 +51,7 @@ class MatsSocketPlatformMock extends MatsSocketPlatform {
   }
 
   @override
-  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
+  WebSocket createAndConnectWebSocket(Uri? webSocketUri, String protocol, String? authorization) {
     return MockWebSocket(webSocketUri.toString(), websocketMessageHandler);
   }
 

@@ -167,8 +167,10 @@ void main() {
       });
 
       group('PreConnectionOperation - Authorization upon WebSocket HTTP Handshake', () {
+
+        // NOTE: We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
+
         test('When preconnectoperations=true, we should get the initial AuthorizationValue presented in Cookie in the authPlugin.checkHandshake(..) function Server-side', () async {
-          // We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
           matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
 
           var expiry = DateTime.now().add(Duration(milliseconds: 20000));
@@ -207,8 +209,9 @@ void main() {
           await testCompleter.future;
         });
 
+        // NOTE: We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
+
         test('When the test-servers authPlugin.checkHandshake(..) repeatedly returns false, we should eventually get SessionClosedEvent.VIOLATED_POLICY.', () async {
-          // We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
           matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
           matsSocket.maxConnectionAttempts = 2; // "Magic option" that is just meant for integration testing.
           var testCompleter = Completer();

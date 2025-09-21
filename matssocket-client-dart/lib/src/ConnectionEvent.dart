@@ -22,7 +22,7 @@ class ConnectionEvent {
 
   /// For all of the events this holds the current URL we're either connected to, was connected to, or trying to
   /// connect to.
-  final Uri? webSocketUrl;
+  final Uri webSocketUri;
 
   /// For several of the events (enumerated in [ConnectionEventType]), there is an underlying WebSocket event
   /// that caused it. This field holds that.
@@ -87,12 +87,12 @@ class ConnectionEvent {
   /// The connection attempt count, starts at 0th attempt and increases for each time the connection attempt fails.
   final int? connectionAttempt;
 
-  const ConnectionEvent(this.type, this.webSocketUrl, this.webSocketEvent, [this.timeout, this.elapsed, this.connectionAttempt]);
+  const ConnectionEvent(this.type, this.webSocketUri, this.webSocketEvent, [this.timeout, this.elapsed, this.connectionAttempt]);
 
   Map<String, dynamic> toJson() {
     return removeNullValues({
       'type': type.name,
-      'webSocketUrl': webSocketUrl.toString(),
+      'webSocketUrl': webSocketUri.toString(),
       'webSocketEvent': webSocketEvent?.toString(),
       'timeoutMs': timeout?.inMilliseconds,
       'elapsedMs': elapsed?.inMilliseconds,

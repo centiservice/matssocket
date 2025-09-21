@@ -87,10 +87,11 @@ class MatsSocket {
   /// Cookie (e.g. named "MatsSocketAuthCookie").
   ///
   /// When the WebSocket connect is performed, the cookies will be transferred along with the initial "handshake"
-  /// HTTP Request - and the AuthenticationPlugin on the server side can then validate the Authorization header -
-  /// now present in a cookie. <i>Note: One could of course have supplied it in the URL of the WebSocket HTTP Handshake,
-  /// but this is very far from ideal, as a live authentication then could be stored in several ACCESS LOG style
-  /// logging systems along the path of the WebSocket HTTP Handshake Request call.</i>
+  /// HTTP Request (the "cookie jar" is shared between the HTTP requests and WebSockets) - and the AuthenticationPlugin
+  /// on the server side can then validate the Authorization header - now present in a cookie. <i>Note: One could of
+  /// course have supplied it in the URL of the WebSocket HTTP Handshake, but this is very far from ideal, as a live
+  /// authentication then could be stored in several ACCESS LOG style logging systems along the path of the WebSocket
+  /// HTTP Handshake Request call.</i>
   ///
   /// This can be set to any function fulfilling the PreConnectOperation typedef.
   PreConnectOperation? preconnectoperation;
@@ -959,7 +960,7 @@ class MatsSocket {
   ///     and must therefore be quite short (max 123 chars).
   Future close(String reason) async {
     // Fetch properties we need before clearing state
-    final Uri? webSocketUrl = _currentWebSocketUrl;
+    final Uri webSocketUrl = _currentWebSocketUrl;
     final String? existingSessionId = sessionId;
     _logger.info(() => 'close(): Closing MatsSocketSession, id:[$existingSessionId] due to [$reason], currently connected: [${_webSocket?.url ?? "not connected"}]');
 
@@ -976,8 +977,8 @@ class MatsSocket {
     _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages();
 
     // :: Out-of-band Session Close
-    // ?: Do we have a sessionId and a webSocketUrl?
-    if ((existingSessionId != null) && (webSocketUrl != null)) {
+    // ?: Do we have a sessionId?
+    if (existingSessionId != null) {
       // Yes -> inform the transport to close the session.
       final httpUri = webSocketUrl.scheme == 'wss'
           ? webSocketUrl.replace(scheme: 'https')
@@ -1267,6 +1268,9 @@ class MatsSocket {
           AuthorizationRequiredEvent(AuthorizationRequiredEventType.NOT_PRESENT));
       return;
     }
+
+    // ----- After this point, _authorization is set (Can't get past above if without returning otherwise)
+
     // ?: Check whether we have expired authorization
     if ((_expirationTimestamp != null)
         && (_expirationTimestamp!.subtract(_roomForLatencyDuration).isBefore(DateTime.now()))) {
@@ -1282,7 +1286,7 @@ class MatsSocket {
       return;
     }
 
-    // ----- We have good authentication, and should send pipeline.
+    // ----- After this point, we have *valid* authentication, and should send pipeline.
 
     // ?: Are we trying to open websocket?
     if (_webSocketConnecting) {
@@ -1294,8 +1298,7 @@ class MatsSocket {
 
     // ?: Is the WebSocket present?
     if (_webSocket == null) {
-      _logger.fine(
-          'evaluatePipelineSend(): WebSocket is not present, so initiate creation. Cannot send yet.');
+      _logger.fine('evaluatePipelineSend(): WebSocket is not present, so initiate creation. Cannot send yet.');
       // -> No, so go get it.
       _initiateWebSocketCreation();
       // Returning now, as opening is async. When the socket opens, it will re-run 'evaluatePipelineSend()'.
@@ -1435,7 +1438,7 @@ class MatsSocket {
 
   int _urlIndexCurrentlyConnecting = 0; // Cycles through the URLs
   int _connectionAttemptRound = 0; // When cycled one time through URLs, this increases.
-  Uri? _currentWebSocketUrl;
+  late Uri _currentWebSocketUrl; // Will be set before any use.
 
   static const int _connectionTimeoutBase = 500; // Base timout, milliseconds. Doubles, up to max defined below.
   static const int _connectionTimeoutMinIfSingleUrl = 5000; // Min timeout if single-URL configured, milliseconds.
@@ -1632,7 +1635,7 @@ class MatsSocket {
 
       w_attemptPreConnectionOperation = () {
           // :: Decide based on type of 'preconnectoperation' how to do the .. PreConnectOperation..!
-          var abortAndFuture = preconnectoperation!(_currentWebSocketUrl, _authorization);
+          var abortAndFuture = preconnectoperation!(_currentWebSocketUrl, _authorization!);
 
           // Deconstruct the return
           preConnectOperationAbortFunction = abortAndFuture.abortFunction as dynamic Function()?;
@@ -1679,11 +1682,11 @@ class MatsSocket {
 
           // :: Actually create the WebSocket instance
 
-          var url = (preconnectoperation != null ? _currentWebSocketUrl!.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
+          var url = (preconnectoperation != null ? _currentWebSocketUrl.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
 
           final webSocketInstanceId = id(6);
           _logger.fine(() => 'INSTANTIATING new WebSocket("$url", "matssocket") - InstanceId:[$webSocketInstanceId]');
-          websocketAttempt = platform.connect(url, 'matssocket', _authorization);
+          websocketAttempt = platform.createAndConnectWebSocket(url, 'matssocket', _authorization!);
           websocketAttempt!.webSocketInstanceId = webSocketInstanceId;
 
           // :: Add the handlers for this "trying to acquire" procedure.

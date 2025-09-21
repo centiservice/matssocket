@@ -2,7 +2,7 @@ import 'MatsSocketPlatformStub.dart'
     if (dart.library.io) 'MatsSocketPlatformIo.dart'
     if (dart.library.js_interop) 'MatsSocketPlatformJs.dart';
 
-typedef PreConnectOperation = ConnectResult Function(Uri?, String?);
+typedef PreConnectOperation = ConnectResult Function(Uri, String);
 
 /// Interface to communicate with the platform that the mats socket runs on.
 ///
@@ -17,9 +17,13 @@ abstract class MatsSocketPlatform {
   /// This method will delegate to appropriate implementation based on the current platform.
   factory MatsSocketPlatform.create() => createTransport();
 
-  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization);
+  void registerBeforeunload(Function(dynamic) beforeunloadHandler);
 
-  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization);
+  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler);
+
+  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization);
+
+  WebSocket createAndConnectWebSocket(Uri webSocketUri, String protocol, String authorization);
 
   /// Send a MatsSocket close session signal.
   ///
@@ -30,10 +34,6 @@ abstract class MatsSocketPlatform {
   /// Still, the process should not exit until the close request has completed, as we block on the future returned
   /// here.
   Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId);
-
-  void registerBeforeunload(Function(dynamic) beforeunloadHandler);
-
-  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler);
 
   String get runningOnVersions;
 

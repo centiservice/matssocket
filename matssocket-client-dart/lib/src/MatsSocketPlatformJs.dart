@@ -17,20 +17,56 @@ MatsSocketPlatform createTransport() => MatsSocketPlatformJs();
 class MatsSocketPlatformJs extends MatsSocketPlatform {
   String? cookies;
 
+  MatsSocketPlatformJs();
+
+  // Keep a mapping from the Dart handler to the JS handler so we can remove by the same reference.
+  JSFunction? _beforeUnloadJsHandler;
+
   @override
-  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
+  void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
+    // ?: Is this web or node?
+    if (isNode) {
+      // -> Node, we don't have a way to register beforeunload.
+    }
+    else {
+      // -> Browser, so register unload handler
+      // Make JS Function to register
+      final jsHandler = ((web.Event e) {
+        beforeunloadHandler(e);
+      }).toJS;
+      _beforeUnloadJsHandler = jsHandler;
+      web.window.addEventListener('beforeunload', jsHandler);
+    }
+  }
+
+  @override
+  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
+    // ?: Is this web or node?
+    if (isNode) {
+      // -> Node, nothing to do.
+    }
+    else {
+      // -> Browser, so deregister:
+      if (_beforeUnloadJsHandler != null) {
+        web.window.removeEventListener('beforeunload', _beforeUnloadJsHandler);
+      }
+    }
+  }
+
+  @override
+  WebSocket createAndConnectWebSocket(Uri webSocketUri, String protocol, String authorization) {
     _logger.fine('Creating web:web WebSocket to $webSocketUri with protocol: $protocol');
     return WebWebSocket.create(webSocketUri.toString(), protocol, authorization);
   }
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
+  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
     // :: Make abortable request:
     final abortTrigger = Completer<void>();
     final client = BrowserClient()..withCredentials = true;
 
     final authFuture = () async {
-      final httpUri = websocketUri!.scheme == 'wss'
+      final httpUri = websocketUri.scheme == 'wss'
           ? websocketUri.replace(scheme: 'https')
           : websocketUri.replace(scheme: 'http');
 
@@ -41,9 +77,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
         abortTrigger: abortTrigger.future,
       );
 
-      if (authorization != null) {
-        request.headers['Authorization'] = authorization;
-      }
+      request.headers['Authorization'] = authorization;
 
       _logger.fine('Sending Authorization headers to $httpUri');
 
@@ -98,40 +132,6 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
     return web.window.navigator.sendBeacon(closeUri.toString());
   }
 
-  // Keep a mapping from the Dart handler to the JS handler so we can remove by the same reference.
-  JSFunction? _beforeUnloadJsHandler;
-
-  @override
-  void registerBeforeunload(Function(dynamic) beforeunloadHandler) {
-    // ?: Is this web or node?
-    if (isNode) {
-      // -> Node, we don't have a way to register beforeunload.
-    }
-    else {
-      // -> Browser, so register unload handler
-      // Make JS Function to register
-      final jsHandler = ((web.Event e) {
-        beforeunloadHandler(e);
-      }).toJS;
-      _beforeUnloadJsHandler = jsHandler;
-      web.window.addEventListener('beforeunload', jsHandler);
-    }
-  }
-
-  @override
-  void deregisterBeforeunload(Function(dynamic) beforeunloadHandler) {
-    // ?: Is this web or node?
-    if (isNode) {
-      // -> Node, nothing to do.
-    }
-    else {
-      // -> Browser, so deregister:
-      if (_beforeUnloadJsHandler != null) {
-        web.window.removeEventListener('beforeunload', _beforeUnloadJsHandler);
-      }
-    }
-  }
-
   @override
   String get runningOnVersions {
     // ?: Node?
@@ -152,12 +152,13 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
 
 /// Implementation of WebSocket using the browser's WebSocket API (package:web).
 class WebWebSocket extends WebSocket {
-  String? _url;
-  late web.WebSocket _htmlWebSocket;
+  final String _url;
+  final web.WebSocket _htmlWebSocket;
 
-  WebWebSocket.create(String url, String protocol, String? authorization) {
-    _url = url;
-    _htmlWebSocket = web.WebSocket(url, protocol.toJS);
+  WebWebSocket.create(String url, String protocol, String authorization)
+    : _url = url,
+        _htmlWebSocket = web.WebSocket(url, protocol.toJS) {
+
     _htmlWebSocket.onClose.forEach((closeEvent) {
       handleClose(closeEvent.code, closeEvent.reason, closeEvent);
     });
@@ -183,7 +184,7 @@ class WebWebSocket extends WebSocket {
   }
 
   @override
-  String? get url => _url;
+  String get url => _url;
 }
 
 // ---- Node's global `process` ----

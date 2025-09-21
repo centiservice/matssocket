@@ -38,7 +38,7 @@ class ReceivedEvent {
     return removeNullValues({
       'type': type.name,
       'traceId': traceId,
-      'sentTimestamp': sentTimestamp!.millisecondsSinceEpoch,
+      'sentTimestamp': sentTimestamp.millisecondsSinceEpoch,
       'receivedTimestamp': receivedTimestamp.millisecondsSinceEpoch,
       'roundTripMillis': roundTripMillis,
       'description': description

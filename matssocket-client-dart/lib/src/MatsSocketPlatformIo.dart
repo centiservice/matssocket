@@ -14,61 +14,6 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
 
   MatsSocketPlatformIo();
 
-  @override
-  WebSocket connect(Uri? webSocketUri, String protocol, String? authorization) {
-    _logger.fine('Creating dart:io WebSocket to $webSocketUri with protocol: $protocol');
-    return IoWebSocket.create(webSocketUri.toString(), protocol, authorization, _cookies);
-  }
-
-  @override
-  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) async {
-    final client = io.HttpClient();
-    final request = await client.postUrl(closeUri);
-    await request.close();
-    return true;
-  }
-
-  @override
-  String get runningOnVersions {
-    // Since we are using ';' to split the pieces, we cannot allow its presence in other elements of the
-    // version string. Also, ',' is used to split the name and version, thus that cannot be a part of the
-    // name. For the name, we replace both with '|' (unlikely to ever happen), while for the version, we
-    // replace ';' with ','.
-    final osName = io.Platform.operatingSystem.replaceAll(RegExp('[;,]'), '|');
-    final osVersion = io.Platform.operatingSystemVersion.replaceAll(RegExp(';'), ',');
-    final dartVersion = io.Platform.version.replaceAll(RegExp(';'), ',');
-    return 'Runtime: Dart VM/Exe $dartVersion; Host: $osName $osVersion';
-  }
-
-  @override
-  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
-    final client = io.HttpClient();
-    final response = Future<int>(() async {
-      var preAuthUri = websocketUri!.replace(scheme: websocketUri.scheme.replaceAll('ws', 'http'));
-
-      var req = await client.getUrl(preAuthUri);
-      req.headers.set('Authorization', '$authorization');
-      var response = await req.close();
-      _cookies.clear();
-      _cookies.addAll(response.cookies);
-
-      // Get response status
-      var status = response.statusCode;
-      // ?: Was it a GOOD return?
-      if ((status == 200) || (status == 202) || (status == 204)) {
-        // -> Yes, it was good - supplying the status code
-        return status;
-      } else {
-        // -> Not, it was BAD - supplying the status code
-        throw status;
-      }
-    });
-    return ConnectResult(() {
-      _logger.info('  \\ - Abort requested, closing client');
-      client.close(force: true);
-    }, response);
-  }
-
   Function(dynamic)? _beforeUnloadHandler;
   StreamSubscription<io.ProcessSignal>? _sigintSub;
   StreamSubscription<io.ProcessSignal>? _sigtermSub;
@@ -117,17 +62,96 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
   }
 
   @override
+  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
+    final client = io.HttpClient();
+    final response = Future<int>(() async {
+      try {
+        var preAuthUri = websocketUri.replace(
+            scheme: websocketUri.scheme.replaceAll('ws', 'http')
+        );
+
+        final req = await client.getUrl(preAuthUri);
+        // Sending the actual auth-header, which is the entire point of this method.
+        // (The server side can then move it over to a Cookie, which when on WebSocket connect will be sent along due
+        // to common cookie jar between HTTP calls and WebSockets. This makes more sense on Browsers, where you for
+        // some inexplicable reason cannot add headers to the initial WebSocket request.)
+        req.headers.set('Authorization', authorization);
+        // Premature optimization wrt. getting prompt release of connection.
+        req.headers.set(io.HttpHeaders.connectionHeader, 'close');
+        final resp = await req.close();
+        _cookies.clear();
+        _cookies.addAll(resp.cookies);
+
+        // Drain any response to free connection.
+        await resp.drain();
+
+        // Get response status
+        final status = resp.statusCode;
+        // ?: Was it a GOOD return?
+        if ((status == 200) || (status == 202) || (status == 204)) {
+          // -> Yes, it was good - supplying the status code
+          return status;
+        } else {
+          // -> Not, it was BAD - throwing the status code
+          throw status;
+        }
+      }
+      finally {
+        client.close(force: true);
+      }
+    });
+    return ConnectResult(() {
+      _logger.info('  \\ - Abort requested, closing client');
+      client.close(force: true);
+    }, response);
+  }
+
+  @override
+  WebSocket createAndConnectWebSocket(Uri webSocketUri, String protocol, String authorization) {
+    _logger.fine('Creating dart:io WebSocket to $webSocketUri with protocol: $protocol');
+    return IoWebSocket.create(webSocketUri.toString(), protocol, authorization, _cookies);
+  }
+
+  @override
+  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) async {
+    final client = io.HttpClient();
+    try {
+      final req = await client.postUrl(closeUri);
+      // Premature optimization wrt. getting prompt release of connection.
+      req.headers.set(io.HttpHeaders.connectionHeader, 'close');
+      final resp = await req.close();
+      // Drain any response to free connection.
+      await resp.drain();
+      return true;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  @override
+  String get runningOnVersions {
+    // Since we are using ';' to split the pieces, we cannot allow its presence in other elements of the
+    // version string. Also, ',' is used to split the name and version, thus that cannot be a part of the
+    // name. For the name, we replace both with '|' (unlikely to ever happen), while for the version, we
+    // replace ';' with ','.
+    final osName = io.Platform.operatingSystem.replaceAll(RegExp('[;,]'), '|');
+    final osVersion = io.Platform.operatingSystemVersion.replaceAll(RegExp(';'), ',');
+    final dartVersion = io.Platform.version.replaceAll(RegExp(';'), ',');
+    return 'Runtime: Dart VM/Exe $dartVersion; Host: $osName $osVersion';
+  }
+
+  @override
   double performanceTime() => DateTime.now().microsecondsSinceEpoch.toDouble() / 1000.0;
 }
 
 /// Implementation of WebSocket using native dart:io WebSocket.
 class IoWebSocket extends WebSocket {
-  String? _url;
+  final String _url;
   io.WebSocket? _ioWebSocket;
 
-  IoWebSocket.create(String url, String protocol, String? authorization, List<io.Cookie> cookies) {
-    _url = url;
-    var headers = {'Authorization': '$authorization'};
+  IoWebSocket.create(String url, String protocol, String authorization, List<io.Cookie> cookies)
+    : _url = url {
+    var headers = {'Authorization': authorization};
     if (cookies.isNotEmpty) {
       headers['Cookie'] =
           cookies.map((cookie) => '${cookie.name}=${cookie.value}').reduce((cookie1, cookie2) => '$cookie1; $cookie2');
