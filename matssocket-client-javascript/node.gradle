@@ -28,7 +28,6 @@ tasks.register('deleteNodeModules', Delete) {
 tasks.register('distcleanNode', Delete) {
     dependsOn clean, deleteNodeModules
     delete "$projectDir/node_download/"
-    delete "$projectDir/.gradle/" // If Yarn is accidentally used, it puts stuff here.
 }
 
 // :: Update npm dependencies tasks
