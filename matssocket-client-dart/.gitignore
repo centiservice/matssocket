@@ -7,6 +7,7 @@ pubspec.lock
 
 # Download of the Dart SDK
 dartsdk_download
+dartsdk_download-temp
 
 # Directory created by dartdoc
 doc/api/
