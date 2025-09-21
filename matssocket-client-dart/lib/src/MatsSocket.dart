@@ -58,6 +58,28 @@ void _shuffleList(List items) {
   }
 }
 
+/// A function that performs a pre-connection operation (typically an HTTP GET)
+/// before opening the WebSocket.
+///
+/// - [uri]: The HTTP URL to call (GET).
+/// - [authorization]: The value to use for the Authorization header in that call.
+///
+/// Returns a [ConnectResult] providing:
+/// - an `abortFunction` to cancel the in-flight pre-connection request, and
+/// - a `responseStatusCode` future that completes with the HTTP status code.
+typedef PreConnectOperation = ConnectResult Function(Uri uri, String authorization);
+
+/// Result from the [PreConnectOperation], containing an `Function abortFunction` to abort the operation,
+/// and a `Future&lt;int&gt; responseStatusCode`.
+class ConnectResult {
+  final Function abortFunction;
+  final Future<int> responseStatusCode;
+
+  ConnectResult(this.abortFunction, this.responseStatusCode);
+
+  ConnectResult.noop() : this(() {}, Future.value(0));
+}
+
 class MatsSocket {
 
   // ==============================================================================================
@@ -86,15 +108,54 @@ class MatsSocket {
   /// the Authorization header as normal, and the server side can transfer this header value over to a
   /// Cookie (e.g. named "MatsSocketAuthCookie").
   ///
-  /// When the WebSocket connect is performed, the cookies will be transferred along with the initial "handshake"
-  /// HTTP Request (the "cookie jar" is shared between the HTTP requests and WebSockets) - and the AuthenticationPlugin
-  /// on the server side can then validate the Authorization header - now present in a cookie. <i>Note: One could of
-  /// course have supplied it in the URL of the WebSocket HTTP Handshake, but this is very far from ideal, as a live
-  /// authentication then could be stored in several ACCESS LOG style logging systems along the path of the WebSocket
-  /// HTTP Handshake Request call.</i>
+  /// When the subsequent WebSocket connect is performed, the cookies will be transferred along with the initial
+  /// "handshake" HTTP Request (a browser's "cookie jar" is shared between the HTTP requests and WebSockets) - and the
+  /// AuthenticationPlugin on the server side can then validate the authorization String - now present in a cookie.
+  /// <i>Note: One could of course have supplied it in the URL of the WebSocket HTTP Handshake, but this is very far
+  /// from ideal, as a live authentication then could be stored in several ACCESS LOG style logging systems along the
+  /// path of the WebSocket HTTP Handshake Request call.</i>
   ///
-  /// This can be set to any function fulfilling the PreConnectOperation typedef.
-  PreConnectOperation? preconnectoperation;
+  /// **This is really only relevant for browser clients - although the preConnectOperation can probably be used for
+  /// other hacky purposes.** For Dart VM clients, we can actually add Authorization headers directly to the WebSocket
+  /// connection, which this client does (although the preConnectOperation works too - a shared cookie jar is
+  /// implemented between the default PreConnectOperation (true or String) and the WebSocket). For Node, we're out of
+  /// luck, because we neither have the ability to set headers, nor a shared cookie jar.
+  ///
+  /// This can be set to true, false, a String, or a [PreConnectOperation] object:
+  /// * `false`: **(default)**: Disables this functionality.
+  /// * `String`: Performs a HTTP GET with the URL set to the specified string, with the
+  ///    HTTP Header `"Authorization"` set to the current Authorization value. Expects 200, 202 or 204
+  ///    as returned status code to go on.
+  /// * `true`: Same as String above, but where the URL is set to the same URL as
+  ///    the WebSocket URL, with "ws" replaced with "http", similar to {@link MatsSocket#outofbandclose}.
+  /// * [PreConnectOperation] instance: Invokes the function the Uri set to the current WebSocket URL that we will
+  ///    connect to when this PreConnectionOperation has gone through, and the String set to the current Authorization
+  ///    value. The return value is a [ConnectResult], where the abortFunction is invoked when
+  ///    the connection-retry system deems the current attempt to have taken too long time. The Future must
+  ///    be resolved by your code when the request has been successfully performed, or rejected if it didn't go through.
+  ///    In the latter case, a new invocation of the 'preconnectoperation' will be performed after a countdown,
+  ///    possibly with a different 'webSocketUrl' value if the MatsSocket is configured with multiple URLs.
+  set preConnectOperation(Object value) {
+      if ((value is bool) || (value is String) || (value is PreConnectOperation)) {
+        if (value is String) {
+          // Check that it parses as a HTTP URL
+          final uri = Uri.tryParse(value);
+          if (uri == null || !uri.hasAbsolutePath || !(uri.isScheme('http') || uri.isScheme('https'))) {
+            throw ArgumentError.value(value, 'preConnectOperation', 'Must be a valid absolute http(s) URL');
+          }
+        }
+        _preConnectOperation = value;
+      }
+      else {
+        throw ArgumentError(value, 'preConnectOperation' 'Must be bool, String (URL) or PreConnectOperation');
+      }
+  }
+
+  /// Deprecated: Use [preConnectOperation] instead.
+  @Deprecated('Use preConnectOperation instead.')
+  set preconnectoperation(Object value) {
+    preConnectOperation = value;
+  }
 
   /// A bit field requesting different types of debug information, the bits defined in [DebugOption]. It is
   /// read each time an information bearing message is added to the pipeline, and if not 'undefined' or 0, the
@@ -140,6 +201,8 @@ class MatsSocket {
   // ==============================================================================================
   // PRIVATE fields
   // ==============================================================================================
+
+  Object _preConnectOperation = false;
 
   // :: Message handling
   final Map<String, StreamController<MessageEvent>> _terminators = {};
@@ -1634,35 +1697,56 @@ class MatsSocket {
       };
 
       w_attemptPreConnectionOperation = () {
-          // :: Decide based on type of 'preconnectoperation' how to do the .. PreConnectOperation..!
-          var abortAndFuture = preconnectoperation!(_currentWebSocketUrl, _authorization!);
+        // :: Decide based on type of 'preconnectoperation' how to do the .. PreConnectOperation..!
 
-          // Deconstruct the return
-          preConnectOperationAbortFunction = abortAndFuture.abortFunction as dynamic Function()?;
-          var preConnectRequestFuture = abortAndFuture.responseStatusCode;
+        final preAuthHttpUri = _currentWebSocketUrl.scheme == 'wss'
+            ? _currentWebSocketUrl.replace(scheme: 'https')
+            : _currentWebSocketUrl.replace(scheme: 'http');
 
-          // Handle the resolve or reject from the preConnectionOperation
-          preConnectRequestFuture
-              .then((statusMessage) {
-                  // -> Yes, good return - so go onto next phase, which is creating the WebSocket
-                  // ?: Are we still trying to perform the preConnectOperation? (not timed out)
-                  if (preConnectOperationAbortFunction != null) {
-                      // -> Yes, not timed out, so then we're good to go with the next phase
-                      _logger.info(() => 'PreConnectionOperation went OK [$statusMessage], going on to create WebSocket.');
-                      // Create the WebSocket
-                      w_attemptWebSocket();
-                  }
-              })
-              .catchError((statusMessage) {
-                  // -> No, bad return - so go for next
-                  // ?: Are we still trying to perform the preConnectOperation? (not timed out)
-                  if (preConnectOperationAbortFunction != null) {
-                      // -> Yes, not timed out, so then we'll notify about our failed attempt
-                    _logger.info(() => 'PreConnectionOperation failed [$statusMessage] - retrying.');
-                      // Go for next retry
-                      w_connectFailed_RetryOrWaitForTimeout();
-                  }
-              });
+        var abortAndFuture;
+        if (_preConnectOperation is bool) {
+          // -> Use default impl
+          if (!(_preConnectOperation as bool)) {
+            throw AssertionError("Should not be here if _preConnectOperation is false");
+          }
+          abortAndFuture = platform.sendPreConnectAuthorizationHeader(preAuthHttpUri, _authorization!);
+        }
+        else if (_preConnectOperation is String) {
+          // -> String shall be an URI
+          final parsedUri = Uri.parse(_preConnectOperation as String);
+          abortAndFuture = platform.sendPreConnectAuthorizationHeader(parsedUri, _authorization!);
+        }
+        else {
+          // -> Must be a PreConnectOperation
+          final specifiedPreConnectOperation = _preConnectOperation as PreConnectOperation;
+          abortAndFuture = specifiedPreConnectOperation(_currentWebSocketUrl, _authorization!);
+        }
+
+        // Deconstruct the return
+        preConnectOperationAbortFunction = abortAndFuture.abortFunction as dynamic Function()?;
+        var preConnectRequestFuture = abortAndFuture.responseStatusCode;
+
+        // Handle the resolve or reject from the preConnectionOperation
+        preConnectRequestFuture
+            .then((statusMessage) {
+          // -> Yes, good return - so go onto next phase, which is creating the WebSocket
+          // ?: Are we still trying to perform the preConnectOperation? (not timed out)
+          if (preConnectOperationAbortFunction != null) {
+            // -> Yes, not timed out, so then we're good to go with the next phase
+            _logger.info(() => 'PreConnectionOperation went OK [$statusMessage], going on to create WebSocket.');
+            // Create the WebSocket
+            w_attemptWebSocket();
+          }
+        }).catchError((statusMessage) {
+          // -> No, bad return - so go for next
+          // ?: Are we still trying to perform the preConnectOperation? (not timed out)
+          if (preConnectOperationAbortFunction != null) {
+            // -> Yes, not timed out, so then we'll notify about our failed attempt
+            _logger.info(() => 'PreConnectionOperation failed [$statusMessage] - retrying.');
+            // Go for next retry
+            w_connectFailed_RetryOrWaitForTimeout();
+          }
+        });
       };
 
       w_attemptWebSocket = () {
@@ -1682,7 +1766,8 @@ class MatsSocket {
 
           // :: Actually create the WebSocket instance
 
-          var url = (preconnectoperation != null ? _currentWebSocketUrl.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
+          // If we have a PreConnectOperation, then we add add a query parameter to the URL to point this out.
+          var url = (_preConnectOperation != false ? _currentWebSocketUrl.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
 
           final webSocketInstanceId = id(6);
           _logger.fine(() => 'INSTANTIATING new WebSocket("$url", "matssocket") - InstanceId:[$webSocketInstanceId]');
@@ -1820,7 +1905,7 @@ class MatsSocket {
 
       // :: Start the actual connection attempt!
       // ?: Should we do a PreConnectionOperation?
-      if (preconnectoperation != null) {
+      if (_preConnectOperation != false) {
           // -> function, string URL or 'true': Attempt tp perform the PreConnectionOperation - which upon success goes on to invoke 'w_attemptWebSocket()'.
           w_attemptPreConnectionOperation();
       } else {

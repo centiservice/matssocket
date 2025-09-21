@@ -4,6 +4,7 @@ import 'dart:io' as io;
 import 'dart:async';
 
 import 'MatsSocketPlatform.dart';
+import 'package:matssocket/src/MatsSocket.dart';
 
 final Logger _logger = Logger('MatsSocketPlatformIo');
 
@@ -62,15 +63,16 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
   }
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
+  ConnectResult sendPreConnectAuthorizationHeader(Uri currentWebSocketUri, String authorization) {
     final client = io.HttpClient();
     final response = Future<int>(() async {
       try {
-        var preAuthUri = websocketUri.replace(
-            scheme: websocketUri.scheme.replaceAll('ws', 'http')
-        );
 
-        final req = await client.getUrl(preAuthUri);
+        final preAuthHttpUri = currentWebSocketUri.scheme == 'wss'
+            ? currentWebSocketUri.replace(scheme: 'https')
+            : currentWebSocketUri.replace(scheme: 'http');
+
+        final req = await client.getUrl(preAuthHttpUri);
         // Sending the actual auth-header, which is the entire point of this method.
         // (The server side can then move it over to a Cookie, which when on WebSocket connect will be sent along due
         // to common cookie jar between HTTP calls and WebSockets. This makes more sense on Browsers, where you for
@@ -101,7 +103,7 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
       }
     });
     return ConnectResult(() {
-      _logger.info('  \\ - Abort requested, closing client');
+      _logger.info('  \\ - Abort requested, closing preconnect authorization attempt.');
       client.close(force: true);
     }, response);
   }
@@ -188,5 +190,5 @@ class IoWebSocket extends WebSocket {
   }
 
   @override
-  String? get url => _url;
+  String get url => _url;
 }

@@ -2,7 +2,7 @@ import 'MatsSocketPlatformStub.dart'
     if (dart.library.io) 'MatsSocketPlatformIo.dart'
     if (dart.library.js_interop) 'MatsSocketPlatformJs.dart';
 
-typedef PreConnectOperation = ConnectResult Function(Uri, String);
+import 'package:matssocket/src/MatsSocket.dart';
 
 /// Interface to communicate with the platform that the mats socket runs on.
 ///
@@ -21,7 +21,7 @@ abstract class MatsSocketPlatform {
 
   void deregisterBeforeunload(Function(dynamic) beforeunloadHandler);
 
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization);
+  ConnectResult sendPreConnectAuthorizationHeader(Uri currentWebSocketUri, String authorization);
 
   WebSocket createAndConnectWebSocket(Uri webSocketUri, String protocol, String authorization);
 
@@ -41,16 +41,6 @@ abstract class MatsSocketPlatform {
   double performanceTime();
 }
 
-class ConnectResult {
-  final Function abortFunction;
-  final Future<int> responseStatusCode;
-
-  ConnectResult(this.abortFunction, this.responseStatusCode);
-
-  ConnectResult.noop() : this(() {}, Future.value(0));
-}
-
-
 /// Handler for the open event, will be passed the native event as an argument, if any.
 typedef OpenHandler = void Function(WebSocket, dynamic);
 
@@ -66,7 +56,7 @@ typedef CloseHandler = void Function(WebSocket, int?, String?, dynamic);
 abstract class WebSocket {
   String? webSocketInstanceId;
 
-  String? get url;
+  String get url;
 
   ErrorHandler? _errorHandler;
   MessageHandler? _messageHandler;

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:matssocket/src/MatsSocketEnvelopeDto.dart';
 import 'package:matssocket/src/MatsSocketPlatform.dart';
 import 'package:matssocket/src/MessageType.dart';
+import 'package:matssocket/src/MatsSocket.dart';
 
 MatsSocketPlatform createTransport() => MatsSocketPlatformMock.noop();
 
@@ -71,7 +72,7 @@ class MatsSocketPlatformMock extends MatsSocketPlatform {
   }
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri? websocketUri, String? authorization) {
+  ConnectResult sendPreConnectAuthorizationHeader(Uri? currentWebSocketUri, String? authorization) {
     return ConnectResult(() {}, Future.value(200));
   }
 

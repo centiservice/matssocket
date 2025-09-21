@@ -168,51 +168,43 @@ void main() {
 
       group('PreConnectionOperation - Authorization upon WebSocket HTTP Handshake', () {
 
-        // NOTE: We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
+        // NOTE: We can't run these test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
 
         test('When preconnectoperations=true, we should get the initial AuthorizationValue presented in Cookie in the authPlugin.checkHandshake(..) function Server-side', () async {
-          matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
+          matsSocket.preConnectOperation = true;
 
-          var expiry = DateTime.now().add(Duration(milliseconds: 20000));
+          var expiry = DateTime.now().add(Duration(seconds: 20));
           var authValue = 'DummyAuth:PreConnectOperation:${expiry.millisecondsSinceEpoch}';
-          matsSocket.setCurrentAuthorization(authValue, expiry, Duration(milliseconds: 5000));
+          matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
+
+          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {});
+          expect(value.data['string'], equals(authValue));
+        });
+
+        test('When preconnectoperations=String URL, we should get the initial AuthorizationValue presented in Cookie in the authPlugin.checkHandshake(..) function Server-side', () async {
+          matsSocket.preConnectOperation = getServerUris()[0].replace(scheme: "http").toString();
+
+          var expiry = DateTime.now().add(Duration(seconds: 20));
+          var authValue = 'DummyAuth:PreConnectOperation:${expiry.millisecondsSinceEpoch}';
+          matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
+
+          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {});
+          expect(value.data['string'], equals(authValue));
+        });
+
+        test('When preconnectoperations=own PreConnectOperation, we should get the initial AuthorizationValue presented in Cookie in the authPlugin.checkHandshake(..) function Server-side', () async {
+          matsSocket.preConnectOperation = matsSocket.platform.sendPreConnectAuthorizationHeader;
+
+          var expiry = DateTime.now().add(Duration(seconds: 20));
+          var authValue = 'DummyAuth:PreConnectOperation:${expiry.millisecondsSinceEpoch}';
+          matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
 
           var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {});
           expect(value.data['string'], equals(authValue));
         });
 
         test('When the test-servers PreConnectOperation HTTP Auth-to-Cookie Servlet repeatedly returns [400 <= status <= 599], we should eventually get SessionClosedEvent.VIOLATED_POLICY.', () async {
-          // We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
-          matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
-          matsSocket.maxConnectionAttempts = 2; // "Magic option" that is just meant for integration testing.
-          var testCompleter = Completer();
-
-          matsSocket.setAuthorizationExpiredCallback((event) {
-            var expiry = DateTime.now().add(Duration(milliseconds: 1000));
-            var authValue = 'DummyAuth:fail_preConnectOperationServlet:${expiry.millisecondsSinceEpoch}';
-            matsSocket.setCurrentAuthorization(authValue, expiry, Duration(milliseconds: 200));
-          });
-
-          matsSocket.addSessionClosedEventListener((event) {
-            expect(event.type, equals(MatsSocketCloseCodes.VIOLATED_POLICY));
-            expect(event.code, equals(MatsSocketCloseCodes.VIOLATED_POLICY.code));
-            expect(event.type.name, equals('VIOLATED_POLICY'));
-            expect(event.reason.toLowerCase(), contains('too many consecutive'));
-            testCompleter.complete();
-          });
-
-          await matsSocket.request(
-              'Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {}).catchError((messageEvent) {
-            expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
-            return messageEvent; // Satisfy Dart3
-          });
-          await testCompleter.future;
-        });
-
-        // NOTE: We can't run this test on Node.js, as there is no common Cookie-jar between the HTTP client and the WebSocket client.
-
-        test('When the test-servers authPlugin.checkHandshake(..) repeatedly returns false, we should eventually get SessionClosedEvent.VIOLATED_POLICY.', () async {
-          matsSocket.preconnectoperation = matsSocket.platform.sendAuthorizationHeader;
+          matsSocket.preConnectOperation = matsSocket.platform.sendPreConnectAuthorizationHeader;
           matsSocket.maxConnectionAttempts = 2; // "Magic option" that is just meant for integration testing.
           var testCompleter = Completer();
 
@@ -221,9 +213,9 @@ void main() {
           });
 
           matsSocket.setAuthorizationExpiredCallback((event) {
-            var expiry = DateTime.now().add(Duration(milliseconds: 1000));
-            var authValue = 'DummyAuth:fail_checkHandshake:${expiry.millisecondsSinceEpoch}';
-            matsSocket.setCurrentAuthorization(authValue, expiry, Duration(milliseconds: 200));
+            var expiry = DateTime.now().add(Duration(seconds: 20));
+            var authValue = 'DummyAuth:fail_preConnectOperationServlet:${expiry.millisecondsSinceEpoch}';
+            matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
           });
 
           matsSocket.addSessionClosedEventListener((event) {
@@ -234,8 +226,41 @@ void main() {
             testCompleter.complete();
           });
 
-          await matsSocket.request(
-              'Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {}).catchError((messageEvent) {
+          await matsSocket
+              .request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {})
+              .catchError((messageEvent) {
+            expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
+            return messageEvent; // Satisfy Dart3
+          });
+          await testCompleter.future;
+        });
+
+        test('When the test-servers authPlugin.checkHandshake(..) repeatedly returns false, we should eventually get SessionClosedEvent.VIOLATED_POLICY.', () async {
+          matsSocket.preConnectOperation = matsSocket.platform.sendPreConnectAuthorizationHeader;
+          matsSocket.maxConnectionAttempts = 2; // "Magic option" that is just meant for integration testing.
+          var testCompleter = Completer();
+
+          matsSocket.addConnectionEventListener((event) {
+            log.info('Connection attempt: ${event.connectionAttempt}, type: ${event.type}, countDown: ${event.countdownSeconds}');
+          });
+
+          matsSocket.setAuthorizationExpiredCallback((event) {
+            var expiry = DateTime.now().add(Duration(seconds: 20));
+            var authValue = 'DummyAuth:fail_checkHandshake:${expiry.millisecondsSinceEpoch}';
+            matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
+          });
+
+          matsSocket.addSessionClosedEventListener((event) {
+            expect(event.type, equals(MatsSocketCloseCodes.VIOLATED_POLICY));
+            expect(event.code, equals(MatsSocketCloseCodes.VIOLATED_POLICY.code));
+            expect(event.type.name, equals('VIOLATED_POLICY'));
+            expect(event.reason.toLowerCase(), contains('too many consecutive'));
+            testCompleter.complete();
+          });
+
+          await matsSocket
+              .request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {})
+              .catchError((messageEvent) {
             expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
             return messageEvent; // Satisfy Dart3
           });

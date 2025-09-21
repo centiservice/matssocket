@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:js_interop';
 
 import 'MatsSocketPlatform.dart';
+import 'package:matssocket/src/MatsSocket.dart';
 
 final Logger _logger = Logger('MatsSocketPlatformJs');
 
@@ -60,26 +61,26 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
   }
 
   @override
-  ConnectResult sendAuthorizationHeader(Uri websocketUri, String authorization) {
+  ConnectResult sendPreConnectAuthorizationHeader(Uri currentWebSocketUri, String authorization) {
     // :: Make abortable request:
     final abortTrigger = Completer<void>();
     final client = BrowserClient()..withCredentials = true;
 
     final authFuture = () async {
-      final httpUri = websocketUri.scheme == 'wss'
-          ? websocketUri.replace(scheme: 'https')
-          : websocketUri.replace(scheme: 'http');
+      final preAuthHttpUri = currentWebSocketUri.scheme == 'wss'
+          ? currentWebSocketUri.replace(scheme: 'https')
+          : currentWebSocketUri.replace(scheme: 'http');
 
       // Create an AbortableRequest, passing the trigger's future.
       final request = http.AbortableRequest(
         'GET',
-        httpUri,
+        preAuthHttpUri,
         abortTrigger: abortTrigger.future,
       );
 
       request.headers['Authorization'] = authorization;
 
-      _logger.fine('Sending Authorization headers to $httpUri');
+      _logger.fine('Sending Authorization headers to $preAuthHttpUri');
 
       try {
         final streamedResponse = await client.send(request)
@@ -95,7 +96,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
         }
       } on http.RequestAbortedException {
         // Handle the specific case where the request was aborted by our trigger.
-        _logger.fine('Authorization request to $httpUri was aborted.');
+        _logger.fine('Authorization request to $preAuthHttpUri was aborted.');
         throw Exception('Request was aborted');
       } finally {
         client.close(); // Always close the client.
@@ -104,6 +105,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
 
     // The abort function completes the abortTrigger, causing the request to be aborted.
     void abort() {
+      _logger.info('  \\ - Abort requested, closing preconnect authorization attempt.');
       if (!abortTrigger.isCompleted) {
         abortTrigger.complete();
       }
