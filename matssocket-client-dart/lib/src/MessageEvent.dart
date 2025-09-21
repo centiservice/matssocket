@@ -96,7 +96,7 @@ enum MessageEventType {
 
   /// "Synthetic" event in that it is not a message from Server: A Client-to-Server
   /// [MatsSocket.request] was not replied to by the server within the
-  /// [MatsSocket.requestTimeoutMillis] default request timeout - or a specific timeout specified in the request
+  /// [MatsSocket.requestTimeout] default request timeout - or a specific timeout specified in the request
   /// invocation. In these situations, the Request Promise is rejected with a [MessageEvent] of this type,
   /// and the {@link MessageEvent#data} value is undefined.
   TIMEOUT,

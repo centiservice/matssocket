@@ -67,7 +67,7 @@ enum ReceivedEventType {
 
   /// "Synthetic" event in that it is not a message from Server: A Client-to-Server
   /// [MatsSocket.request] Request was not ACKed or NACKed by the server within the
-  /// [MatsSocket.requestTimeoutMillis] default request timeout - or a specific timeout specified in the request
+  /// [MatsSocket.requestTimeout] default request timeout - or a specific timeout specified in the request
   /// invocation. In these situations, any nack- or receivedCallback will be invoked with a [ReceivedEvent]
   /// of this type.
   TIMEOUT,

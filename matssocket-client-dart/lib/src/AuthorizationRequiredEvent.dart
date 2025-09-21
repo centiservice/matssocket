@@ -11,11 +11,11 @@ class AuthorizationRequiredEvent {
   /// Type of the event, one of {@link AuthorizationRequiredEvent}.
   final AuthorizationRequiredEventType type;
 
-  /// When the current Authorization expires - note that this might well still be in the future,
+  /// When the current Authorization expires, if relevant - note that this might well still be in the future,
   /// but the "slack" left before expiration is used up.
   final DateTime? currentExpiration;
 
-  /// [type] type type of the event, one of [AuthorizationRequiredEvent].
+  /// [type] type type of the event, one of [AuthorizationRequiredEventType].
   /// [currentExpiration] when the current Authorization expires.
   AuthorizationRequiredEvent(this.type, [this.currentExpiration]);
 

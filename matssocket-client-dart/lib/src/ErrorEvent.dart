@@ -19,7 +19,7 @@ class ErrorEvent {
   ErrorEvent(this.type, this.message, [this.reference]);
 
   /// Makes a string (<b>chopped the specified max number of characters, default 1024 chars</b>) out of the
-  /// [eference] Object, which might be useful if you want to send this back over HTTP - consider
+  /// [reference] Object, which might be useful if you want to send this back over HTTP - consider
   /// `encodeURIComponent(referenceAsString)` if you want to send it over the URL. First tries to use
   /// `jsonEncode(reference)`, failing that, it uses `reference?.toString()`. Then chops to [maxLength], default
   /// 1024, using "..." to denote the chop.

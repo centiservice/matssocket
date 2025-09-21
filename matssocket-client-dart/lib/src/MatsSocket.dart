@@ -320,26 +320,8 @@ class MatsSocket {
   /// particular wrt. authentication. <b>It is NOT invoked when you explicitly invoke matsSocket.close() from
   /// the client yourself!</b>
   ///
-  /// The event object is the WebSocket's [:CloseEvent:], adorned with properties 'codeName', giving the
-  /// *key name* of the [MatsSocketCloseCodes] (as provided by [MatsSocketCloseCodesExtension.fromCode]),
-  /// and 'outstandingInitiations', giving the number of outstanding initiations when the session was closed.
-  /// You can use the 'code' to "enum-compare" to <code>MatsSocketCloseCodes</code>, the enum keys are listed here:
-  ///
-  ///   * [MatsSocketCloseCodes.UNEXPECTED_CONDITION]: Error on the Server side,
-  ///   typically that the data store (DB) was unavailable, and the MatsSocketServer could not reliably recover
-  ///   the processing of your message.
-  ///   * [MatsSocketCloseCodes.PROTOCOL_ERROR]: This client library has a bug!
-  ///   * [MatsSocketCloseCodes.VIOLATED_POLICY]: Initial Authorization was wrong. Always
-  ///   supply a correct and non-expired Authorization value, which has sufficient 'roomForLatency' wrt.
-  ///   the expiry time.
-  ///   * [MatsSocketCloseCodes.CLOSE_SESSION]:
-  ///   <code>MatsSocketServer.closeSession(sessionId)</code> was invoked Server side for this MatsSocketSession
-  ///   * [MatsSocketCloseCodes.SESSION_LOST]: A reconnect attempt was performed, but the
-  ///   MatsSocketSession was timed out on the Server. The Session will never time out if the WebSocket connection
-  ///   is open. Only if the Client has lost connection, the timer will start. The Session timeout is measured in
-  ///   hours or days. This could conceivably happen if you close the lid of a laptop, and open it again days later
-  ///   - but one would think that the Authentication session (the one giving you Authorization headers) had timed
-  ///   out long before.
+  /// If there's a native close event (differing between VM (dart.io) and JS (js interop) environments), you can get it
+  /// at [MatsSocketCloseEvent.nativeEvent]
   ///
   /// Again, note: In normal operation of the MatsSocket, these events should not be fired. The listeners are not
   /// invoked by `matsSocket.close()` from the client.
@@ -832,7 +814,6 @@ class MatsSocket {
   ///
   ///  * suppressInitiationProcessedEvent: If <code>true</code>, no event will be sent to listeners added
   ///         using [addInitiationProcessedEventListener()].
-  ///
   ///
   /// - [endpointId] the Server MatsSocket Endpoint/Terminator that this message should go to.
   /// - [traceId] the TraceId for this message - will go through all parts of the call, including the Mats flow.

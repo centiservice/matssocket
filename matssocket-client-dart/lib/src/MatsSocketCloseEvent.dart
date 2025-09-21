@@ -1,5 +1,6 @@
 import 'package:matssocket/src/mats_socket_util.dart';
 
+/// Event given to listeners registered via [MatsSocket.addSessionClosedEventListener].
 class MatsSocketCloseEvent {
   final int code;
   final String reason;
@@ -31,13 +32,13 @@ class MatsSocketCloseEvent {
 
 /// WebSocket CloseCodes used in MatsSocket, and for what. Using both standard codes, and MatsSocket-specific/defined
 /// codes.
-/// <p/>
+///
 /// Note: Plural "Codes" since that is what the JSR 356 Java WebSocket API {@link CloseCodes does..!}
 /// Copied from MatsSocketServer.java
 enum MatsSocketCloseCodes {
   /// Standard code 1008 - From Server side, Client should REJECT all outstanding and "crash"/reboot application:
   /// used when the we cannot authenticate.
-  /// <p/>
+  ///
   /// May also be used locally from the Client: If the PreConnectOperation return status code 401 or 403 or the
   /// WebSocket connect attempt raises error too many times (e.g. total 3x number of URLs), the MatsSocket will be
   /// "Closed Session" with this status code.
