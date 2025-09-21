@@ -2,8 +2,10 @@ import 'package:web/web.dart' as web;
 import 'package:logging/logging.dart';
 import 'package:matssocket/src/ConnectionEvent.dart';
 
-List<Uri> loadServerUris() {
-  return [Uri.parse('ws://localhost:8080/matssocket'), Uri.parse('ws://localhost:8081/matssocket')];
+import 'env.dart';
+
+List<Uri> getServerUris() {
+  return matsSocketUrlsConst.split('\$').map((url) => Uri.parse(url)).toList();
 }
 
 int? code(ConnectionEvent connectionEvent) {
@@ -14,6 +16,6 @@ String? reason(ConnectionEvent connectionEvent) {
   return (connectionEvent.webSocketEvent as web.CloseEvent).reason;
 }
 
-Level logLevel() {
+Level getLogLevel() {
   return Level.INFO;
 }

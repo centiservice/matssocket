@@ -54,8 +54,8 @@ void main() {
         matsSocket.addSubscriptionEventListener((event) {
           if (event.type == SubscriptionEventType.OK) {
             // The subscription has gone through, so ask server - via HTTP - to publish a message.
-            var requestToServerUri = serverUris[0].replace(scheme: 'http',
-                path: '${serverUris[0].path}/sendMessageOnTestTopic',
+            var requestToServerUri = getServerUris()[0].replace(scheme: 'http',
+                path: '${getServerUris()[0].path}/sendMessageOnTestTopic',
                 query: 'topic=Test.Topic_Http');
 
             http.get(requestToServerUri);

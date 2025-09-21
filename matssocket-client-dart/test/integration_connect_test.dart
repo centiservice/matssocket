@@ -165,11 +165,11 @@ void main() {
             }
 
             test('Connect twice to same Server - the second connection should result in the first being killed.', () async {
-                await connectTwice(serverUris[0], serverUris[0]);
+                await connectTwice(getServerUris()[0], getServerUris()[0]);
             });
 
             test('Connect twice to different Server - the second connection should result in the first being killed.', () async {
-                await connectTwice(serverUris[0], serverUris[1]);
+                await connectTwice(getServerUris()[0], getServerUris()[1]);
             });
         });
   });

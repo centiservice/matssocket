@@ -1,7 +1,7 @@
 // MatsSocket-Client-Dart
 
 
-// Hacky way to get Dart here for "platform=dart" tests
+// Hacky way to get Dart here for "platform=node" tests
 apply from: '../matssocket-client-javascript/node.gradle' // For the "node" extension
 
 repositories {
@@ -148,22 +148,34 @@ def registerDartTestTask = { String name, String platform, String compiler ->
         }
 
         def chromePath = providers.gradleProperty('chromePath')
+        def dartLogLevel = providers.gradleProperty('dartLogLevel')
 
         doLast {
             dartExec {
+                var matsSocketUrls
+                var logLevel
                 // :: Setting environment for test run
-                environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
-                // Checking which log level is enabled to pass on to the tests, so that they log if needed.
-                if (logger.isEnabled(LogLevel.DEBUG)) {
-                    environment("LOG_LEVEL", "ALL")
-                } else if (logger.isEnabled(LogLevel.INFO)) {
-                    environment("LOG_LEVEL", "INFO")
+                matsSocketUrls = rootProject.wsUrls.join('$')
+                environment("MATS_SOCKET_URLS", matsSocketUrls)
+                if (dartLogLevel.isPresent()) {
+                    logLevel = dartLogLevel.get()
                 } else {
-                    environment("LOG_LEVEL", "SEVERE")
+                    // Checking which log level is enabled to pass on to the tests, so that they log if needed.
+                    if (logger.isEnabled(LogLevel.DEBUG)) {
+                        logLevel = "ALL"
+                    } else if (logger.isEnabled(LogLevel.INFO)) {
+                        logLevel = "INFO"
+                    } else {
+                        logLevel = "SEVERE"
+                    }
                 }
+                environment("LOG_LEVEL", logLevel)
                 def testFiles = file("$projectDir/test")
                         .listFiles().findAll { it.name.endsWith(".dart") }.collect { "test/${it.name}" }
-                args = ['test', '-p', platform, '-c', compiler, '--reporter=expanded', '-j', '1'] + testFiles
+                // Note: The define stuff doesn't work as of 2025-09-21: https://github.com/dart-lang/sdk/issues/51791
+                // It should be picked up in test/lib/env.dart
+                args = ["-DLOG_LEVEL=${logLevel}", "-DMATS_SOCKET_URLS=\"${matsSocketUrls}\"",
+                        'test', '-p', platform, '-c', compiler, '--reporter=expanded', '--concurrency', '1'] + testFiles
                 if (platform == 'chrome' && chromePath.isPresent()) {
                     environment("CHROME_EXECUTABLE", chromePath.get())
                 }
@@ -195,16 +207,14 @@ tasks.register('testNode') { dependsOn 'testNodeJs', 'testNodeWasm'}
 tasks.register('testAll') { dependsOn 'testWeb', 'testVm', 'testNode' }
 
 // Make 'test' be both VM and Node.
-// ?:Are we running on Windows? (GHA)
+// ?: Are we running on Windows? (GHA)
 if (currentOs.isWindows()) {
     // -> Yes, Windows, special handling. Avoid the testNodeWasm, as it fails due to bad path handling,
-    println "Windows OS detected ('${currentOs}'), thus avoiding task 'testNodeWasm' due to bad path handling," +
-            " where e.g. '/runner' becomes '<linefeed>unner', and fails."
+    // e.g. '/runner' becomes '<linefeed>unner', and fails.
     tasks.register('test') { dependsOn 'testVm', 'testNodeJs' }
 }
 else {
     // -> No, not Windows, so include all testVm and testNode tasks.
-    println "Non-Windows OS detected ('${currentOs}'), so including all 'testVM' and 'testNode' tasks."
     tasks.register('test') { dependsOn 'testVm', 'testNodeJs', 'testNodeWasm' }
 }
 
