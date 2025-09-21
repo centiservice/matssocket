@@ -105,12 +105,12 @@ class ConnectionEvent {
 /// of [ConnectionState].
 ///
 enum ConnectionEventType {
-  /// State, and fires as ConnectionEvent when we transition into this state, which is when the WebSocket is literally trying to connect.
-  /// This is between [:new WebSocket(url):] (or the [MatsSocket.preconnectoperation] if configured),
-  /// and either webSocket.onopen or webSocket.onclose is fired, or countdown reaches 0. If webSocket.onopen,
-  /// we transition into [CONNECTED], if webSocket.onclose, we transition into
-  /// [WAITING]. If we reach countdown 0 while in CONNECTING, we will "re-transition" to the same state, and
-  /// thus get one more event of CONNECTING.
+  /// State, and fires as ConnectionEvent when we transition into this state, which is when the WebSocket is literally
+  /// trying to connect. This is between trying to create the WebSocket (or perform the [MatsSocket.preconnectoperation]
+  /// if configured), and either `webSocket.onopen` (good!) or `webSocket.onclose` (bad!) is fired, or countdown reaches
+  /// 0. If `webSocket.onopen`, we transition into [CONNECTED], if `webSocket.onclose`, we transition into [WAITING].
+  /// If we reach countdown 0 while in CONNECTING, we will "re-transition" to the same state, and thus get one more
+  /// event of CONNECTING.
   ///
   /// User Info Tip: Show a info-box, stating "Connecting! <4.0 seconds..>", countdown in "grayed out" style, box is
   /// some neutral information color, e.g. yellow (fading over to this color if already red or orange due to
@@ -132,7 +132,7 @@ enum ConnectionEventType {
   /// then there will be 3 seconds left in WAITING state.
   WAITING,
 
-  /// State, and fires as ConnectionEvent when we transition into this state, which is when WebSocket.onopen is fired.
+  /// State, and fires as ConnectionEvent when we transition into this state, which is when `WebSocket.onopen` happens.
   /// Notice that the MatsSocket is still not fully established, as we have not yet exchanged HELLO and WELCOME -
   /// the MatsSocket is fully established at [SESSION_ESTABLISHED].
   ///
