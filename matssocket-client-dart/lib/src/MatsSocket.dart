@@ -1560,11 +1560,19 @@ class MatsSocket {
   // Based on whether there is multiple URLs, or just a single one, we choose the short "timeout base", or a longer one, as minimum.
   final int _connectionTimeoutMin;
 
+  // Way to let integration tests checking failed connections take a bit less time..!
   int? maxConnectionAttempts;
 
   int _maxConnectionAttempts() {
-      // Way to let integration tests take a bit less time.
-      return maxConnectionAttempts ?? 40320; // The default should be about a week..! 15 sec per attempt: 40320*15 = 60*60*24*7
+    // ?: Have maxConnectionAttempts been set?
+    if (maxConnectionAttempts != null) {
+      // -> Yes, so use this -
+      return maxConnectionAttempts!;
+    }
+
+    return sessionId != null
+        ? 5760 // The default should be about a day..! 15 sec per attempt: 5760*15 sec = 60*60*24 sec
+        : 60; // Way fewer attempts if no session ID is present.
   }
 
   void _increaseReconnectStateVars() {

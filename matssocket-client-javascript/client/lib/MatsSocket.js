@@ -1918,8 +1918,14 @@ function MatsSocket(appName, appVersion, urls, config) {
     let _connectionTimeoutMax = 15000; // Milliseconds max between connection attempts.
 
     function _maxConnectionAttempts() {
-        // Way to let integration tests take a bit less time.
-        return that.maxConnectionAttempts ? that.maxConnectionAttempts : 40320; // The default should be about a week..! 15 sec per attempt: 40320*15 = 60*60*24*7
+        // ?: Have maxConnectionAttempts been set?
+        if (maxConnectionAttempts !== undefined) {
+            // -> Yes, so use this -
+            return maxConnectionAttempts;
+        }
+        return that.sessionId !== null
+            ? 5760 // The default should be about a day..! 15 sec per attempt: 5760*15 sec = 60*60*24 sec
+            : 60; // Way fewer attempts if no session ID is present.
     }
 
     function _increaseReconnectStateVars() {
