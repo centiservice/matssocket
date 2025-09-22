@@ -6,7 +6,7 @@ import 'dart:async';
 import 'MatsSocketPlatform.dart';
 import 'package:matssocket/src/MatsSocket.dart';
 
-final Logger _logger = Logger('MatsSocketPlatformIo');
+final Logger _logger = Logger('mats.MatsSocketPlatformIo');
 
 MatsSocketPlatform createTransport() => MatsSocketPlatformIo();
 
@@ -115,7 +115,8 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
   }
 
   @override
-  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) async {
+  Future<bool> outOfBandCloseSession(Uri closeUri) async {
+    _logger.info(' \\-> Sending out-of-band HTTP POST close-session via io.HttpClient to: $closeUri');
     final client = io.HttpClient();
     try {
       final req = await client.postUrl(closeUri);

@@ -33,7 +33,7 @@ abstract class MatsSocketPlatform {
   /// from the current tab. In DartVM we don't have the same mechanism, as there is no mother process.
   /// Still, the process should not exit until the close request has completed, as we block on the future returned
   /// here.
-  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId);
+  Future<bool> outOfBandCloseSession(Uri closeUri);
 
   String get runningOnVersions;
 

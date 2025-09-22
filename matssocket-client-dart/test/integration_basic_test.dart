@@ -39,12 +39,12 @@ void main() {
       setUp(setAuth);
 
       test('Should have a promise that resolves when received', () async {
-        await matsSocket.send('Test.single', 'SEND_${id(6)}', {'string': 'The String', 'number': math.pi});
+        await matsSocket.send('Test.single', 'SEND_${randomId(6)}', {'string': 'The String', 'number': math.pi});
       });
 
       test('Send to non-existing endpoint should NACK from Server and reject Promise', () async {
         var promise =
-            matsSocket.send('NON EXISTING!', 'SEND_NonExisting${id(6)}', {'string': 'The String', 'number': math.pi});
+            matsSocket.send('NON EXISTING!', 'SEND_NonExisting${randomId(6)}', {'string': 'The String', 'number': math.pi});
         await promise.catchError((receivedEvent) {
           standardStateAssert();
           expect(receivedEvent.type, equals(ReceivedEventType.NACK));
@@ -59,12 +59,12 @@ void main() {
 
       test('Request should resolve Promise', () async {
         await matsSocket
-            .request('Test.single', 'REQUEST-with-Promise_${id(6)}', {'string': 'Request String', 'number': math.e});
+            .request('Test.single', 'REQUEST-with-Promise_${randomId(6)}', {'string': 'Request String', 'number': math.e});
       });
 
       test('Request should invoke both the ack callback and resolve Promise', () async {
         var received = false;
-        await matsSocket.request('Test.single', 'REQUEST-with-Promise-and-receivedCallback_${id(6)}', {},
+        await matsSocket.request('Test.single', 'REQUEST-with-Promise-and-receivedCallback_${randomId(6)}', {},
             receivedCallback: (event) => received = true);
         standardStateAssert();
         expect(received, isTrue, reason: 'The received-callback should have been invoked.');
@@ -73,7 +73,7 @@ void main() {
       test('Request to non-existing endpoint should NACK from Server, invoking receivedCallback and reject Promise',
           () async {
         expect(
-            matsSocket.request('NON EXISTING!', 'REQUEST_NonExisting${id(6)}', {}, receivedCallback: (event) {
+            matsSocket.request('NON EXISTING!', 'REQUEST_NonExisting${randomId(6)}', {}, receivedCallback: (event) {
               standardStateAssert();
             }),
             throwsA(isA<MessageEvent>()));
@@ -86,16 +86,16 @@ void main() {
 
       test('Should reply to our own endpoint', () async {
         var terminator = matsSocket.terminator('ClientSide.testTerminator');
-        await matsSocket.requestReplyTo('Test.single', 'REQUEST-with-ReplyTo_${id(6)}',
+        await matsSocket.requestReplyTo('Test.single', 'REQUEST-with-ReplyTo_${randomId(6)}',
             {'string': 'Request String', 'number': math.e}, 'ClientSide.testTerminator');
 
         await terminator.first;
       });
 
       test('Should reply to our own endpoint with our correlation data', () async {
-        var correlationInformation = id(5);
+        var correlationInformation = randomId(5);
         var terminator = matsSocket.terminator('ClientSide.testTerminator');
-        await matsSocket.requestReplyTo('Test.single', 'REQUEST-with-ReplyTo_withCorrelationInfo_${id(6)}',
+        await matsSocket.requestReplyTo('Test.single', 'REQUEST-with-ReplyTo_withCorrelationInfo_${randomId(6)}',
             {'string': 'Request String', 'number': math.e}, 'ClientSide.testTerminator',
             correlationInformation: correlationInformation);
 
@@ -121,7 +121,7 @@ void main() {
             'sleepTime': 50 // Sleeptime before replying
           };
           var receivedCallbackInvoked = false;
-          matsSocket.request('Test.slow', 'Timeout_request_${id(6)}', req,
+          matsSocket.request('Test.slow', 'Timeout_request_${randomId(6)}', req,
               // Low timeout to NOT get ReceivedEventType.ACK.
               timeout: Duration(milliseconds: 10), receivedCallback: (event) {
                 expect(event.type, equals(ReceivedEventType.TIMEOUT));
@@ -150,7 +150,7 @@ void main() {
       });
 
       test('requestReplyTo with timeout earlier than slow endpoint', () async {
-        var correlationInformation = jid(100);
+        var correlationInformation = randomCId(100);
         var testCompleter = Completer();
 
         /**
@@ -171,7 +171,7 @@ void main() {
           };
           matsSocket
               .requestReplyTo(
-              'Test.slow', 'Timeout_requestReplyTo_${id(6)}', req,
+              'Test.slow', 'Timeout_requestReplyTo_${randomId(6)}', req,
               'Test.terminator',
               correlationInformation: correlationInformation,
               timeout: Duration(milliseconds: 5))
@@ -248,22 +248,22 @@ void main() {
 
         var req1 = matsSocket.requestReplyTo(
             'Test.single',
-            'REQUEST-with-ReplyTo_Pipeline_msg1of3_${id(6)}',
+            'REQUEST-with-ReplyTo_Pipeline_msg1of3_${randomId(6)}',
             {'string': 'Messge 1', 'number': 100.001, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
             'ClientSide.testEndpoint',
-            correlationInformation: 'pipeline_msg1of3_${id(10)}');
+            correlationInformation: 'pipeline_msg1of3_${randomId(10)}');
         var req2 = matsSocket.requestReplyTo(
             'Test.single',
-            'REQUEST-with-ReplyTo_Pipeline_msg2of3_${id(6)}',
+            'REQUEST-with-ReplyTo_Pipeline_msg2of3_${randomId(6)}',
             {'string': 'Message 2', 'number': 200.002, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
             'ClientSide.testEndpoint',
-            correlationInformation: 'pipeline_msg2of3_${id(10)}');
+            correlationInformation: 'pipeline_msg2of3_${randomId(10)}');
         var req3 = matsSocket.requestReplyTo(
             'Test.single',
-            'REQUEST-with-ReplyTo_Pipeline_msg3of3_${id(6)}',
+            'REQUEST-with-ReplyTo_Pipeline_msg3of3_${randomId(6)}',
             {'string': 'Message 3', 'number': 300.003, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
             'ClientSide.testEndpoint',
-            correlationInformation: 'pipeline_msg3of3_${id(10)}');
+            correlationInformation: 'pipeline_msg3of3_${randomId(10)}');
         matsSocket.flush();
 
         // Wait for the last future, to ensure all processing done, and that the test completer is
@@ -283,7 +283,7 @@ void main() {
           () async {
         var received = false;
         var promise = matsSocket.request(
-            'Test.ignoreInIncomingHandler', 'REQUEST_ignored_in_incomingHandler${id(6)}', {},
+            'Test.ignoreInIncomingHandler', 'REQUEST_ignored_in_incomingHandler${randomId(6)}', {},
             receivedCallback: (event) => received = true);
         await promise.catchError((event) {
           standardStateAssert();
@@ -294,7 +294,7 @@ void main() {
 
       test('context.deny() should NACK (and thus reject Promise)', () async {
         var received = false;
-        var promise = matsSocket.request('Test.denyInIncomingHandler', 'REQUEST_denied_in_incomingHandler${id(6)}', {},
+        var promise = matsSocket.request('Test.denyInIncomingHandler', 'REQUEST_denied_in_incomingHandler${randomId(6)}', {},
             receivedCallback: (event) => received = true);
         await promise.catchError((event) {
           standardStateAssert();
@@ -306,7 +306,7 @@ void main() {
       test('context.resolve(..) should ACK received, and RESOLVE the Promise.', () async {
         var received = false;
         var promise = matsSocket.request(
-            'Test.resolveInIncomingHandler', 'REQUEST_resolved_in_incomingHandler${id(6)}', {},
+            'Test.resolveInIncomingHandler', 'REQUEST_resolved_in_incomingHandler${randomId(6)}', {},
             receivedCallback: (event) => received = true);
         await promise.then((event) {
           standardStateAssert();
@@ -318,7 +318,7 @@ void main() {
       test('context.reject(..) should ACK received, and REJECT the Promise', () async {
         var received = false;
         var promise = matsSocket.request(
-            'Test.rejectInIncomingHandler', 'REQUEST_rejected_in_incomingHandler${id(6)}', {},
+            'Test.rejectInIncomingHandler', 'REQUEST_rejected_in_incomingHandler${randomId(6)}', {},
             receivedCallback: (event) => received = true);
         await promise.catchError((event) {
           standardStateAssert();
@@ -330,7 +330,7 @@ void main() {
       test('Exception in incomingAdapter should NACK (and thus reject Promise)', () async {
         var received = false;
         var promise = matsSocket.request(
-            'Test.throwsInIncomingHandler', 'REQUEST_throws_in_incomingHandler${id(6)}', {},
+            'Test.throwsInIncomingHandler', 'REQUEST_throws_in_incomingHandler${randomId(6)}', {},
             receivedCallback: (event) => received = true);
         await promise.catchError((event) {
           standardStateAssert();
@@ -347,12 +347,12 @@ void main() {
       // FOR ALL: Both the received callback should be invoked, and the Promise resolved/rejected
 
       test('Ignored (handler did nothing) should ACK when SEND (thus resolve Promise)', () async {
-        await matsSocket.send('Test.ignoreInIncomingHandler', 'SEND_ignored_in_incomingHandler${id(6)}', {});
+        await matsSocket.send('Test.ignoreInIncomingHandler', 'SEND_ignored_in_incomingHandler${randomId(6)}', {});
         standardStateAssert();
       });
 
       test('context.deny() should NACK (reject Promise)', () async {
-        var promise = matsSocket.send('Test.denyInIncomingHandler', 'SEND_denied_in_incomingHandler${id(6)}', {});
+        var promise = matsSocket.send('Test.denyInIncomingHandler', 'SEND_denied_in_incomingHandler${randomId(6)}', {});
         await promise.catchError((receivedEvent) {
           standardStateAssert();
           return receivedEvent; // Satisfy Dart3
@@ -361,7 +361,7 @@ void main() {
 
       test('context.resolve(..) should NACK (reject Promise) since it is not allowed to resolve/reject a send',
           () async {
-        var promise = matsSocket.send('Test.resolveInIncomingHandler', 'SEND_resolved_in_incomingHandler${id(6)}', {});
+        var promise = matsSocket.send('Test.resolveInIncomingHandler', 'SEND_resolved_in_incomingHandler${randomId(6)}', {});
         await promise.catchError((receivedEvent) {
           standardStateAssert();
           return receivedEvent; // Satisfy Dart3
@@ -370,7 +370,7 @@ void main() {
 
       test('context.reject(..) should NACK (reject Promise) since it is not allowed to resolve/reject a send',
           () async {
-        var promise = matsSocket.send('Test.rejectInIncomingHandler', 'SEND_rejected_in_incomingHandler${id(6)}', {});
+        var promise = matsSocket.send('Test.rejectInIncomingHandler', 'SEND_rejected_in_incomingHandler${randomId(6)}', {});
         await promise.catchError((receivedEvent) {
           standardStateAssert();
           return receivedEvent; // Satisfy Dart3
@@ -378,7 +378,7 @@ void main() {
       });
 
       test('Exception in incomingAdapter should NACK (reject Promise)', () async {
-        var promise = matsSocket.send('Test.throwsInIncomingHandler', 'SEND_throws_in_incomingHandler${id(6)}', {});
+        var promise = matsSocket.send('Test.throwsInIncomingHandler', 'SEND_throws_in_incomingHandler${randomId(6)}', {});
         await promise.catchError((receivedEvent) {
           return receivedEvent; // Satisfy Dart3
         });
@@ -395,7 +395,7 @@ void main() {
           () async {
         var received = false;
         var rejected = false;
-        await matsSocket.request('Test.ignoreInReplyAdapter', 'REQUEST_ignored_in_replyAdapter${id(6)}', {},
+        await matsSocket.request('Test.ignoreInReplyAdapter', 'REQUEST_ignored_in_replyAdapter${randomId(6)}', {},
             receivedCallback: (event) {
           standardStateAssert();
           received = true;
@@ -411,7 +411,7 @@ void main() {
 
       test('context.resolve(..)', () async {
         var received = false;
-        await matsSocket.request('Test.resolveInReplyAdapter', 'REQUEST_resolved_in_replyAdapter${id(6)}', {},
+        await matsSocket.request('Test.resolveInReplyAdapter', 'REQUEST_resolved_in_replyAdapter${randomId(6)}', {},
             receivedCallback: (event) {
           standardStateAssert();
           received = true;
@@ -424,7 +424,7 @@ void main() {
       test('context.reject(..)', () async {
         var received = false;
         var rejected = false;
-        await matsSocket.request('Test.rejectInReplyAdapter', 'REQUEST_rejected_in_replyAdapter${id(6)}', {},
+        await matsSocket.request('Test.rejectInReplyAdapter', 'REQUEST_rejected_in_replyAdapter${randomId(6)}', {},
             receivedCallback: (event) {
           standardStateAssert();
           received = true;
@@ -442,7 +442,7 @@ void main() {
         var received = false;
         var rejected = false;
 
-        await matsSocket.request('Test.throwsInReplyAdapter', 'REQUEST_throws_in_replyAdapter${id(6)}', {},
+        await matsSocket.request('Test.throwsInReplyAdapter', 'REQUEST_throws_in_replyAdapter${randomId(6)}', {},
             receivedCallback: (event) {
           standardStateAssert();
           received = true;
@@ -464,7 +464,7 @@ void main() {
 
         ReceivedEvent? receivedEventReceived;
         var messageEvent = await matsSocket
-            .request('Test.single', 'Request_DebugObject_${debug}_${matsSocket.debug}_${id(6)}', {},
+            .request('Test.single', 'Request_DebugObject_${debug}_${matsSocket.debug}_${randomId(6)}', {},
                 receivedCallback: (receivedEvent) {
           standardStateAssert();
           receivedEventReceived = receivedEvent;
@@ -569,7 +569,7 @@ void main() {
         setAuth('enableAllDebugOptions');
 
         ReceivedEvent? receivedEventReceived;
-        var messageEvent = await matsSocket.request('Test.single', 'Request_DebugObject_non_requested_${id(6)}', {},
+        var messageEvent = await matsSocket.request('Test.single', 'Request_DebugObject_non_requested_${randomId(6)}', {},
             receivedCallback: (receivedEvent) {
           standardStateAssert();
           receivedEventReceived = receivedEvent;
@@ -587,7 +587,7 @@ void main() {
         matsSocket.debug = 0;
 
         ReceivedEvent? receivedEventReceived;
-        var messageEvent = await matsSocket.request('Test.single', 'Request_DebugObject_non_requested_${id(6)}', {},
+        var messageEvent = await matsSocket.request('Test.single', 'Request_DebugObject_non_requested_${randomId(6)}', {},
             receivedCallback: (receivedEvent) {
           standardStateAssert();
           receivedEventReceived = receivedEvent;

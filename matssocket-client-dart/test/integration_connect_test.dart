@@ -83,7 +83,7 @@ void main() {
                 });
 
                 // First SEND a message to instance A, so as to perform HELLO and get a WELCOME with sessionId
-                var receivedEvent = await matsSocket_A.send('Test.ignoreInIncomingHandler', 'SEND_twiceConnect_ensureAssignedSessionId_${id(6)}', {});
+                var receivedEvent = await matsSocket_A.send('Test.ignoreInIncomingHandler', 'SEND_twiceConnect_ensureAssignedSessionId_${randomId(6)}', {});
 
                 // Assert that the Resolve is MessageEventType.REPLY
                 expect(receivedEvent.type, equals(ReceivedEventType.ACK));
@@ -112,7 +112,7 @@ void main() {
                   };
                   var receivedCallbackInvoked = 0;
                   var reply = await matsSocket_B.request(
-                      'Test.simpleMats', 'REQUEST_twiceConnect_requestOnNewMatsSocket${id(6)}', req,
+                      'Test.simpleMats', 'REQUEST_twiceConnect_requestOnNewMatsSocket${randomId(6)}', req,
                       receivedCallback: (event) => receivedCallbackInvoked++);
                   var data = reply.data;
                   // Assert that we got receivedCallback ONCE

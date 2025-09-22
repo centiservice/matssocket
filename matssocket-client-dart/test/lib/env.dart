@@ -19,7 +19,7 @@ void configureLogging() {
   print('Setting log level to ${Logger.root.level}');
 
   Logger.root.onRecord.listen((LogRecord rec) {
-    print('${rec.time.toIso8601String()} ${rec.level.name} ${rec.loggerName.padRight(24)} |$logContext| ${rec.message}');
+    print('${rec.time.toIso8601String()} ${rec.level.name} ${rec.loggerName.padRight(26)}|$logContext| ${rec.message}');
     if (rec.error != null) {
       print('\tError: ${rec.error}');
     }

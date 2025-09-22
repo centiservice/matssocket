@@ -40,7 +40,7 @@ void main() {
 
         // Refer to the other test, where we handle asyncness by only requesting server to publish after SUB_OK:
         // This is not necessary here, as this message is *in-band*, and guaranteed to happen *after* the sub.
-        await matsSocket.send('Test.publish', 'PUBLISH_testSend${id(5)}', 'Testmessage');
+        await matsSocket.send('Test.publish', 'PUBLISH_testSend${randomId(5)}', 'Testmessage');
         await messageEvent.future;
       });
 

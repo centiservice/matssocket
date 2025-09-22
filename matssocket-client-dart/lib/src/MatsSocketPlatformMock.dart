@@ -11,7 +11,6 @@ MatsSocketPlatform createTransport() => MatsSocketPlatformMock.noop();
 class MatsSocketPlatformMock extends MatsSocketPlatform {
 
   Function(dynamic)? beforeunloadHandler;
-  final List<String> closedSessions = [];
   final MessageHandler websocketMessageHandler;
 
   MatsSocketPlatformMock(this.websocketMessageHandler);
@@ -46,8 +45,7 @@ class MatsSocketPlatformMock extends MatsSocketPlatform {
   });
 
   @override
-  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) {
-    closedSessions.add(sessionId);
+  Future<bool> outOfBandCloseSession(Uri closeUri) {
     return Future.value(true);
   }
 

@@ -9,7 +9,7 @@ import 'dart:js_interop';
 import 'MatsSocketPlatform.dart';
 import 'package:matssocket/src/MatsSocket.dart';
 
-final Logger _logger = Logger('MatsSocketPlatformJs');
+final Logger _logger = Logger('mats.MatsSocketPlatformJs');
 
 const bool isNode = bool.fromEnvironment("node");
 
@@ -114,10 +114,11 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
     return ConnectResult(abort, authFuture);
   }
   @override
-  Future<bool> outOfBandCloseSession(Uri closeUri, String sessionId) async {
+  Future<bool> outOfBandCloseSession(Uri closeUri) async {
     // ?: Node?
     if (isNode) {
       // We don't have async unload handling in Node.js, so we'll do a best-effort POST.
+      _logger.info(' \\-> Sending out-of-band HTTP POST close-session via web.BrowserClient to: $closeUri');
       final client = BrowserClient()..withCredentials = true;
       try {
         await client
@@ -131,6 +132,7 @@ class MatsSocketPlatformJs extends MatsSocketPlatform {
       return true;
     }
     // E-> In browser, use sendBeacon:
+    _logger.info(' \\-> Sending out-of-band HTTP POST close-session via navigator.sendBeacon([$closeUri])');
     return web.window.navigator.sendBeacon(closeUri.toString());
   }
 

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:logging/logging.dart';
 import 'package:matssocket/matssocket.dart';
 
-final Logger _logger = Logger('MatsSocket');
+final Logger _logger = Logger('mats.MatsSocket');
 
 // alphabet length: 10 + 26 x 2 = 62 chars.
 const String ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -19,16 +19,16 @@ typedef SubscriptionEventListener = Function(SubscriptionEvent);
 typedef MessageEventHandler = Function(MessageEvent);
 typedef ErrorEventListener = Function(ErrorEvent);
 
-/// A function that performs a pre-connection operation (typically an HTTP GET)
-/// before opening the WebSocket.
+/// Function that performs a pre-connection operation (typically an HTTP GET) before opening the WebSocket, if the
+/// feature is enabled using [MatsSocket.preConnectOperation], read doc there.
 ///
-/// - [uri]: The HTTP URL to call (GET).
-/// - [authorization]: The value to use for the Authorization header in that call.
+/// - [webSocketUri]: The WebSocket Uri that will be attempted after the pre-connection has gone well.
+/// - [authorization]: The Authorization value that will be used in the WebSocket connection.
 ///
-/// Returns a [ConnectResult] providing:
+/// Shall return a [ConnectResult] providing:
 /// - an `abortFunction` to cancel the in-flight pre-connection request, and
 /// - a `responseStatusCode` future that completes with the HTTP status code.
-typedef PreConnectOperation = ConnectResult Function(Uri uri, String authorization);
+typedef PreConnectOperation = ConnectResult Function(Uri webSocketUri, String authorization);
 
 /// Result from the [PreConnectOperation], containing an `Function abortFunction` to abort the operation,
 /// and a `Future&lt;int&gt; responseStatusCode`.
@@ -41,14 +41,17 @@ class ConnectResult {
   ConnectResult.noop() : this(() {}, Future.value(0));
 }
 
-final _rnd = math.Random();
+/// Function that will be invoked upon closing the session, as an extra way to say to the server that the session is
+/// closing. This is beneficial if the WebSocket for some reason has gone down, as the server then can clean up the
+/// otherwise lingering session.
+typedef OutOfBandClose = Function(Uri webSocketUri, String sessionId);
 
 /// Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
 /// alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
 /// finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
 ///
 /// - [length] length how long the string should be, default is 6.
-String id([int length = 6]) {
+String randomId([int length = 6]) {
   var result = '';
   for (var i = 0; i < length; i++) {
     result += ALPHABET[_rnd.nextInt(ALPHABET.length)];
@@ -62,13 +65,16 @@ String id([int length = 6]) {
 /// use e.g. length=16. The alphabet is 92 chars.
 ///
 /// - [length] how long the string should be, default is 10.
-String jid([int length = 10]) {
+String randomCId([int length = 10]) {
   var result = '';
   for (var i = 0; i < length; i++) {
     result += JSON_ALPHABET[_rnd.nextInt(JSON_ALPHABET.length)];
   }
   return result;
 }
+
+// Random used throughout, for ids, and shuffle, and random delays.
+final _rnd = math.Random();
 
 // https://stackoverflow.com/a/12646864/39334
 void _shuffleList(List items) {
@@ -135,6 +141,8 @@ class MatsSocket {
   ///    be resolved by your code when the request has been successfully performed, or rejected if it didn't go through.
   ///    In the latter case, a new invocation of the 'preconnectoperation' will be performed after a countdown,
   ///    possibly with a different 'webSocketUrl' value if the MatsSocket is configured with multiple URLs.
+  ///
+  /// The default is `false`.
   set preConnectOperation(Object value) {
       if ((value is bool) || (value is String) || (value is PreConnectOperation)) {
         if (value is String) {
@@ -147,8 +155,42 @@ class MatsSocket {
         _preConnectOperation = value;
       }
       else {
-        throw ArgumentError(value, 'preConnectOperation' 'Must be bool, String (URL) or PreConnectOperation');
+        throw ArgumentError.value(value, 'preConnectOperation', 'Must be bool, String (URL) or PreConnectOperation');
       }
+  }
+
+  /// "Out-of-band Close" refers to a small hack to notify the server about a MatsSocketSession being Closed even
+  /// if the WebSocket is not live anymore: When [MatsSocket.close] is invoked, an attempt is done to close
+  /// the WebSocket with CloseCode [MatsSocketCloseCodes.CLOSE_SESSION] - but whether the WebSocket is open
+  /// or not, this "Out-of-band Close" will also be invoked if enabled and MatsSocket SessionId is present.
+  ///
+  /// Values:
+  /// * `false`: Disables this functionality
+  /// * `String`: The sessionId is concatenated to the String representing an URI, and a POST request is performed to
+  ///     this URL. If you want it as a URL parameter, then the supplied string should end with e.g. `"?sessionId="`.
+  /// * `true`: **(default)**: The following pseudo code is executed:
+  ///     `webSocketUri.replace('ws', 'http')+"/close_session?sessionId={sessionId}")`, and this URL is used to perform
+  ///     a POST to</li>
+  /// * [OutOfBandClose] The function is with the current webSocketUri, i.e. the URI that the WebSocket was
+  ///     connected to, e.g. "wss://example.com/matssocket", and the current MatsSocket sessionId we're trying to close.
+  ///
+  /// The default is `false`.
+  ///
+  /// Note: A 'beforeunload' listener invoking `MatsSocket.close(..)` is attached when running in a web browser,
+  /// so that if the user navigates away, the current MatsSocketSession is closed.
+  set outOfBandClose(Object value) {
+    if ((value is bool) || (value is String) || (value is OutOfBandClose)) {
+      if (value is String) {
+        // Check that it parses as a HTTP URL
+        final uri = Uri.tryParse(value);
+        if (uri == null || !uri.hasAbsolutePath || !(uri.isScheme('http') || uri.isScheme('https'))) {
+          throw ArgumentError.value(value, 'outOfBandClose', 'Must be a valid absolute http(s) URL');
+        }
+      }
+      _outOfBandClose = value;
+    } else {
+      throw ArgumentError.value(value, 'outOfBandClose', 'Must be bool, String');
+    }
   }
 
   /// A bit field requesting different types of debug information, the bits defined in [DebugOption]. It is
@@ -197,13 +239,14 @@ class MatsSocket {
   // ==============================================================================================
 
   Object _preConnectOperation = false;
+  Object _outOfBandClose = true;
 
   // :: Message handling
   final Map<String, StreamController<MessageEvent>> _terminators = {};
   final Map<String, EndpointMessageHandler> _endpoints = {};
 
   final List<Uri> _useUrls;
-  final matsSocketInstanceId = id(3);
+  final matsSocketInstanceId = randomId(3);
 
   DateTime _lastMessageEnqueuedTimestamp = DateTime.now(); // Start by assuming that it was just used.
   double? _initialSessionEstablished_PerformanceNow;
@@ -254,7 +297,7 @@ class MatsSocket {
   // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
   final Map<String?, _Initiation> _outboxInitiations = {};
   // .. "guard object" to avoid having to retransmit messages sent /before/ the WELCOME is received for the HELLO handshake
-  String _outboxInitiations_RetransmitGuard = jid(5);
+  String _outboxInitiations_RetransmitGuard = randomCId(5);
   // Outbox for REPLYs
   final Map<String?, _OutboxReply> _outboxReplies = {};
   // The Inbox - to be able to catch double deliveries from Server
@@ -998,7 +1041,7 @@ class MatsSocket {
   ///     and must therefore be quite short (max 123 chars).
   Future close(String reason) async {
     // Fetch properties we need before clearing state
-    final Uri webSocketUrl = _currentWebSocketUrl;
+    final Uri existingWebSocketUri = _currentWebSocketUri;
     final String? existingSessionId = sessionId;
     _logger.info(() => 'close(): Closing MatsSocketSession, id:[$existingSessionId] due to [$reason], currently connected: [${_webSocket?.url ?? "not connected"}]');
 
@@ -1017,18 +1060,36 @@ class MatsSocket {
     // :: Out-of-band Session Close
     // ?: Do we have a sessionId?
     if (existingSessionId != null) {
-      // Yes -> inform the transport to close the session.
-      final httpUri = webSocketUrl.scheme == 'wss'
-          ? webSocketUrl.replace(scheme: 'https')
-          : webSocketUrl.replace(scheme: 'http');
+      if (_outOfBandClose is bool) {
+        // ?: False?
+        if (!(_outOfBandClose as bool)) {
+          // -> Nothing to do
+          return;
+        }
+        // E-> No, it's true - do default.
+        final httpUri = existingWebSocketUri.scheme == 'wss'
+            ? existingWebSocketUri.replace(scheme: 'https')
+            : existingWebSocketUri.replace(scheme: 'http');
 
-      final closeUri = httpUri.replace(
-          path: '${webSocketUrl.path}/close_session',
-          queryParameters: {'session_id': sessionId }
-      );
-
-      _logger.info(() => ' \\-> Sending out-of-band close-session request to: [$closeUri]');
-      await platform.outOfBandCloseSession(closeUri, existingSessionId);
+        final closeUri = httpUri.replace(
+            path: '${existingWebSocketUri.path}/close_session',
+            queryParameters: {'session_id': existingSessionId }
+        );
+        await platform.outOfBandCloseSession(closeUri);
+      }
+      else if (_outOfBandClose is String) {
+        // -> String shall be an URI, to which we concatenate the sessionId
+        String appended = (_outOfBandClose as String) + existingSessionId;
+        final closeUri = Uri.parse(appended);
+        await platform.outOfBandCloseSession(closeUri);
+      }
+      else {
+        // -> Must be a OutOfBandClose
+        final specifiedOutOfBandClose = _outOfBandClose as OutOfBandClose;
+        _logger.info(() => ' \\-> Out-of-band close, invoking specified OutOfBandClose instance,'
+            ' with URI: $existingWebSocketUri, sessionId: $existingSessionId');
+        specifiedOutOfBandClose(existingWebSocketUri, existingSessionId);
+      }
     }
   }
 
@@ -1098,7 +1159,7 @@ class MatsSocket {
     // Reset Reconnect state vars
     _resetReconnectStateVars();
     // Make new RetransmitGuard - so that any previously "guarded" messages now will be retransmitted.
-    _outboxInitiations_RetransmitGuard = jid(5);
+    _outboxInitiations_RetransmitGuard = randomCId(5);
     // :: Clear out _webSocket;
     if (_webSocket != null) {
       // We don't want the onclose callback invoked from this event that we initiated ourselves.
@@ -1278,7 +1339,7 @@ class MatsSocket {
 
   void _evaluatePipelineLater() {
     _evaluatePipelineLater_timer?.cancel();
-    _evaluatePipelineLater_timer = Timer(Duration(milliseconds: 2), () {
+    _evaluatePipelineLater_timer = Timer(Duration(milliseconds: 10), () {
       _evaluatePipelineLater_timer = null;
       _evaluatePipelineSend();
     });
@@ -1490,7 +1551,7 @@ class MatsSocket {
 
   int _urlIndexCurrentlyConnecting = 0; // Cycles through the URLs
   int _connectionAttemptRound = 0; // When cycled one time through URLs, this increases.
-  late Uri _currentWebSocketUrl; // Will be set before any use.
+  late Uri _currentWebSocketUri; // Will be set before any use.
 
   static const int _connectionTimeoutBase = 500; // Base timout, milliseconds. Doubles, up to max defined below.
   static const int _connectionTimeoutMinIfSingleUrl = 5000; // Min timeout if single-URL configured, milliseconds.
@@ -1513,16 +1574,16 @@ class MatsSocket {
           _urlIndexCurrentlyConnecting = 0;
           _connectionAttemptRound++;
       }
-      _currentWebSocketUrl = _useUrls[_urlIndexCurrentlyConnecting];
-      _logger.fine('_increaseReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] = $_currentWebSocketUrl');
+      _currentWebSocketUri = _useUrls[_urlIndexCurrentlyConnecting];
+      _logger.fine('_increaseReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] = $_currentWebSocketUri');
   }
 
   void _resetReconnectStateVars() {
       _connectionAttempt = 0;
       _urlIndexCurrentlyConnecting = 0;
       _connectionAttemptRound = 0;
-      _currentWebSocketUrl = _useUrls[_urlIndexCurrentlyConnecting];
-      _logger.fine('_resetReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] =  $_currentWebSocketUrl');
+      _currentWebSocketUri = _useUrls[_urlIndexCurrentlyConnecting];
+      _logger.fine('_resetReconnectStateVars(): round:[$_connectionAttemptRound], urlIndex:[$_urlIndexCurrentlyConnecting] =  $_currentWebSocketUri');
   }
 
   void _updateStateAndNotifyConnectionEventListeners(ConnectionEvent connectionEvent) {
@@ -1608,7 +1669,7 @@ class MatsSocket {
       }
 
       // About to create WebSocket, so notify our listeners about this.
-      _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTING, _currentWebSocketUrl, null, timeout, elapsed(), _connectionAttempt));
+      _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTING, _currentWebSocketUri, null, timeout, elapsed(), _connectionAttempt));
 
       Function()? preConnectOperationAbortFunction;
       WebSocket? websocketAttempt;
@@ -1646,7 +1707,7 @@ class MatsSocket {
           } else {
               // -> No, we've NOT hit timeout-target, so sleep till next countdown-target, where we re-invoke ourselves (this w_countDownTimer())
               // Notify ConnectionEvent listeners about this COUNTDOWN event.
-              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.COUNTDOWN, _currentWebSocketUrl, null, timeout, elapsed(), _connectionAttempt));
+              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.COUNTDOWN, _currentWebSocketUri, null, timeout, elapsed(), _connectionAttempt));
               final sleep = math.max(5, currentCountdownTargetTimestamp.difference(DateTime.now()).inMilliseconds);
               countdownId = Timer(Duration(milliseconds: sleep), () {
                   w_countDownTimer();
@@ -1688,9 +1749,9 @@ class MatsSocket {
       w_attemptPreConnectionOperation = () {
         // :: Decide based on type of 'preconnectoperation' how to do the .. PreConnectOperation..!
 
-        final preAuthHttpUri = _currentWebSocketUrl.scheme == 'wss'
-            ? _currentWebSocketUrl.replace(scheme: 'https')
-            : _currentWebSocketUrl.replace(scheme: 'http');
+        final preAuthHttpUri = _currentWebSocketUri.scheme == 'wss'
+            ? _currentWebSocketUri.replace(scheme: 'https')
+            : _currentWebSocketUri.replace(scheme: 'http');
 
         ConnectResult abortAndFuture;
         if (_preConnectOperation is bool) {
@@ -1708,7 +1769,7 @@ class MatsSocket {
         else {
           // -> Must be a PreConnectOperation
           final specifiedPreConnectOperation = _preConnectOperation as PreConnectOperation;
-          abortAndFuture = specifiedPreConnectOperation(_currentWebSocketUrl, _authorization!);
+          abortAndFuture = specifiedPreConnectOperation(_currentWebSocketUri, _authorization!);
         }
 
         // Deconstruct the return
@@ -1756,9 +1817,9 @@ class MatsSocket {
           // :: Actually create the WebSocket instance
 
           // If we have a PreConnectOperation, then we add add a query parameter to the URL to point this out.
-          var url = (_preConnectOperation != false ? _currentWebSocketUrl.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUrl);
+          var url = (_preConnectOperation != false ? _currentWebSocketUri.replace(queryParameters: { 'preconnect': 'true' }) : _currentWebSocketUri);
 
-          final webSocketInstanceId = id(6);
+          final webSocketInstanceId = randomId(6);
           _logger.fine(() => 'INSTANTIATING new WebSocket("$url", "matssocket") - InstanceId:[$webSocketInstanceId]');
           websocketAttempt = platform.createAndConnectWebSocket(url, 'matssocket', _authorization!);
           websocketAttempt!.webSocketInstanceId = webSocketInstanceId;
@@ -1775,7 +1836,7 @@ class MatsSocket {
             websocketAttempt!.onError = null;
             websocketAttempt!.onClose = null;
             websocketAttempt!.onOpen = null;
-            _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, errorEvent, timeout, elapsed(), _connectionAttempt));
+            _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUri, errorEvent, timeout, elapsed(), _connectionAttempt));
             w_connectFailed_RetryOrWaitForTimeout();
           };
 
@@ -1786,7 +1847,7 @@ class MatsSocket {
             websocketAttempt!.onError = null;
             websocketAttempt!.onClose = null;
             websocketAttempt!.onOpen = null;
-            _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, timeout, elapsed(), _connectionAttempt));
+            _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUri, closeEvent, timeout, elapsed(), _connectionAttempt));
             w_connectFailed_RetryOrWaitForTimeout();
           };
 
@@ -1819,7 +1880,7 @@ class MatsSocket {
 
               platform.registerBeforeunload(_beforeunloadHandler);
 
-              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTED, _currentWebSocketUrl, openEvent, timeout, elapsed(), _connectionAttempt));
+              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTED, _currentWebSocketUri, openEvent, timeout, elapsed(), _connectionAttempt));
 
               // Fire off any waiting messages, next tick
               Future(() {
@@ -1831,7 +1892,7 @@ class MatsSocket {
 
       w_connectFailed_RetryOrWaitForTimeout = () {
           // :: Attempt failed, either immediate retry or wait for timeout
-          _logger.fine("Create WebSocket: Attempt failed, URL [$_currentWebSocketUrl] didn't work out.");
+          _logger.fine("Create WebSocket: Attempt failed, URL [$_currentWebSocketUri] didn't work out.");
           // ?: Assert that we're still open
           if (!_matsSocketOpen) {
               _logger.fine('After failed attempt, we realize that this MatsSocket instance is closed! - stopping right here.');
@@ -1884,7 +1945,7 @@ class MatsSocket {
 
       w_connectTimeout_AbortAttemptAndReschedule = () {
           // :: Attempt timed out, clear this WebSocket out
-          _logger.fine("Create WebSocket: Attempt timeout exceeded [$timeout ms], URL [$_currentWebSocketUrl] didn't work out.");
+          _logger.fine("Create WebSocket: Attempt timeout exceeded [$timeout ms], URL [$_currentWebSocketUri] didn't work out.");
           // Abort the attempt.
           w_abortAttempt();
           // ?: Assert that we're still open
@@ -1918,7 +1979,7 @@ class MatsSocket {
   void _onerror(WebSocket target, dynamic event) {
       error('websocket.onerror', 'Got \'onerror\' event from WebSocket, instanceId:[${target.webSocketInstanceId}].', event);
       // :: Synchronously notify our ConnectionEvent listeners.
-      _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTION_ERROR, _currentWebSocketUrl, event, null, null, _connectionAttempt));
+      _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTION_ERROR, _currentWebSocketUri, event, null, null, _connectionAttempt));
   }
 
   void _onclose(WebSocket target, int? code, String? reason, dynamic closeEvent) {
@@ -1965,7 +2026,7 @@ class MatsSocket {
           _forcePipelineProcessing = true;
 
           // :: Synchronously notify our ConnectionEvent listeners.
-          _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.LOST_CONNECTION, _currentWebSocketUrl, closeEvent, null, null, _connectionAttempt));
+          _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.LOST_CONNECTION, _currentWebSocketUri, closeEvent, null, null, _connectionAttempt));
 
           // ?: Is this the special DISCONNECT that asks us to NOT start reconnecting?
           if (code != MatsSocketCloseCodes.DISCONNECT.code) {
@@ -2010,14 +2071,14 @@ class MatsSocket {
         if (envelope.type == MessageType.WELCOME) {
           // Fetch our assigned MatsSocketSessionId
           sessionId = envelope.sessionId;
-          _logger.fine(() => 'We\'re WELCOME! SessionId:$sessionId, there are [${_outboxInitiations
+          _logger.info(() => 'We\'re WELCOME! SessionId:$sessionId, there are [${_outboxInitiations
               .length}] outstanding sends-or-requests, and [${_outboxReplies
               .length}] outstanding replies.');
           // If this is the very first time we get SESSION_ESTABLISHED, then record time (can happen again due to reconnects)
           _initialSessionEstablished_PerformanceNow ??= platform.performanceTime();
           // :: Synchronously notify our ConnectionEvent listeners.
           _updateStateAndNotifyConnectionEventListeners(
-              ConnectionEvent(ConnectionEventType.SESSION_ESTABLISHED, _currentWebSocketUrl, null, null, null, _connectionAttempt));
+              ConnectionEvent(ConnectionEventType.SESSION_ESTABLISHED, _currentWebSocketUri, null, null, null, _connectionAttempt));
           // Start pinger (AFTER having set ConnectionState to SESSION_ESTABLISHED, otherwise it'll exit!)
           _startPinger();
 

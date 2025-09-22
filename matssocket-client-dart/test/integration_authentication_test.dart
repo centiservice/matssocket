@@ -43,7 +43,7 @@ void main() {
             authCallbackCalled = true;
             setAuth();
           });
-          await matsSocket.send('Test.single', 'SEND_${id(6)}', {});
+          await matsSocket.send('Test.single', 'SEND_${randomId(6)}', {});
           expect(authCallbackCalled, isTrue);
         });
 
@@ -53,7 +53,7 @@ void main() {
           matsSocket.setAuthorizationExpiredCallback((event) {
             authCallbackCalled = true;
           });
-          await matsSocket.send('Test.single', 'SEND_${id(6)}', {});
+          await matsSocket.send('Test.single', 'SEND_${randomId(6)}', {});
           expect(authCallbackCalled, isFalse);
         });
 
@@ -64,7 +64,7 @@ void main() {
             authCallbackCalled = true;
             setAuth();
           });
-          await matsSocket.send('Test.single', 'SEND_${id(6)}', {});
+          await matsSocket.send('Test.single', 'SEND_${randomId(6)}', {});
           expect(authCallbackCalled, isTrue);
         });
 
@@ -76,7 +76,7 @@ void main() {
             authCallbackCalled = true;
             setAuth();
           });
-          await matsSocket.send('Test.single', 'SEND_${id(6)}', {});
+          await matsSocket.send('Test.single', 'SEND_${randomId(6)}', {});
           expect(authCallbackCalled, isTrue);
         });
       });
@@ -96,7 +96,7 @@ void main() {
           var req = {'string': 'test', 'number': math.e, 'sleepTime': 0};
           var receivedCallbackInvoked = 0;
           await matsSocket
-              .request('Test.slow', 'REQUEST_authentication_from_server_${id(6)}', req,
+              .request('Test.slow', 'REQUEST_authentication_from_server_${randomId(6)}', req,
                   receivedCallback: (event) => receivedCallbackInvoked++)
               .then((reply) {
             var data = reply.data;
@@ -140,7 +140,7 @@ void main() {
               authCallbackCalledEvent = event;
               Timer(Duration(milliseconds: 50), () {
                   var expiry = DateTime.now().add(Duration(milliseconds: 20000));
-                  authValue = 'DummyAuth:MatsSocket.renewAuth_${id(10)}:${expiry.millisecondsSinceEpoch}';
+                  authValue = 'DummyAuth:MatsSocket.renewAuth_${randomId(10)}:${expiry.millisecondsSinceEpoch}';
                   matsSocket.setCurrentAuthorization(authValue!, expiry, Duration.zero);
               });
           });
@@ -160,7 +160,7 @@ void main() {
               'number': math.e,
               'sleepTime': 0
           };
-          await matsSocket.send('Test.renewAuth', 'MatsSocket.renewAuth_${id(6)}', req);
+          await matsSocket.send('Test.renewAuth', 'MatsSocket.renewAuth_${randomId(6)}', req);
 
           await testCompleter.future;
         });
@@ -177,7 +177,7 @@ void main() {
           var authValue = 'DummyAuth:PreConnectOperation:${expiry.millisecondsSinceEpoch}';
           matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
 
-          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {});
+          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${randomId(6)}', {});
           expect(value.data['string'], equals(authValue));
         });
 
@@ -188,7 +188,7 @@ void main() {
           var authValue = 'DummyAuth:PreConnectOperation:${expiry.millisecondsSinceEpoch}';
           matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
 
-          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {});
+          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${randomId(6)}', {});
           expect(value.data['string'], equals(authValue));
         });
 
@@ -199,7 +199,7 @@ void main() {
           var authValue = 'DummyAuth:PreConnectOperation:${expiry.millisecondsSinceEpoch}';
           matsSocket.setCurrentAuthorization(authValue, expiry, Duration(seconds: 5));
 
-          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {});
+          var value = await matsSocket.request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${randomId(6)}', {});
           expect(value.data['string'], equals(authValue));
         });
 
@@ -227,7 +227,7 @@ void main() {
           });
 
           await matsSocket
-              .request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {})
+              .request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${randomId(6)}', {})
               .catchError((messageEvent) {
             expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
             return messageEvent; // Satisfy Dart3
@@ -259,7 +259,7 @@ void main() {
           });
 
           await matsSocket
-              .request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${id(6)}', {})
+              .request('Test.replyWithCookieAuthorization', 'PreConnectionOperation_${randomId(6)}', {})
               .catchError((messageEvent) {
             expect(messageEvent.type, equals(MessageEventType.SESSION_CLOSED));
             return messageEvent; // Satisfy Dart3
