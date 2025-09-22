@@ -5,10 +5,11 @@ Very simple example:
 4. Prints the response
 5. Closes the MatsSocket
 
-Available in [simple.dart](simple.dart).
+Standalone in [simple.dart](simple.dart).
 
-(There's a more elaborate example in [elaborate.dart](elaborate.dart), adding listeners and performing multiple
-requests and sends.)
+_(There's a more elaborate example in [listeners_and_callback.dart](listeners_and_callback.dart), and the
+[integration tests](https://github.com/centiservice/matssocket/tree/main/matssocket-client-dart/test) in
+the source code exercises all the features of the client library)_
 
 This will run if you have started the `MatsSocketTestServer` from the source code; git clone and run
 `./gradlew matsSocketTestServer`.
@@ -20,7 +21,8 @@ import 'package:matssocket/matssocket.dart';
 
 void _configureLogging() {
   Logger.root.level = Level.INFO;
-  Logger.root.onRecord.listen((rec) => print('${rec.time.toIso8601String()} [${rec.level.name}] ${rec.loggerName}: ${rec.message}'));
+  Logger.root.onRecord.listen((rec) => print('${rec.time.toIso8601String()}'
+      ' [${rec.level.name}] ${rec.loggerName}: ${rec.message}'));
 }
 
 Future<void> main() async {
@@ -32,7 +34,8 @@ Future<void> main() async {
   ]);
 
   // TOTALLY FAKE DUMMY Authentication, do NOT copy this in production code!!!
-  matsSocket.setCurrentAuthorization('DummyAuth:DummyUser:${DateTime.now().add(Duration(seconds: 10)).millisecondsSinceEpoch}');
+  matsSocket.setCurrentAuthorization('DummyAuth:DummyUser:'
+      '${DateTime.now().add(Duration(seconds: 10)).millisecondsSinceEpoch}');
 
   // Perform a request to MatsSocketEndpoint 'Test.single', which on server forwards to Mats endpoint 'Test.single'
   final result = await matsSocket.request('Test.single', 'REQUEST-with-Promise_${id(6)}', {
@@ -44,8 +47,10 @@ Future<void> main() async {
   print(' == Request completed, result: type=${result.type} traceId=${result.traceId} rttMs=${result.roundTripMillis}');
   print('   \\- Data: ${result.data.toString()}');
 
-  // NOTE: This makes no sense in the real world: You should never close the socket after a single request.
-  // This is just for demonstration purposes. A MatsSocket should be kept open for the whole application lifetime.
+  // Close the MatsSocket.
+  // NOTE: Closing the MatsSocket after one request makes no sense in the real world: The MatsSocket is a long-lived
+  // connection, featuring automatic reconnects, keep-alive ping-pongs, reauthentication when needed etc, and should
+  // be kept open for the whole application lifetime. This is just for demonstration purposes.
   await matsSocket.close("Demo done!");
 }
 ```
