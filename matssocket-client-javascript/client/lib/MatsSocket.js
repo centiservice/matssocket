@@ -2214,20 +2214,33 @@ function MatsSocket(appName, appVersion, urls, config) {
 
             // :: Add the handlers for this "trying to acquire" procedure.
 
-            // Error: Just log for debugging, as an "onclose" will always follow.
-            websocketAttempt.onerror = function (event) {
-                log("Create WebSocket: error. InstanceId:[" + event.target.webSocketInstanceId + "]", event);
+            // Note: On failure, some environments will call error, then close, and some just error. We set up so that we
+            // handle any order, and both, by removing handlers after getting the first.
+
+            // Error: Log, updateState/notifyListeners, and start retry/wait.
+            websocketAttempt.onerror = function (errorEvent) {
+                if (that.logging) log("Create WebSocket: error. InstanceId:[" + errorEvent.target.webSocketInstanceId + "]", errorEvent);
+                // Some environments will call onClose afterward, and some not. We'll remove all handlers to be sure.
+                websocketAttempt.onerror = undefined;
+                websocketAttempt.onclose = undefined;
+                websocketAttempt.onopen = undefined;
+                _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, _secondsTenths(timeout), secondsLeft(), _connectionAttempt));
+                w_connectFailed_RetryOrWaitForTimeout();
             };
 
-            // Close: Log + IF this is the first "round" AND there is multiple URLs, then immediately try the next URL. (Close may happen way before the Connection Timeout)
+            // Close: .. same as Error
             websocketAttempt.onclose = function (closeEvent) {
-                log("Create WebSocket: close. InstanceId:[" + closeEvent.target.webSocketInstanceId + "], Code:" + closeEvent.code + ", Reason:" + closeEvent.reason, closeEvent);
+                if (that.logging) log("Create WebSocket: close. InstanceId:[" + closeEvent.target.webSocketInstanceId + "], Code:" + closeEvent.code + ", Reason:" + closeEvent.reason, closeEvent);
+                // We'll remove all handlers now, since any other event would be bad at this time.
+                websocketAttempt.onerror = undefined;
+                websocketAttempt.onclose = undefined;
+                websocketAttempt.onopen = undefined;
                 _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, _secondsTenths(timeout), secondsLeft(), _connectionAttempt));
                 w_connectFailed_RetryOrWaitForTimeout();
             };
 
             // Open: Success! Cancel countdown timer, and set WebSocket in MatsSocket, clear flags, set proper WebSocket event handlers including onMessage.
-            websocketAttempt.onopen = function (event) {
+            websocketAttempt.onopen = function (openEvent) {
                 // First and foremost: Cancel the "connection timeout" thingy - we're done!
                 clearTimeout(countdownId);
 
@@ -2238,7 +2251,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                     return;
                 }
 
-                log("Create WebSocket: opened! InstanceId:[" + event.target.webSocketInstanceId + "].", event);
+                log("Create WebSocket: opened! InstanceId:[" + openEvent.target.webSocketInstanceId + "].", openEvent);
 
                 // Store our brand new, soon-ready-for-business WebSocket.
                 _webSocket = websocketAttempt;
@@ -2255,7 +2268,7 @@ function MatsSocket(appName, appVersion, urls, config) {
 
                 _registerBeforeunload();
 
-                _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.CONNECTED, _currentWebSocketUrl, event, _secondsTenths(timeout), secondsLeft(), _connectionAttempt));
+                _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.CONNECTED, _currentWebSocketUrl, openEvent, _secondsTenths(timeout), secondsLeft(), _connectionAttempt));
 
                 // Fire off any waiting messages, next tick
                 _invokeLater(function () {

@@ -1692,7 +1692,7 @@ class MatsSocket {
             ? _currentWebSocketUrl.replace(scheme: 'https')
             : _currentWebSocketUrl.replace(scheme: 'http');
 
-        var abortAndFuture;
+        ConnectResult abortAndFuture;
         if (_preConnectOperation is bool) {
           // -> Use default impl
           if (!(_preConnectOperation as bool)) {
@@ -1765,22 +1765,33 @@ class MatsSocket {
 
           // :: Add the handlers for this "trying to acquire" procedure.
 
-          // Error: Just log for debugging, as an "onclose" will always follow.
-          websocketAttempt!.onError = (target, event) {
-            _logger.fine(() => 'Create WebSocket: error. InstanceId:[${target.webSocketInstanceId}], event:[$event]');
-            // onClose will not be called, so we need to trigger connect failed
+          // Note: On failure, some environments will call error, then close, and some just error. We set up so that we
+          // handle any order, and both, by removing handlers after getting the first.
+
+          // Error: Log, updateState/notifyListeners, and start retry/wait.
+          websocketAttempt!.onError = (target, errorEvent) {
+            _logger.fine(() => 'Create WebSocket: error. InstanceId:[${target.webSocketInstanceId}], event:[$errorEvent]');
+            // Some environments will call onClose afterward, and some not. We'll remove all handlers to be sure.
+            websocketAttempt!.onError = null;
+            websocketAttempt!.onClose = null;
+            websocketAttempt!.onOpen = null;
+            _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, errorEvent, timeout, elapsed(), _connectionAttempt));
             w_connectFailed_RetryOrWaitForTimeout();
           };
 
-          // Close: Log + IF this is the first "round" AND there is multiple URLs, then immediately try the next URL. (Close may happen way before the Connection Timeout)
+          // Close: .. same as Error
           websocketAttempt!.onClose = (target, code, reason, closeEvent) {
-              _logger.fine(() => 'Create WebSocket: close. InstanceId:[${target.webSocketInstanceId}], Code:$code, Reason:$reason, event: $closeEvent');
-              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, timeout, elapsed(), _connectionAttempt));
-              w_connectFailed_RetryOrWaitForTimeout();
+            _logger.fine(() => 'Create WebSocket: close. InstanceId:[${target.webSocketInstanceId}], Code:$code, Reason:$reason, event: $closeEvent');
+            // We'll remove all handlers now, since any other event would be bad at this time.
+            websocketAttempt!.onError = null;
+            websocketAttempt!.onClose = null;
+            websocketAttempt!.onOpen = null;
+            _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, timeout, elapsed(), _connectionAttempt));
+            w_connectFailed_RetryOrWaitForTimeout();
           };
 
           // Open: Success! Cancel countdown timer, and set WebSocket in MatsSocket, clear flags, set proper WebSocket event handlers including onMessage.
-          websocketAttempt!.onOpen = (target, event) {
+          websocketAttempt!.onOpen = (target, openEvent) {
               // First and foremost: Cancel the "connection timeout" thingy - we're done!
               countdownId.cancel();
 
@@ -1808,7 +1819,7 @@ class MatsSocket {
 
               platform.registerBeforeunload(_beforeunloadHandler);
 
-              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTED, _currentWebSocketUrl, event, timeout, elapsed(), _connectionAttempt));
+              _updateStateAndNotifyConnectionEventListeners(ConnectionEvent(ConnectionEventType.CONNECTED, _currentWebSocketUrl, openEvent, timeout, elapsed(), _connectionAttempt));
 
               // Fire off any waiting messages, next tick
               Future(() {
