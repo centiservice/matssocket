@@ -104,9 +104,30 @@ tasks.register('downloadDartAndDeps') {
     }
 }
 
+tasks.register('dartBinPath') {
+    dependsOn downloadDartAndDeps
+    doLast {
+        println "=== Dart path: ${currentOs.getExecutableName("$dartSdkPath/bin/dart")}"
+    }
+}
+
 // :: 'dart doc'
 tasks.register('dartDoc') {
     dependsOn downloadDartAndDeps
+
+    // Inputs: source files and pubspec that affect docs
+    inputs.files(fileTree(dir: "$projectDir/lib", include: ["**/*.dart"]))
+    inputs.file("$projectDir/pubspec.yaml")
+    inputs.file("$projectDir/README.md").optional(true)
+    inputs.file("$projectDir/CHANGELOG.md").optional(true)
+    inputs.file("$projectDir/analysis_options.yaml").optional(true)
+
+    // Outputs: doc/api directory
+    outputs.dir("$projectDir/doc")
+
+    doFirst {
+        delete "$projectDir/doc"
+    }
     doLast {
         dartExec 'doc'
     }
@@ -146,19 +167,20 @@ tasks.register('dartPana') {
     }
 }
 
-// 'dart publish --dry-run'
+// 'dart publish --dry-run' // == NOTE! DO A './gradlew -PchromePath=<path> testAll' first!
 tasks.register('dartPublishDryRun') {
-    dependsOn downloadDartAndDeps, build
+    dependsOn downloadDartAndDeps, testVmKernel, dartDoc
     doLast {
         dartExec 'pub', 'publish', '--dry-run'
     }
 }
 
-// 'dart publish --force'
+// 'dart publish' // == NOTE! DO A './gradlew -PchromePath=<path> testAll' first!
+// Check versions in pubspec.yaml and MatsSocket.dart
 tasks.register('dartPublish') {
-    dependsOn downloadDartAndDeps, build
+    dependsOn downloadDartAndDeps, testVmKernel, dartDoc
     doLast {
-        dartExec 'pub', 'publish', '--force'
+        dartExec 'pub', 'publish'
     }
 }
 
@@ -166,10 +188,12 @@ tasks.register('dartPublish') {
 tasks.register('archiveLib', Zip) {
     from "$projectDir/lib"
     into "mats_socket-${project.version}-dart"
-    archiveFileName = "mats_socket-${project.version}-dart.zip"
-    destinationDirectory.set(layout.buildDirectory.dir("dist"))
+    def destinationDir = layout.buildDirectory.dir("dist").get().asFile
+    def archiveName = "matssocket-${project.version}-dart.zip"
+    destinationDirectory = destinationDir
+    archiveFileName = archiveName
     doLast {
-        println("##### Dart Client zip: " + destinationDirectory.get().asFile + "/" + archiveFileName)
+        println("##### Dart Client zip: " + destinationDir + "/" + archiveName)
     }
 }
 
@@ -187,7 +211,7 @@ tasks.register('nodeBinDir', NodeTask) {
     }
     doLast {
         def binDir = nodeOut.toString().trim()
-        println "Node bin dir: ${binDir}"
+        println "=== Node bin dir: ${binDir}"
         // Stash it for other tasks to use
         project.ext.set('NODE_BIN_DIR', binDir);
     }
@@ -299,6 +323,7 @@ rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVm
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
+    delete "$projectDir/doc"
 }
 
 tasks.register('distclean', Delete) {

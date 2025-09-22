@@ -4,5 +4,8 @@ build.gradle
 # Download of the Dart SDK
 dartsdk_download
 
+# Download of the Node.js runtime
+node_download
+
 # Gradle build
 build-gradle

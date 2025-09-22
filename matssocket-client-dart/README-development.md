@@ -1,6 +1,37 @@
 # MatsSocket Dart client library DEVELOPMENT
 
-## Running Dart tests:
+Note that we don't get full 'pub.dev' score from Pana (per 2025-09-22: 150 of 160), likely due to source not completely
+formatted according to rules, or that three lints are disabled, specifically `file_names`, `constant_identifier_names`
+and `non_constant_identifier_names`. This is because the JavaScript variant is the "primary" source, while the Dart is
+a manually "cross-compiled" variant, and there is a desire to keep the Dart variant as close to the JavaScript variant
+as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally and semantically.
+
+## Gradle targets
+
+### General
+* `build`: runs `archiveLib`, `dartDoc` and `test` (target from DI server; GitHub Actions).
+* `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
+* `dartDoc`: generates Dart documentation, open `doc/api/index.html`
+* `test`: runs all VM and Node tests on all compilers.
+* `testAll`: runs all tests, including the tests on the Web target
+* Other test tasks, see _'Running Dart tests'_ chapter below.
+* `dartBinPath`: Runs `downloadDartAndDeps`, and then prints out the path to the Dart binary.
+* `nodeBinDir`: NodeTask, so it downloads Node, and then prints out the path to the Node bin dir.
+* `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
+
+### Dart tasks
+* `dartVersion`: Runs `dart --version` to print out the Dart version. (`versions` depends on this)
+* `dartOutdated`: Runs `dart pub outdated` to check for outdated dependencies.
+* `dartUpgradeUpdate`: Runs `dart pub upgrade --major-versions` to upgrade dependencies.
+* `dartPana`: Runs `dart pub global run pana` to get the pub.dev score the lib will get.
+
+### Publishing
+* `dartPublishDryRun`: Runs `pub publish --dry-run` to get a preview of what will be published, with scoring/warnings.
+    Depends on `dartDoc` and only `testVmKernel` for test, for fast iteration. **Make sure `testAll` passes before
+    publishing!**
+* `dartPublish`: Runs `pub publish` to publish the lib to pub.dev. **Make sure `testAll` passes before publishing!**
+
+## Running Dart tests
 
 ### Via Gradle
 
@@ -13,55 +44,91 @@ integration tests, which is VM/Kernel.
 ./gradlew matssocket-client-dart:test
 ```
 
-For running the tests on the Web target, you need to have Chrome/Chromium installed. Notice how you may set the path
-to your Chrome/Chromium binary, if it is not in the default location. This is done with the `-PchromePath=` parameter.
+**For running the tests on the Web target, you need to have Chrome/Chromium installed.** You may set the path to your
+Chrome/Chromium binary, if it is not in the default location. This is done with the `-PchromePath=` parameter.
 
 Standing in the project root directory, the following `testAll` task runs all platform/compiler variants of the
 integration tests, setting the Chrome path to `/snap/bin/chromium`.
 
 ```shell
-./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:testAll
+./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:testAll   # replace path with your Chrome path
 ```
 
-There are also separate tasks `testVmKernel`, `testVmSource`, `testVmExe`, `testWebJs`, `testWebWasm`, `testNodeJs` and
-`testNodeWasm` if you want to run a specific combination, and `testVm`, `testWeb` and `testNode` for subsets.
-The default `test` task only runs the `testVm` and `testNode` task (don't depend on Chrome on DI server).
+There are also separate tasks `testVmKernel`, `testVmSource`, `testVmExe`, `testNodeJs` and `testNodeWasm`, `testWebJs`,
+and `testWebWasm` if you want to run a specific combination, and `testVm`, `testWeb` and `testNode` for subsets.
+The default `test` task runs the `testVm` and `testNode` task, thus not depending on Chrome on DI server.
 The VM tasks don't need Chrome, while the Node tasks need Node which Gradle installs.
 
-### From command line using Gradle/downloaded Dart SDK
+### From command line using Gradle-downloaded Dart SDK and Node.js
 
 You may use the Gradle-downloaded Dart SDK to run the tests directly from command line. The Dart SDK will be downloaded
-by most tasks in this module's build.gradle, but you may run it specifically by executing the Gradle task
-`./gradlew matssocket-client-dart:downloadDartAndDeps` from project root. _(Note that it is also possible to let
-IntelliJ use this downloaded Dart SDK - but you might have to restart the analyzer each time after the Gradle download
-task runs, since the SDK will be overwritten and the analyzer thus crashes)_
+by the Gradle task `./gradlew dartBinPath` run from project root, where it also will print out the path to the dart
+executable _(Note that it is also possible to let IntelliJ use this downloaded Dart SDK, read below on IDE)_
 
 **You need to have the test server running**, as the tests are integration tests that connect to a test-specific
-MatsSocketServer with multiple test MatsSocket endpoints, as well as a few HTTP endpoints.
-This server is the `io.mats3.matssocket.MatsSocketTestServer`, residing in the 'matssocket-server-impl'
-module. Find it in e.g. IntelliJ, right-click and select 'Run' or 'Debug'. Or run it from command line with Gradle,
-from project root: `./gradlew matsSocketTestServer`.
+MatsSocketServer with multiple test MatsSocket endpoints, as well as a few HTTP endpoints. This server is the
+`io.mats3.matssocket.MatsSocketTestServer`, residing in the 'matssocket-server-impl' module. Find it in e.g. IntelliJ,
+right-click and select 'Run' or 'Debug'. **Or run it from command line with Gradle, from project root:
+`./gradlew matsSocketTestServer`.**
+
+For some strange reason, it is quite a bit faster to run the tests on command line than via Gradle.
+
+#### VM targets - no dependencies except Dart SDK
 
 Standing in the `matssocket-client-dart` module directory, here's an example running the tests using the project
 downloaded Dart SDK (using default platform/compiler - VM/Kernel):
-<pre>
-dartsdk_download/dart-sdk/bin/dart test -j 1 test/*</pre>
-
-Here is an example running the tests on Web target compiled to JS - notice how you set the path to your Chrome/Chromium
-binary with the `CHROME_EXECUTABLE` environment variable if it is not in the default location:
 
 ```shell
-CHROME_EXECUTABLE=/snap/bin/chromium
-export CHROME_EXECUTABLE
+dartsdk_download/dart-sdk/bin/dart test -j 1 test/*
+```
+
+#### Node targets - Node required, supplied by Gradle
+
+To run the tests on the Node target, you need to have Node on `PATH`. To use the Node supplied by Gradle, run the
+following command in project root: `./gradlew nodeBinDir`. This will download Node and print the path to the directory
+containing the Node executable, printing "Node bin dir: &lt;nodeBinPath&gt;". Stick this on the `PATH` variable, e.g.
+for Unices `export PATH=<nodeBinPath>:$PATH`, or Windows `set PATH=<nodeBinPath>;%PATH%`.
+
+Standing in the `matssocket-client-dart` module directory, here's an example running the tests on Node target compiled
+to JavaScript:
+
+```shell
+export PATH=<nodeBinPath>:$PATH   # replace <nodeBinPath> with the path printed by Gradle
+dartsdk_download/dart-sdk/bin/dart test -p node -c dart2js -j 1 test/*
+```
+
+#### Web targets - Chrome/Chromium required
+
+For Web targets, you need to have Chrome or Chromium installed, where it will run it headless. The `dart test` command
+will look for Chrome in a specific place, and if it is not found (e.g. if installed using snap, or you have Chromium
+installed instead), it will fail. You can then set the path to your Chrome/Chromium binary with the `CHROME_EXECUTABLE`
+environment variable. Find it with `which chromium` or `which chrome` (`where` on Windows).
+
+Standing in the `matssocket-client-dart` module directory, here's an example running the tests on Web target compiled
+to JavaScript:
+
+```shell
+export CHROME_EXECUTABLE=/snap/bin/chromium    # replace with your Chrome/Chromium path
 dartsdk_download/dart-sdk/bin/dart test -p chrome -c dart2js -j 1 test/*
 ```
+
+#### All platform/compiler combinations
+
 The platform/compiler combinations are (The Dart default is '-p vm -c kernel'):
 
 * `-p vm -c kernel` (VM, compiled to kernel - default)
 * `-p vm -c source` (VM, run from source)
 * `-p vm -c exe` (VM, compiled to native executable)
-* `-p chrome -c dart2js` (Web, compiled to JS)
-* `-p chrome -c dart2wasm` (Web, compiled to Wasm)
-* `-p chrome -c dart2js` (Web, compiled to JS)
-* `-p chrome -c dart2wasm` (Web, compiled to Wasm)
+* `-p node -c dart2js` (Node, compiled to JS - Node required, downloaded by Gradle)
+* `-p node -c dart2wasm` (Node, compiled to Wasm - Node required, downloaded by Gradle)
+* `-p chrome -c dart2js` (Web, compiled to JS - Chrome/Chromium required, you must supply.)
+* `-p chrome -c dart2wasm` (Web, compiled to Wasm - Chrome/Chromium required, you must supply.)
 
+### Within IDE/IntelliJ
+
+You can run the tests from within your IDE, e.g. IntelliJ. Just right-click on the `test`-directory and choose 'Run
+Tests' This by default runs on the VM/Kernel target, and is very fast.
+
+You need a Dart SDK that IntelliJ can use, and the one downloaded by Gradle works fine and you'll get the correct
+version. Find the installation path as described above. Just note that you might have to restart the Dart analyzer each
+time after the Gradle download task runs, since the SDK will be overwritten and the analyzer thus crashes!

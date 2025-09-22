@@ -19,45 +19,6 @@ typedef SubscriptionEventListener = Function(SubscriptionEvent);
 typedef MessageEventHandler = Function(MessageEvent);
 typedef ErrorEventListener = Function(ErrorEvent);
 
-final rnd = math.Random();
-
-/// Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
-/// alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
-/// finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
-///
-/// - [length] length how long the string should be, default is 6.
-String id([int length = 6]) {
-  var result = '';
-  for (var i = 0; i < length; i++) {
-    result += ALPHABET[rnd.nextInt(ALPHABET.length)];
-  }
-  return result;
-}
-
-/// Convenience method for making random strings for correlationIds, not meant for human reading as the alphabet
-/// consist of all visible ACSII chars that won't be quoted in a JSON string. Should you want to make actual Session
-/// cookies or similar, that is, ids being very unique and hard to brute force, you would want to have a longer length,
-/// use e.g. length=16. The alphabet is 92 chars.
-///
-/// - [length] how long the string should be, default is 10.
-String jid([int length = 10]) {
-  var result = '';
-  for (var i = 0; i < length; i++) {
-    result += JSON_ALPHABET[rnd.nextInt(JSON_ALPHABET.length)];
-  }
-  return result;
-}
-
-// https://stackoverflow.com/a/12646864/39334
-void _shuffleList(List items) {
-  for (var i = items.length - 1; i > 0; i--) {
-    var j = rnd.nextInt(i + 1);
-    var temp = items[i];
-    items[i] = items[j];
-    items[j] = temp;
-  }
-}
-
 /// A function that performs a pre-connection operation (typically an HTTP GET)
 /// before opening the WebSocket.
 ///
@@ -80,6 +41,45 @@ class ConnectResult {
   ConnectResult.noop() : this(() {}, Future.value(0));
 }
 
+final _rnd = math.Random();
+
+/// Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
+/// alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
+/// finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
+///
+/// - [length] length how long the string should be, default is 6.
+String id([int length = 6]) {
+  var result = '';
+  for (var i = 0; i < length; i++) {
+    result += ALPHABET[_rnd.nextInt(ALPHABET.length)];
+  }
+  return result;
+}
+
+/// Convenience method for making random strings for correlationIds, not meant for human reading as the alphabet
+/// consist of all visible ACSII chars that won't be quoted in a JSON string. Should you want to make actual Session
+/// cookies or similar, that is, ids being very unique and hard to brute force, you would want to have a longer length,
+/// use e.g. length=16. The alphabet is 92 chars.
+///
+/// - [length] how long the string should be, default is 10.
+String jid([int length = 10]) {
+  var result = '';
+  for (var i = 0; i < length; i++) {
+    result += JSON_ALPHABET[_rnd.nextInt(JSON_ALPHABET.length)];
+  }
+  return result;
+}
+
+// https://stackoverflow.com/a/12646864/39334
+void _shuffleList(List items) {
+  for (var i = items.length - 1; i > 0; i--) {
+    var j = _rnd.nextInt(i + 1);
+    var temp = items[i];
+    items[i] = items[j];
+    items[j] = temp;
+  }
+}
+
 class MatsSocket {
 
   // ==============================================================================================
@@ -98,7 +98,7 @@ class MatsSocket {
 
   /// Default is 3-7 seconds for the initial ping delay, and then 15 seconds for subsequent pings. Can be overridden
   /// for tests.
-  int initialPingDelay = 3000 + rnd.nextInt(4000);
+  int initialPingDelay = 3000 + _rnd.nextInt(4000);
   /// The time between pings, 15 seconds.
   int pingInterval = 15000;
 
@@ -149,12 +149,6 @@ class MatsSocket {
       else {
         throw ArgumentError(value, 'preConnectOperation' 'Must be bool, String (URL) or PreConnectOperation');
       }
-  }
-
-  /// Deprecated: Use [preConnectOperation] instead.
-  @Deprecated('Use preConnectOperation instead.')
-  set preconnectoperation(Object value) {
-    preConnectOperation = value;
   }
 
   /// A bit field requesting different types of debug information, the bits defined in [DebugOption]. It is
@@ -1888,7 +1882,7 @@ class MatsSocket {
               return;
           }
           // Invoke after a small random number of millis: Bump reconnect state vars, re-run _initiateWebSocketCreation
-          Timer(Duration(milliseconds: rnd.nextInt(200)), () {
+          Timer(Duration(milliseconds: _rnd.nextInt(200)), () {
               _increaseReconnectStateVars();
               _initiateWebSocketCreation();
           });
@@ -1966,7 +1960,7 @@ class MatsSocket {
           if (code != MatsSocketCloseCodes.DISCONNECT.code) {
               // -> No, not special DISCONNECT - so start reconnecting.
               // :: Start reconnecting, but give the server a little time to settle, and a tad randomness to handle any reconnect floods.
-              Timer(Duration(milliseconds: 250 + rnd.nextInt(750)), () {
+              Timer(Duration(milliseconds: 250 + _rnd.nextInt(750)), () {
                 // ?: Have we already gotten a new WebSocket, or started the process of creating one (due to a new
                 // message having been sent in the meantime, having started the WebSocket creation process)?
                 if ((_webSocket != null) || _webSocketConnecting) {
@@ -2086,7 +2080,7 @@ class MatsSocket {
               continue;
             }
             // Note: the retry-cycles will start at attempt=2, since we initialize it with 1, and have already increased it by now.
-            var retryDelay = math.pow(2, (initiation.attempt - 2)) * 500 + rnd.nextInt(1000);
+            var retryDelay = math.pow(2, (initiation.attempt - 2)) * 500 + _rnd.nextInt(1000);
             Timer(Duration(milliseconds: retryDelay as int), () {
               _addEnvelopeToPipeline_EvaluatePipelineLater(initiationEnvelope);
             });
@@ -2105,7 +2099,7 @@ class MatsSocket {
               continue;
             }
             // Note: the retry-cycles will start at attempt=2, since we initialize it with 1, and have already increased it by now.
-            var retryDelay = math.pow(2, (initiation!.attempt - 2)) * 500 + rnd.nextInt(1000);
+            var retryDelay = math.pow(2, (initiation!.attempt - 2)) * 500 + _rnd.nextInt(1000);
             Timer(Duration(milliseconds: retryDelay as int), () {
               _addEnvelopeToPipeline_EvaluatePipelineLater(replyEnvelope);
             });

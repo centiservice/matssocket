@@ -106,7 +106,7 @@ class ConnectionEvent {
 ///
 enum ConnectionEventType {
   /// State, and fires as ConnectionEvent when we transition into this state, which is when the WebSocket is literally
-  /// trying to connect. This is between trying to create the WebSocket (or perform the [MatsSocket.preconnectoperation]
+  /// trying to connect. This is between trying to create the WebSocket (or perform the [MatsSocket.preConnectOperation]
   /// if configured), and either `webSocket.onopen` (good!) or `webSocket.onclose` (bad!) is fired, or countdown reaches
   /// 0. If `webSocket.onopen`, we transition into [CONNECTED], if `webSocket.onclose`, we transition into [WAITING].
   /// If we reach countdown 0 while in CONNECTING, we will "re-transition" to the same state, and thus get one more

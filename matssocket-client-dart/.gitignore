@@ -1,16 +1,15 @@
 # Files and directories created by pub
 .dart_tool/
-.packages
 
 # Not committing Dart's pubspec.lock
 pubspec.lock
 
 # Download of the Dart SDK
-dartsdk_download
-dartsdk_download-temp
+dartsdk_download/
+dartsdk_download-temp/
 
 # Directory created by dartdoc
-doc/api/
+doc/
 
 # Node for 'dart test -p node'
 node_modules/
