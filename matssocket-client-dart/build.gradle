@@ -116,7 +116,7 @@ tasks.register('dartDoc') {
     dependsOn downloadDartAndDeps
 
     // Inputs: source files and pubspec that affect docs
-    inputs.files(fileTree(dir: "$projectDir/lib", include: ["**/*.dart"]))
+    inputs.dir("$projectDir/lib")
     inputs.file("$projectDir/pubspec.yaml")
     inputs.file("$projectDir/README.md").optional(true)
     inputs.file("$projectDir/CHANGELOG.md").optional(true)
@@ -274,11 +274,12 @@ def registerDartTestTask = { String name, String platform, String compiler ->
                 args = ["-DLOG_LEVEL=${logLevel}", "-DMATS_SOCKET_URLS=\"${matsSocketUrls}\"",
                         'test', '-p', platform, '-c', compiler, '--reporter=expanded', '--concurrency', '1'] + testFiles
                 if (platform == 'chrome' && chromePath.isPresent()) {
+                    println "Setting env CHROME_EXECUTABLE=${chromePath.get()}"
                     environment("CHROME_EXECUTABLE", chromePath.get())
                 }
                 if (platform == 'node') {
-                    println "NODE_BIN_DIR (from project.ext): ${NODE_BIN_DIR}"
-                    environment 'PATH', "${NODE_BIN_DIR}${File.pathSeparator}$dartSdkPath/bin${File.pathSeparator}${System.getenv('PATH')}"
+                    println "Adding Node to PATH: ${NODE_BIN_DIR}"
+                    environment 'PATH', "${NODE_BIN_DIR}${File.pathSeparator}${System.getenv('PATH')}"
                 }
                 println "Executing 'dart ${args.join(" ")}' to run tests."
             }
