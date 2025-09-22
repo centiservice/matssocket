@@ -7,6 +7,11 @@ export { MessageEvent, MessageEventType }
  * initiated Sends (to Terminators), and for the event to a {@link MatsSocket#endpoint() Endpoint} upon a Server
  * initiated Request, and for the event sent to a {@link MatsSocket#subscribe() Subscription}.
  *
+ * @param {MessageEventType} type - {@link MessageEvent#type}
+ * @param {object} data - {@link MessageEvent#data}
+ * @param {string} traceId - {@link MessageEvent#traceId}
+ * @param {string} messageId - {@link MessageEvent#messageId}
+ * @param {number} receivedTimestamp - {@link MessageEvent#receivedTimestamp}
  * @class
  */
 function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
@@ -26,7 +31,7 @@ function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
      * which may choose to include data with a rejection. The same basically goes wrt. "timeout", as the Server
      * has not replied yet.
      *
-     * @type {string}
+     * @type {MessageEventType}
      */
     this.type = type;
 

@@ -5,6 +5,12 @@ export { ReceivedEvent, ReceivedEventType }
  * returned Promise of a send(..) is settled with (i.e. then() and catch()), and which
  * {@link MatsSocket#request request}'s receivedCallback function are invoked with.
  *
+ * @param {ReceivedEventType} type - {@link ReceivedEvent#type}
+ * @param {string} traceId - {@link ReceivedEvent#traceId}
+ * @param {number} sentTimestamp - {@link ReceivedEvent#sentTimestamp}
+ * @param {number} receivedTimestamp - {@link ReceivedEvent#receivedTimestamp}
+ * @param {number} roundTripMillis - {@link ReceivedEvent#roundTripMillis}
+ * @param {string} description - {@link ReceivedEvent#description}
  * @class
  */
 function ReceivedEvent(type, traceId, sentTimestamp, receivedTimestamp, roundTripMillis, description) {
@@ -13,7 +19,7 @@ function ReceivedEvent(type, traceId, sentTimestamp, receivedTimestamp, roundTri
      * {@link ReceivedEventType#NACK "nack"} - <b>or {@link ReceivedEventType#SESSION_CLOSED "sessionclosed"} if the
      * session was closed with outstanding initiations and MatsSocket therefore "clears out" these initiations.</b>
      *s
-     * @type {string}
+     * @type {ReceivedEventType}
      */
     this.type = type;
 

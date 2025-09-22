@@ -7,8 +7,8 @@ export { SubscriptionEvent, SubscriptionEventType }
  * <p />
  * Note: this also fires upon every reconnect. <b>Make note of the {@link SubscriptionEventType#LOST_MESSAGES}!</b>
  *
- * @param type {SubscriptionEventType}
- * @param topicId {string}
+ * @param type {SubscriptionEventType} - {@link SubscriptionEvent#type}
+ * @param topicId {string} - {@link SubscriptionEvent#topicId}
  * @class
  */
 function SubscriptionEvent(type, topicId) {

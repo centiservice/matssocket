@@ -4,15 +4,15 @@ export { AuthorizationRequiredEvent, AuthorizationRequiredEventType }
  * Sent by the MatsSocket, via the {@link MatsSocket#setAuthorizationExpiredCallback}, when it requires new or
  * revalidated authentication by the client.
  *
- * @param {string} type - {@link AuthorizationRequiredEvent.type}
- * @param {number} currentExpirationTimestamp - {@link AuthorizationRequiredEvent.currentExpirationTimestamp}
+ * @param {AuthorizationRequiredEvent} type - {@link AuthorizationRequiredEvent#type}
+ * @param {number} currentExpirationTimestamp - {@link AuthorizationRequiredEvent#currentExpirationTimestamp}
  * @class
  */
 function AuthorizationRequiredEvent(type, currentExpirationTimestamp) {
     /**
      * Type of the event, one of {@link AuthorizationRequiredEvent}.
      *
-     * @type {string}
+     * @type {AuthorizationRequiredEvent}
      */
     this.type = type;
 

@@ -24,6 +24,7 @@ This gives a semi-parallel execution, which is visualised below.<br>
 Each Request is passed onto the MatsSocket directly, no pipelining. Each Request uses
 its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the round-trip by updating
 the specific cell with its timing information.<br>
+<b>If you just started the <code>MatsSocketTestServer</code>, then run this a few times to let it warm up!</b><br/>
 <i id="statistics">Here will be statistics...</i>
 
 <script type="module">

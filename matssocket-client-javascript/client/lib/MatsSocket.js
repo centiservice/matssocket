@@ -174,7 +174,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      *         <code>'sessionId'</code> is the current MatsSocket SessionId - the one we're trying to close.</li>
      *     <li>"Truthy", e.g. <code>true</code> <b>(default)</b>: When this MatsSocket library is used in
      *         a web browser context, the following code is executed:
-     *         <code>navigator.sendBeacon(webSocketUrl.replace('ws', 'http)+"/close_session?sessionId={sessionId}")</code>.
+     *         <code>navigator.sendBeacon(webSocketUrl.replace('ws', 'http')+"/close_session?sessionId={sessionId}")</code>.
      *         Note that replace is replace-first, and that an extra 's' in 'wss' thus results in 'https'.</li>
      * </ul>
      * The default is <code>true</code>.
@@ -1243,7 +1243,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      */
     this.close = function (reason) {
         // Fetch properties we need before clearing state
-        let webSocketUrl = _currentWebSocketUrl;
+        let existingWebSocketUrl = _currentWebSocketUrl;
         let existingSessionId = that.sessionId;
         log("close(): Closing MatsSocketSession, id:[" + existingSessionId + "] due to [" + reason
             + "], currently connected: [" + (_webSocket ? _webSocket.url : "not connected") + "]");
@@ -1267,17 +1267,17 @@ function MatsSocket(appName, appVersion, urls, config) {
             if (typeof (this.outofbandclose) === "function") {
                 // -> Yes, function, so invoke it
                 this.outofbandclose({
-                    webSocketUrl: webSocketUrl,
+                    webSocketUrl: existingWebSocketUrl,
                     sessionId: existingSessionId
                 });
                 // ?: Is the out-of-band close 'truthy'?
             } else if (this.outofbandclose) {
-                // -> Yes, truthy, so do default logic
+                // -> Yes, truthy, so perform default logic
                 // ?: Do we have 'navigator'?
                 if ((typeof window !== 'undefined') && (typeof window.navigator !== 'undefined')) {
                     // -> Yes, navigator present, so then we can fire off the out-of-band close too
                     // Fire off a "close" over HTTP using navigator.sendBeacon(), so that even if the socket is closed, it is possible to terminate the MatsSocket SessionId.
-                    let closeSesionUrl = webSocketUrl.replace("ws", "http") + "/close_session?session_id=" + existingSessionId;
+                    let closeSesionUrl = existingWebSocketUrl.replace("ws", "http") + "/close_session?session_id=" + existingSessionId;
                     log("  \\- Send an out-of-band (i.e. HTTP) close_session, using navigator.sendBeacon('" + closeSesionUrl + "').");
                     let success = window.navigator.sendBeacon(closeSesionUrl);
                     log("    \\- Result: " + (success ? "Enqueued POST, but do not know whether anyone received it - check Network tab of Dev Tools." : "Did NOT manage to enqueue a POST."));
@@ -1715,7 +1715,7 @@ function MatsSocket(appName, appVersion, urls, config) {
         _evaluatePipelineLater_timeoutId = setTimeout(function () {
             _evaluatePipelineLater_timeoutId = undefined;
             _evaluatePipelineSend();
-        }, 2);
+        }, 10);
     }
 
     /**
@@ -2224,7 +2224,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                 websocketAttempt.onerror = undefined;
                 websocketAttempt.onclose = undefined;
                 websocketAttempt.onopen = undefined;
-                _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, closeEvent, _secondsTenths(timeout), secondsLeft(), _connectionAttempt));
+                _updateStateAndNotifyConnectionEventListeners(new ConnectionEvent(ConnectionEventType.WAITING, _currentWebSocketUrl, errorEvent, _secondsTenths(timeout), secondsLeft(), _connectionAttempt));
                 w_connectFailed_RetryOrWaitForTimeout();
             };
 

@@ -16,7 +16,7 @@ export { ConnectionEvent, ConnectionEventType }
  * get a 'countdown'-event with 0 seconds left, as that is when we transition into 'connecting' again. For events
  * that also describe {@link ConnectionState}s, the {@link MatsSocket.state} is updated before the event is fired.
  *
- * @param {valueOf<ConnectionEventType>} type - {@link ConnectionEvent#type}
+ * @param {ConnectionEventType} type - {@link ConnectionEvent#type}
  * @param {string} webSocketUrl - {@link ConnectionEvent#webSocketUrl}
  * @param {Event} webSocketEvent - {@link ConnectionEvent#webSocketEvent}
  * @param {number} timeoutSeconds - {@link ConnectionEvent#timeoutSeconds}
@@ -28,7 +28,7 @@ function ConnectionEvent(type, webSocketUrl, webSocketEvent, timeoutSeconds, cou
     /**
      * The type of the <code>ConnectionEvent</code>, returns an enum value of {@link ConnectionEventType}.
      *
-     * @type {valueOf<ConnectionEventType>}
+     * @type {ConnectionEventType}
      */
     this.type = type;
 
