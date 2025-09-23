@@ -1555,10 +1555,9 @@ class MatsSocket {
 
   static const int _connectionTimeoutBase = 500; // Base timout, milliseconds. Doubles, up to max defined below.
   static const int _connectionTimeoutMinIfSingleUrl = 5000; // Min timeout if single-URL configured, milliseconds.
-  static const int _connectionTimeoutMax = 15000; // Milliseconds max between connection attempts.
-
   // Based on whether there is multiple URLs, or just a single one, we choose the short "timeout base", or a longer one, as minimum.
-  final int _connectionTimeoutMin;
+  final int _connectionTimeoutMin; // Set in constructor.
+  static const int _connectionTimeoutMax = 15000; // Milliseconds max between connection attempts.
 
   // Way to let integration tests checking failed connections take a bit less time..!
   int? maxConnectionAttempts;
@@ -1665,9 +1664,11 @@ class MatsSocket {
       _webSocketConnecting = true;
 
       // Timeout: LESSER of "max" and "timeoutBase * (2^round)", which should lead to timeoutBase x1, x2, x4, x8 - but capped at max.
-      // .. but at least '_connectionTimeoutMin', which handles the special case of longer minimum if just 1 URL.
-      var timeoutMs = math.max(_connectionTimeoutMin,
-          math.min(_connectionTimeoutMax,  _connectionTimeoutBase * math.pow(2, _connectionAttemptRound)));
+      // .. but at least '_connectionTimeoutMin', which also handles the special case of longer minimum if just 1 URL.
+      // Shortcut exponential if we guaranteed would be at max, to avoid pow-overflow
+      var timeoutMs = _connectionAttemptRound > 10
+          ? _connectionTimeoutMax
+          : math.max(_connectionTimeoutMin, math.min(_connectionTimeoutMax, _connectionTimeoutBase * math.pow(2, _connectionAttemptRound)));
       var timeout = Duration(milliseconds: timeoutMs as int);
       var attemptStart = DateTime.now();
       var currentCountdownTargetTimestamp = attemptStart;

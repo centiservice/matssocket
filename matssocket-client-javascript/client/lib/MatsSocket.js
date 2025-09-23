@@ -2042,9 +2042,11 @@ function MatsSocket(appName, appVersion, urls, config) {
         _webSocketConnecting = true;
 
         // Timeout: LESSER of "max" and "timeoutBase * (2^round)", which should lead to timeoutBase x1, x2, x4, x8 - but capped at max.
-        // .. but at least '_connectionTimeoutMin', which handles the special case of longer minimum if just 1 URL.
-        let timeout = Math.max(_connectionTimeoutMin,
-            Math.min(_connectionTimeoutMax, _connectionTimeoutBase * Math.pow(2, _connectionAttemptRound)));
+        // .. but at least '_connectionTimeoutMin', which also handles the special case of longer minimum if just 1 URL.
+        // Shortcut exponential if we guaranteed would be at max, to avoid pow-overflow
+        let timeout = _connectionAttemptRound > 10
+            ? _connectionTimeoutMax
+            : Math.max(_connectionTimeoutMin, Math.min(_connectionTimeoutMax, _connectionTimeoutBase * Math.pow(2, _connectionAttemptRound)));
         let currentCountdownTargetTimestamp = Date.now();
         let targetTimeoutTimestamp = currentCountdownTargetTimestamp + timeout;
         let secondsLeft = function () {
