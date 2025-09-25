@@ -5,12 +5,12 @@ export default {
     external: [ 'matssocket', 'chai', 'sinon' ],
     output: [
         {
-            file: 'bundles/all_tests.esm.js',
+            file: 'dist/all_tests.esm.js',
             format: 'esm',
             sourcemap: true
         },
         {
-            file: 'bundles/all_tests.umd.js',
+            file: 'dist/all_tests.umd.js',
             format: 'umd',
             name: 'mats',
             sourcemap: true,

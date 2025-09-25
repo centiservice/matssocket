@@ -4,23 +4,6 @@ apply from: '../node.gradle'
 
 tasks.register('build') {dependsOn test }
 
-// Execute only the unit tests
-tasks.register('testUnit', NpmTask) {
-    dependsOn npmInstall, ':matssocket-client-javascript:client:build'
-    args = ['testUnit']
-}
-
-// Execute only the basic tests
-tasks.register('testBasic', NpmTask) {
-    dependsOn npmInstall, ':startMatsSocketTestServer'
-    args = ['testBasic']
-    doFirst {
-        execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
-        }
-    }
-}
-
 // Execute both unit and integration tests against a test MatsSocketTestServer
 tasks.register('test', NpmTask) {
     dependsOn npmInstall, ':startMatsSocketTestServer'
@@ -54,11 +37,10 @@ tasks.register('javascriptTestWatch', NpmTask) {
 
 // We need to ensure that javascript tests are run before MatsSocketTestServer stops!
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
-rootProject.stopMatsSocketTestServer.mustRunAfter(testBasic)
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
-    delete "$projectDir/bundles/"
+    delete "$projectDir/dist/"
 }
 
 tasks.register('distclean', Delete) {dependsOn clean, distcleanNode }

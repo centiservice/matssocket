@@ -2,30 +2,73 @@
   "name": "matssocket",
   "version": "0.19.0-2022-11-11",
   "description": "MatsSocket client library",
-  "repository": "https://github.com/centiservice/matssocket",
-  "author": "Endre Stølsvik",
+  "author": "Endre Stølsvik <endre@stolsvik.com> (https://stolsvik.net/)",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/centiservice/matssocket.git",
+    "directory": "matssocket-client-javascript/client"
+  },
   "private": false,
 
   "type": "module",
 
-  "main": "bundles/MatsSocket.umd.cjs",
-  "module": "lib/MatsSocket.js",
-  "exports": {
-    "import": "./lib/MatsSocket.js",
-    "require": "./bundles/MatsSocket.umd.cjs",
-    "script": "./bundles/MatsSocket.umd.cjs"
-  },
+  "cdn": "./dist/MatsSocket.umd.min.js",
+  "unpkg": "./dist/MatsSocket.umd.min.js",
+  "jsdelivr": "./dist/MatsSocket.umd.min.js",
 
-  "files": ["lib/", "bundles/", "build.gradle", "rollup.config.js"],
+  "main": "./dist/MatsSocket.umd.cjs",
+  "module": "./src/MatsSocket.js",
+  "types": "./dist/MatsSocket.d.ts",
+
+  "exports": {
+    ".": {
+      "require": "./dist/MatsSocket.umd.cjs",
+      "import": "./src/MatsSocket.js",
+      "types": "./dist/MatsSocket.d.ts"
+    },
+
+    "./esm": {
+      "types": "./dist/MatsSocket.d.ts",
+      "import": "./dist/MatsSocket.esm.js"
+    },
+    "./esm.min.js": "./dist/MatsSocket.esm.min.js",
+
+    "./umd": {
+      "types": "./dist/MatsSocket.d.ts",
+      "require": "./dist/MatsSocket.umd.cjs"
+    },
+    "./umd.min.js": "./dist/MatsSocket.umd.min.js",
+
+    "./dist/*": "./dist/*",
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "build.gradle",
+    "rollup.config.js",
+    "README.md",
+    "README-development.md",
+    "LICENSE"
+  ],
 
   "scripts": {
     "prebuild": "tsc",
     "build": "rollup --config",
-    "jsdoc": "jsdoc --destination jsdoc/ lib/"
+    "postbuild": "node -e \"require('fs').cpSync('src','dist',{recursive:true})\"",
+    "jsdoc": "jsdoc --destination jsdoc/ src/"
   },
 
   "dependencies": {
+  },
+
+  "peerDependencies": {
+    "ws": "^8 || ^9"
+  },
+  "peerDependenciesMeta": {
+    "ws": { "optional": true }
   },
 
   "devDependencies": {

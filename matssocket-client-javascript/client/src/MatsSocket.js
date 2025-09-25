@@ -1919,9 +1919,9 @@ function MatsSocket(appName, appVersion, urls, config) {
 
     function _maxConnectionAttempts() {
         // ?: Have maxConnectionAttempts been set?
-        if (maxConnectionAttempts !== undefined) {
-            // -> Yes, so use this -
-            return maxConnectionAttempts;
+        if ('maxConnectionAttempts' in that && that.maxConnectionAttempts !== undefined) {
+            // -> Yes, so use this.
+            return that.maxConnectionAttempts;
         }
         return that.sessionId !== null
             ? 5760 // The default should be about a day..! 15 sec per attempt: 5760*15 sec = 60*60*24 sec

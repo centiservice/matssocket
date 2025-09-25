@@ -9,8 +9,6 @@
   "type": "module",
 
   "scripts": {
-    "testUnit": "mocha src/unit.js",
-    "testBasic": "mocha src/integration_basic.js",
     "test": "mocha src/all_tests.js"
   },
 

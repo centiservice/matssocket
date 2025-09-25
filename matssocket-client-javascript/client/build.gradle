@@ -17,8 +17,8 @@ tasks.register('build', NpmTask) {
     dependsOn jsdoc, archiveLib
     args = ['run', 'build']
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
-    inputs.dir('lib')
-    outputs.dir('bundles')
+    inputs.dir('src')
+    outputs.dir('dist')
 }
 
 tasks.register('download') {
@@ -33,7 +33,7 @@ tasks.register('jsdoc', NpmTask) {
     dependsOn npmInstall
     args = ['run', 'jsdoc']
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
-    inputs.dir('lib')
+    inputs.dir('src')
     outputs.dir('jsdoc')
     doLast {
         println("##### JavaScript Client API docs: " + file("$projectDir/jsdoc/index.html").toURI())
@@ -42,7 +42,7 @@ tasks.register('jsdoc', NpmTask) {
 
 // Package up the JavaScript library
 tasks.register('archiveLib', Zip) {
-    from "$projectDir/lib"
+    from "$projectDir/src"
     into "matssocket-${project.version}-js"
     def destinationDir = layout.buildDirectory.dir("dist").get().asFile
     def archiveName = "matssocket-${project.version}-js.zip"
@@ -101,7 +101,7 @@ tasks.register('versions') {dependsOn nodeVersion, npmVersion }
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
-    delete "$projectDir/bundles/"
+    delete "$projectDir/dist/"
     delete "$projectDir/jsdoc/"
 }
 

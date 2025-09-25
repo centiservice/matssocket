@@ -13,19 +13,19 @@ You must have built the code, '<code>./gradlew build</code>', to have the UMD fi
 
 <div id="mocha"></div>
 
-<script src="/mats/client/bundles/MatsSocket.umd.cjs"></script>
+<script src="/mats/client/dist/MatsSocket.umd.cjs"></script>
 <!-- Note that the "matssocket" ref above can both be
 1. "/mats/client/bundles/MatsSocket.umd.cjs"
 2. "/mats/client/bundles/MatsSocket.umd.min.cjs"
 .. assuming that they have been built, of course. (run './gradlew build')
  -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.2.0/chai.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sinon.js/8.1.0/sinon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chai@4.2.0/chai.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sinon@21.0.0/pkg/sinon-min.js"></script>
 
 <script>mocha.setup('bdd')</script>
 
-<script src="mats/tests_umd/bundles/all_tests.umd.js"></script>
+<script src="mats/tests_umd/dist/all_tests.umd.js"></script>
 
 <script>
     mocha.run();

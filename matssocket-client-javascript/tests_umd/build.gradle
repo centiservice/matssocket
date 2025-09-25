@@ -10,7 +10,7 @@ tasks.register('build_internal', NpmTask) {
     args = ['run', 'build']
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
     inputs.dir('../tests_esm/src')
-    outputs.dir('bundles')
+    outputs.dir('dist')
 }
 
 // Execute both unit and integration tests against a test MatsSocketTestServer
@@ -37,7 +37,7 @@ rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
-    delete "$projectDir/bundles/"
+    delete "$projectDir/dist/"
 }
 
 tasks.register('distclean', Delete) {dependsOn clean, distcleanNode }
