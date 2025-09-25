@@ -32,6 +32,14 @@ tasks.register('test', NpmTask) {
     }
 }
 
+tasks.register('download') {
+    dependsOn nodeBinDir
+}
+
+tasks.register('downloadAll') {
+    dependsOn download, npmUpdate
+}
+
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
 tasks.register('javascriptTestWatch', NpmTask) {
@@ -53,4 +61,4 @@ tasks.register('clean', Delete) {
     delete "$projectDir/bundles/"
 }
 
-tasks.register('distclean', Delete) {dependsOn distcleanNode }
+tasks.register('distclean', Delete) {dependsOn clean, distcleanNode }

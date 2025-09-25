@@ -22,16 +22,18 @@ the JS Client integration tests in the browser (which connects to the same serve
 
 **A few Gradle tasks:**
 * `./gradlew matsSocketTestServer` - starts a test server, with a test/examples webapp on localhost:8080.
-* `./gradlew build` - builds the Java code, JS ESM and UMD bundles, and runs 'test' tasks.
+* `./gradlew build` - builds the Java code, JS ESM and UMD bundles, and all respective docs, and runs all 'test' tasks.
 * `./gradlew build -x test` - build, not running tests.
-* `./gradlew test` - runs tests, both JS in ESM and UMD modes, and Dart in VM(Kernel,Src,Exe) and Node(JS,Wasm) modes.
-  (You can run JS tests in the browser using the test server, see above.)
+* `./gradlew test` - runs tests, both JS in Node with ESM and UMD builds, and Dart in VM(Kernel,Src,Exe) and
+  Node(JS,Wasm) modes. (You can run JS tests by clicking in the browser using the test server, see above.)
 * `./gradlew matssocket-client-dart:testAll` - runs the Dart tests for all platforms and compilers, including in chrome
   (headless), read more in [matssocket-client-dart/README.md](matssocket-client-dart/README.md). _(Path to
   Chrome/Chromium can be set using `-PchromePath`)._
 * `./gradlew clean` - deletes all build output.
-* `./gradlew distclean` - .. also deletes all downloaded dependencies like Node and Dart SDKs - `distclean build` for a
+* `./gradlew distclean` - Clean + deletes all dependencies: Node and Dart SDK + deps - `distclean build` for a
   fully fresh build.
+* `./gradlew download` - downloads Dart and Node, in all modules. Prints out the paths to the binaries.
+* `./gradlew downloadAll` - Download + dependencies ('dart pub get' and 'npm install') for all modules.
 * `./gradlew npmCheckUpdates` - check all JS deps in package.json for newer versions, `npmCheckUpdatesUpdate` to force
   update.
 * `./gradlew dartOutdated` - check all Dart deps in pubspec.yaml for newer versions, `dartUpgradeUpdate` to force

@@ -15,8 +15,10 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 * `test`: runs all VM and Node tests on all compilers.
 * `testAll`: runs all tests, including the tests on the Web target
 * Other test tasks, see _'Running Dart tests'_ chapter below.
-* `dartBinPath`: Runs `downloadDartAndDeps`, and then prints out the path to the Dart binary.
+* `dartBinPath`: Installs Dart, and then prints out the path to the Dart binary, and PATH variables for Unix and Windows.
 * `nodeBinDir`: NodeTask, so it downloads Node, and then prints out the path to the Node bin dir.
+* `download`: depends on both `dartBinPath` and `nodeBinDir` - i.e. downloads Dart and Node, and prints out the paths. 
+* `downloadAll`: Download + dependencies ('dart pub get' and 'npm install')
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
 
 ### Dart tasks
@@ -85,9 +87,8 @@ dartsdk_download/dart-sdk/bin/dart test -j 1 test/*
 #### Node targets - Node required, supplied by Gradle
 
 To run the tests on the Node target, you need to have Node on `PATH`. To use the Node supplied by Gradle, run the
-following command in project root: `./gradlew nodeBinDir`. This will download Node and print the path to the directory
-containing the Node executable, printing "Node bin dir: &lt;nodeBinPath&gt;". Stick this on the `PATH` variable, e.g.
-for Unices `export PATH=<nodeBinPath>:$PATH`, or Windows `set PATH=<nodeBinPath>;%PATH%`.
+following command in project root: `./gradlew nodeBinDir` (or `download`). This will download Node and print the path
+to the directory containing the Node executable, along with convenient path-setting commands for Unix and Windows.
 
 Standing in the `matssocket-client-dart` module directory, here's an example running the tests on Node target compiled
 to JavaScript:
@@ -129,6 +130,6 @@ The platform/compiler combinations are (The Dart default is '-p vm -c kernel'):
 You can run the tests from within your IDE, e.g. IntelliJ. Just right-click on the `test`-directory and choose 'Run
 Tests' This by default runs on the VM/Kernel target, and is very fast.
 
-You need a Dart SDK that IntelliJ can use, and the one downloaded by Gradle works fine and you'll get the correct
-version. Find the installation path as described above. Just note that you might have to restart the Dart analyzer each
-time after the Gradle download task runs, since the SDK will be overwritten and the analyzer thus crashes!
+You need a Dart SDK that IntelliJ can use, and the one downloaded by Gradle works fine, and you'll get the correct
+version. Find the installation path as described above (run `download` task). Just note that you might have to restart
+the Dart analyzer after the Gradle download task runs, since the SDK will be overwritten and the analyzer thus crashes!

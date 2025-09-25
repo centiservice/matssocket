@@ -41,9 +41,16 @@ dependencies {
     dartSdk "com.google.dart:dartsdk:${dartSdkVersion}:${platformClassifier}@zip"
 }
 
-
 tasks.register('build') {
     dependsOn archiveLib, test, dartDoc
+}
+
+tasks.register('download') {
+    dependsOn nodeBinDir, dartBinPath
+}
+
+tasks.register('downloadAll') {
+    dependsOn download, dartPubGet
 }
 
 // ===============================
@@ -68,15 +75,12 @@ def dartExec(Object... cmd) {
     }
 }
 
-tasks.register('downloadDartAndDeps') {
+tasks.register('installDart') {
     // ---- Declare inputs ----
     inputs.files(configurations.dartSdk)        // The Dart SDK zip file
-    inputs.file("pubspec.yaml")                 // Specification of dependencies
 
     // ---- Declare outputs ----
     outputs.dir(dartDownload)                   // unpacked SDK
-    outputs.dir("${projectDir}/.dart_tool")     // dart pub get stuff
-    outputs.file("pubspec.lock")                // the resulting pubspec lock file
 
     doLast {
         println "Pre-cleaning Dart temp dir '$dartDownloadTemp' and target dir '$dartDownload'"
@@ -94,26 +98,44 @@ tasks.register('downloadDartAndDeps') {
         println "Renaming Dart SDK download to '$dartDownload'"
         dartDownloadTemp.renameTo(dartDownload)
 
-        // Update dart dependencies by executing 'pub get'
-        println "Executing 'dart pub get' to resolve and fetch dependencies."
-        dartExec 'pub', 'get'
-        dartExec '--version' // Just to show which dart version we are using.
-
         println "All good, cleaning Dart temp dir '$dartDownloadTemp'"
         delete "$dartDownloadTemp"
     }
 }
 
-tasks.register('dartBinPath') {
-    dependsOn downloadDartAndDeps
+tasks.register('dartPubGet') {
+    dependsOn 'installDart'
+
+    // ---- Declare inputs ----
+    inputs.files(configurations.dartSdk)        // The Dart SDK zip file
+    inputs.file("pubspec.yaml")                 // Specification of dependencies
+
+    // ---- Declare outputs ----
+    outputs.dir(dartDownload)                   // unpacked SDK
+    outputs.dir("${projectDir}/.dart_tool")     // dart pub get stuff
+    outputs.file("pubspec.lock")                // the resulting pubspec lock file
+
     doLast {
-        println "=== Dart path: ${currentOs.getExecutableName("$dartSdkPath/bin/dart")}"
+        // Update dart dependencies by executing 'pub get'
+        println "Executing 'dart pub get' to resolve and fetch dependencies."
+        dartExec 'pub', 'get'
+        dartExec '--version' // Just to show which dart version we are using.
+    }
+}
+
+tasks.register('dartBinPath') {
+    dependsOn installDart
+    doLast {
+        println "=== Dart executable: ${currentOs.getExecutableName("$dartSdkPath/bin/dart")}"
+        println "=== Dart bin dir   : $dartSdkPath/bin/"
+        println "    Unix:     export PATH=$dartSdkPath/bin/:\$PATH"
+        println "    Windows:  set PATH=$dartSdkPath/bin/;%PATH%"
     }
 }
 
 // :: 'dart doc'
 tasks.register('dartDoc') {
-    dependsOn downloadDartAndDeps
+    dependsOn dartPubGet
 
     // Inputs: source files and pubspec that affect docs
     inputs.dir("$projectDir/lib")
@@ -136,7 +158,7 @@ tasks.register('dartDoc') {
 
 // :: 'dart outdated'
 tasks.register('dartOutdated') {
-    dependsOn downloadDartAndDeps
+    dependsOn dartPubGet
     doLast {
         dartExec 'pub', 'outdated'
     }
@@ -144,7 +166,7 @@ tasks.register('dartOutdated') {
 
 // :: 'dart upgrade'
 tasks.register('dartUpgradeUpdate') {
-    dependsOn downloadDartAndDeps
+    dependsOn dartPubGet
     doLast {
         dartExec 'pub', 'upgrade', '--major-versions'
     }
@@ -152,7 +174,7 @@ tasks.register('dartUpgradeUpdate') {
 
 // :: 'dart version'
 tasks.register('dartVersion') {
-    dependsOn downloadDartAndDeps
+    dependsOn dartPubGet
     doLast {
         dartExec '--version'
     }
@@ -161,7 +183,7 @@ tasks.register('versions') { dependsOn dartVersion }
 
 // :: 'dart pub global run pana' - to check whether we get full score on pub.dev
 tasks.register('dartPana') {
-    dependsOn downloadDartAndDeps
+    dependsOn dartPubGet
     doLast {
         dartExec 'pub', 'global', 'run', 'pana'
     }
@@ -169,7 +191,7 @@ tasks.register('dartPana') {
 
 // 'dart publish --dry-run' // == NOTE! DO A './gradlew -PchromePath=<path> testAll' first!
 tasks.register('dartPublishDryRun') {
-    dependsOn downloadDartAndDeps, testVmKernel, dartDoc
+    dependsOn dartPubGet, testVmKernel, dartDoc
     doLast {
         dartExec 'pub', 'publish', '--dry-run'
     }
@@ -178,7 +200,7 @@ tasks.register('dartPublishDryRun') {
 // 'dart publish' // == NOTE! DO A './gradlew -PchromePath=<path> testAll' first!
 // Check versions in pubspec.yaml and MatsSocket.dart
 tasks.register('dartPublish') {
-    dependsOn downloadDartAndDeps, testVmKernel, dartDoc
+    dependsOn dartPubGet, testVmKernel, dartDoc
     doLast {
         dartExec 'pub', 'publish'
     }
@@ -200,23 +222,6 @@ tasks.register('archiveLib', Zip) {
 // ===============================
 // Comprehensive test setup!
 
-// :: Find where Node was installed.
-def nodeOut = new ByteArrayOutputStream()
-tasks.register('nodeBinDir', NodeTask) {
-    script = file('README.md') // node-gradle requires the script property, so just point to something harmless.
-    options = ['-p', "require('path').dirname(process.execPath)"] // small script to get its own dir.
-    // Capture stdout so we can read it out.
-    execOverrides {
-        standardOutput = nodeOut
-    }
-    doLast {
-        def binDir = nodeOut.toString().trim()
-        println "=== Node bin dir: ${binDir}"
-        // Stash it for other tasks to use
-        project.ext.set('NODE_BIN_DIR', binDir);
-    }
-}
-
 // :: This is an experiment of running dart from "command line". Setting path for node, and then invoking dart.
 tasks.register('experimentWithExecutingDartAndNode', Exec) {
     dependsOn nodeBinDir
@@ -237,7 +242,7 @@ tasks.register('experimentWithExecutingDartAndNode', Exec) {
 // Helper to register a Dart test task with platform and compiler variants.
 def registerDartTestTask = { String name, String platform, String compiler ->
     tasks.register(name) {
-        dependsOn 'downloadDartAndDeps', ':startMatsSocketTestServer'
+        dependsOn 'dartPubGet', ':startMatsSocketTestServer'
         if (platform == 'node') {
             dependsOn 'nodeBinDir' // Need to have figured out where node is.
         }
@@ -333,4 +338,5 @@ tasks.register('distclean', Delete) {
     delete "$dartDownloadTemp"
     delete "$projectDir/.dart_tool"
     delete "$projectDir/pubspec.lock"
+    delete "$projectDir/package-lock.json" // If npmUpdate is run in this submodule
 }

@@ -24,6 +24,14 @@ tasks.register('test', NpmTask) {
     }
 }
 
+tasks.register('download') {
+    dependsOn nodeBinDir
+}
+
+tasks.register('downloadAll') {
+    dependsOn download, npmUpdate
+}
+
 // We need to ensure that javascript tests are run before MatsSocketTestServer stops!
 rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 
@@ -32,4 +40,4 @@ tasks.register('clean', Delete) {
     delete "$projectDir/bundles/"
 }
 
-tasks.register('distclean', Delete) {dependsOn distcleanNode }
+tasks.register('distclean', Delete) {dependsOn clean, distcleanNode }

@@ -234,6 +234,10 @@ class MatsSocket {
   /// [ReceivedEventType.TIMEOUT] - this happens *before* the Future rejects)
   Duration requestTimeout = Duration(seconds: 45);
 
+  /// An random three-char id, useful for uniquely identifying this MatsSocket among others in one app instance, or in
+  /// one test run. Not a globally unique id.
+  final matsSocketInstanceId = randomId(3);
+
   // ==============================================================================================
   // PRIVATE fields
   // ==============================================================================================
@@ -246,7 +250,6 @@ class MatsSocket {
   final Map<String, EndpointMessageHandler> _endpoints = {};
 
   final List<Uri> _useUrls;
-  final matsSocketInstanceId = randomId(3);
 
   DateTime _lastMessageEnqueuedTimestamp = DateTime.now(); // Start by assuming that it was just used.
   double? _initialSessionEstablished_PerformanceNow;
@@ -739,7 +742,7 @@ class MatsSocket {
   ///
   /// Note: You should preferably add all "static" subscriptions in the "configuration phase" while setting up
   /// your MatsSocket, before starting it (i.e. sending first message). However, dynamic adding and
-  /// [deleteSubscription()] is also supported.
+  /// [deleteSubscription] is also supported.
   ///
   /// Note: Pub/sub is not designed to be as reliable as send/request - but it should be pretty ok anyway!
   ///
@@ -814,7 +817,7 @@ class MatsSocket {
     }
   }
 
-  /// Removes a previously added [subscribe()]. If there are no more listeners for this topic,
+  /// Removes a previously added [subscribe]. If there are no more listeners for this topic,
   /// it is de-subscribed from the server. If the 'messageCallback' was not already registered, an error is
   /// emitted, but the method otherwise returns silently.
   ///
@@ -1099,7 +1102,6 @@ class MatsSocket {
     }
   }
 
-
   /// Effectively emulates "lost connection" - **Used in testing**.
   ///
   /// If the "disconnect" parameter is true, it will disconnect with [MatsSocketCloseCodes.DISCONNECT]
@@ -1108,7 +1110,7 @@ class MatsSocket {
   ///
   /// - [reason] {String} a string saying why.
   /// - [disconnect] {Boolean} whether to close with [MatsSocketCloseCodes.DISCONNECT] instead of
-  ///     [MatsSocketCloseCodes.RECONNECT] - default <code>false</code>. AFAIK, only useful in testing..!
+  ///     [MatsSocketCloseCodes.RECONNECT] - default `false`. AFAIK, only useful in testing..!
   void reconnect(String reason, [bool disconnect = false]) {
     var closeCode = disconnect ? MatsSocketCloseCodes.DISCONNECT : MatsSocketCloseCodes.RECONNECT;
     _logger.info(() => 'reconnect(): Closing WebSocket with CloseCode \'${closeCode.name} (${closeCode.code})\','
@@ -1916,8 +1918,7 @@ class MatsSocket {
       _logger.fine("Create WebSocket: Attempt failed, URL [$_currentWebSocketUri] didn't work out.");
       // ?: Assert that we're still open
       if (!_matsSocketOpen) {
-        _logger.fine(
-            'After failed attempt, we realize that this MatsSocket instance is closed! - stopping right here.');
+        _logger.fine('After failed attempt, we realize that this MatsSocket instance is closed! - stopping right here.');
         // Abort connecting
         w_abortAttempt();
         // Cancel the "reconnect scheduler" thingy.
@@ -2704,7 +2705,6 @@ class MatsSocket {
   double _roundTiming(double millis) {
     return (millis * 100).round() / 100;
   }
-
 
   void _issueInitiationProcessedEvent(_Initiation initiation,
       [String? replyToTerminatorId, MessageEvent? replyMessageEvent]) {

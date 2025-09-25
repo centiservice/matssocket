@@ -14,11 +14,19 @@ apply from: '../node.gradle'
  * https://dev.to/remshams/rolling-up-a-multi-module-system-esm-cjs-compatible-npm-library-with-typescript-and-babel-3gjg
  */
 tasks.register('build', NpmTask) {
-    dependsOn npmInstall, jsdoc, archiveLib
+    dependsOn jsdoc, archiveLib
     args = ['run', 'build']
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('bundles')
+}
+
+tasks.register('download') {
+    dependsOn nodeBinDir
+}
+
+tasks.register('downloadAll') {
+    dependsOn download, npmUpdate
 }
 
 tasks.register('jsdoc', NpmTask) {

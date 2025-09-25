@@ -12,7 +12,27 @@ node {
     npmWorkDir = file("$projectDir/node_download/npm")
 }
 
-// :: Cleaning tasks
+// :: Find where Node was installed.
+def nodeOut = new ByteArrayOutputStream()
+tasks.register('nodeBinDir', NodeTask) {
+    // node-gradle requires the script property, so just point to something harmless.
+    script = [file('package.json'), file('pubspec.yaml'), file('README.md')].find { it.exists() }
+    options = ['-p', "require('path').dirname(process.execPath)"] // small script to get its own dir.
+    // Capture stdout so we can read it out.
+    execOverrides {
+        standardOutput = nodeOut
+    }
+    doLast {
+        def binDir = nodeOut.toString().trim()
+        println "=== Node.js bin dir: ${binDir}"
+        println "    Unix:     export PATH=${binDir}:\$PATH"
+        println "    Windows:  set PATH=${binDir};%PATH%"
+        // Stash it for other tasks to use
+        project.ext.set('NODE_BIN_DIR', binDir);
+    }
+}
+
+// :: Cleaning tasks - must reside above those that depends on it..
 
 // Delete package-lock.json
 tasks.register('deletePackageLock', Delete) {
@@ -26,25 +46,33 @@ tasks.register('deleteNodeModules', Delete) {
 
 // Clean out the downloaded node and modules
 tasks.register('distcleanNode', Delete) {
-    dependsOn clean, deleteNodeModules
+    dependsOn clean, deletePackageLock, deleteNodeModules
     delete "$projectDir/node_download/"
 }
 
 // :: Update npm dependencies tasks
 
-// :: 'npmUpdate' to
+// :: 'npm update' to download deps
 tasks.register('npmUpdate', NpmTask) {
-    dependsOn deletePackageLock, deleteNodeModules, npmInstall
+    inputs.file("$projectDir/package.json")
+    outputs.file("$projectDir/package-lock.json")
+    outputs.dir("$projectDir/node_modules")
     args = ['update']
 }
-npmInstall.mustRunAfter deletePackageLock
-npmInstall.mustRunAfter deleteNodeModules
+// :: 'npm update' to download deps - after deleting them all.
+tasks.register('npmCleanUpdate') {
+    dependsOn deletePackageLock, deleteNodeModules, npmUpdate
+}
+npmCleanUpdate.mustRunAfter deletePackageLock
+npmCleanUpdate.mustRunAfter deleteNodeModules
+
+// :: Check uppdate and audit tasks.
 
 tasks.register('npmCheckUpdates', NpxTask) {
     command = 'npm-check-updates@latest'
 }
 
-// :: 'npmCheckUpdatesUpdate' to force update of all deps, ignore specified versions in package.json.
+// 'npmCheckUpdatesUpdate' to force update of all deps, ignore specified versions in package.json.
 tasks.register('npmCheckUpdatesUpdate_internal', NpxTask) {
     command = 'npm-check-updates@latest'
     args = ['-u']
@@ -56,4 +84,3 @@ tasks.register('npmAudit', NpmTask) {
     dependsOn npmInstall
     args = ['audit']
 }
-
