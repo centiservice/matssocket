@@ -18,13 +18,13 @@
   "jsdelivr": "./dist/MatsSocket.umd.min.js",
 
   "main": "./dist/MatsSocket.umd.cjs",
-  "module": "./src/MatsSocket.js",
+  "module": "./lib/MatsSocket.js",
   "types": "./dist/MatsSocket.d.ts",
 
   "exports": {
     ".": {
       "require": "./dist/MatsSocket.umd.cjs",
-      "import": "./src/MatsSocket.js",
+      "import": "./lib/MatsSocket.js",
       "types": "./dist/MatsSocket.d.ts"
     },
 
@@ -41,11 +41,11 @@
     "./umd.min.js": "./dist/MatsSocket.umd.min.js",
 
     "./dist/*": "./dist/*",
-    "./src/*": "./src/*",
+    "./lib/*": "./lib/*",
     "./package.json": "./package.json"
   },
   "files": [
-    "src/",
+    "lib/",
     "dist/",
     "build.gradle",
     "rollup.config.js",
@@ -57,8 +57,8 @@
   "scripts": {
     "prebuild": "tsc",
     "build": "rollup --config",
-    "postbuild": "node -e \"require('fs').cpSync('src','dist',{recursive:true})\"",
-    "jsdoc": "jsdoc --destination jsdoc/ src/"
+    "postbuild": "node -e \"require('fs').cpSync('lib','dist',{recursive:true})\"",
+    "jsdoc": "jsdoc --destination jsdoc/ lib/"
   },
 
   "dependencies": {

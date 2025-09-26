@@ -37,7 +37,7 @@ rootProject.stopMatsSocketTestServer.mustRunAfter(test)
 
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
-    delete "$projectDir/dist/"
+    delete "$projectDir/bundle/"
 }
 
 tasks.register('distclean', Delete) {dependsOn clean, distcleanNode }
