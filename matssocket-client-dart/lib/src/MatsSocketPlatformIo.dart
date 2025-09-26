@@ -140,7 +140,7 @@ class MatsSocketPlatformIo extends MatsSocketPlatform {
     final osName = io.Platform.operatingSystem.replaceAll(RegExp('[;,]'), '|');
     final osVersion = io.Platform.operatingSystemVersion.replaceAll(RegExp(';'), ',');
     final dartVersion = io.Platform.version.replaceAll(RegExp(';'), ',');
-    return 'Runtime: Dart VM/Exe $dartVersion; Host: $osName $osVersion';
+    return 'Runtime: Dart VM $dartVersion; Host: $osName $osVersion';
   }
 
   @override
