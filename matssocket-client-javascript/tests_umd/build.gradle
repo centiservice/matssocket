@@ -10,7 +10,7 @@ tasks.register('build_internal', NpmTask) {
     args = ['run', 'build']
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
     inputs.dir('../tests_esm/src')
-    outputs.dir('dist')
+    outputs.dir('bundle')
 }
 
 // Execute both unit and integration tests against a test MatsSocketTestServer
