@@ -1,41 +1,55 @@
 import * as chai from "chai"
-import sinon from "sinon"
 import * as mats from "matssocket"
 
 let logging = false;
 
-// :: Make mock WebSocket
-const webSocket = {};
-// Make send function:
-webSocket.send = function (payload) {
-    JSON.parse(payload).forEach(({t, cmid}, idx) => {
-        if (t === 'HELLO') {
-            setTimeout(() => {
-                webSocket.onmessage({target: webSocket, data: JSON.stringify([{t: "WELCOME"}])});
-            }, idx);
-        }
-        if (t !== "ACK2" && cmid !== undefined) {
-            setTimeout(() => {
-                webSocket.onmessage({target: webSocket, data: JSON.stringify([{t: "ACK", cmid: cmid}])});
-            }, idx);
+let webSocketCreated;
+
+// :: Make mock WebSocket FACTORY
+function makeMockWebSocket(url, protocol) {
+    const ws = {url, protocol};
+
+    webSocketCreated = true;
+
+    // send: echo relevant protocol messages as the real server would
+    ws.send = function (payload) {
+        // Forward HELLO -> WELCOME, and ACKs for messages with cmid
+        JSON.parse(payload).forEach(({ t, cmid }, idx) => {
+            if (t === "HELLO") {
+                setTimeout(() => {
+                    ws.onmessage && ws.onmessage({ target: ws, data: JSON.stringify([{ t: "WELCOME" }]) });
+                }, idx);
+            }
+            if (t !== "ACK2" && cmid !== undefined) {
+                setTimeout(() => {
+                    ws.onmessage && ws.onmessage({ target: ws, data: JSON.stringify([{ t: "ACK", cmid }]) });
+                }, idx);
+            }
+        });
+    };
+
+    ws.close = function () { /* no-op for tests */ };
+
+    // onopen setter: MatsSocket sets and unsets this; call the callback immediately when set
+    Object.defineProperty(ws, "onopen", {
+        set(callback) {
+            if (callback !== undefined) {
+                setTimeout(() => callback({ target: ws }), 0);
+            }
         }
     });
-};
-webSocket.close = function () {
-};
 
-// Make 'ononpen' property, which is set twice by MatsSocket: Once when it waits for it to open, and when this happens, it is "unset" (set to undefined)
-Object.defineProperty(webSocket, "onopen", {
-    set(callback) {
-        // When callback is set, immediately invoke it on next tick (fast opening times on this mock WebSocket..!)
-        if (callback !== undefined) {
-            setTimeout(() => callback({target: webSocket}), 0);
-        }
-    }
-});
+    return ws;
+}
+
 
 // MatsSocket config object specifying Mock WebSocket factory.
-let config = {webSocketFactory: () => webSocket};
+// The factory will create a fresh WebSocket each time MatsSocket connects.
+let config = {
+    webSocketFactory: (url, protocol) => {
+        return makeMockWebSocket(url, protocol);
+    }
+};
 
 describe('MatsSocket unit tests', function () {
     describe('constructor', function () {
@@ -51,11 +65,17 @@ describe('MatsSocket unit tests', function () {
         it('Should fail if urls are missing', function () {
             chai.assert.throws(() => new mats.MatsSocket("Test", "1.0"));
         });
-        it('Should not invoke the WebSocket constructor', function () {
-            const callback = sinon.spy(webSocket);
-            new mats.MatsSocket("Test", "1.0", ["ws://localhost:8080/"], config);
-            chai.assert(!callback.called);
-            sinon.reset();
+        it('Activity should invoke the WebSocket constructor', async function () {
+            webSocketCreated = undefined;
+            let matsSocket = new mats.MatsSocket("Test", "1.0", ["ws://localhost:8080/"], config);
+            matsSocket.setCurrentAuthorization("Dummy");
+            // We should not have created the WebSocket yet.
+            chai.assert(!webSocketCreated);
+            // This 'send' will create the WebSocket (sending HELLO+auth and SEND), and thus invoke the WebSocket constructor.
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            chai.assert(webSocketCreated);
+            matsSocket.close("test done.");
+            webSocketCreated = undefined;
         });
     });
 
