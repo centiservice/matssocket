@@ -103,6 +103,13 @@ import io.mats3.matssocket.MatsSocketServer.SessionRemovedEvent.SessionRemovedEv
  * @author Endre Stølsvik 2019-11-28 16:15 - http://stolsvik.com/, endre@stolsvik.com
  */
 public interface MatsSocketServer {
+    /**
+     * Returns the implementation and version of the MatsSocketServer.
+     *
+     * @return a String with two comma-separated fields "implementation,version". For example, for default
+     * implementation: <code>"Mats3 MatsSocketServer,1.0.0+2022-12-24"</code>
+     */
+    String getImplementationNameAndVersion();
 
     /**
      * Registers a MatsSocket Endpoint, including a {@link ReplyAdapter} which can adapt the reply from the Mats
@@ -1132,7 +1139,7 @@ public interface MatsSocketServer {
      * Note: A specific MatsSocketSession can {@link SessionRemovedEventType#DEREGISTER DEREGISTER} multiple times, due
      * to it can {@link SessionEstablishedEventType#RECONNECT RECONNECT} again after each DEREGISTER. However, once it
      * has {@link SessionRemovedEventType#CLOSE CLOSE} or {@link SessionRemovedEventType#TIMEOUT TIMEOUT}, the session
-     * cannot RECONNECT ever again, and hence those events are terminal wrt. to that specific MatsSocketSessionId.
+     * cannot RECONNECT ever again, and hence those events are terminal wrt. that specific MatsSocketSessionId.
      *
      * @param listener
      *            the {@link SessionEstablishedEventListener SessionEstablishedListener} that shall get invoked when
