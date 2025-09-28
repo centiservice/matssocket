@@ -3,7 +3,7 @@
 ## Layout
 
 There are two sub modules: `client` and `tests`. The `client` module contains the actual MatsSocket client code in the '
-lib' directory, coded as EcmaScript Modules (ESM) - and its build step creates EMD and UMD bundles, both full and
+lib' directory, coded as EcmaScript Modules (ESM) - and its build step creates ESM and UMD bundles, both full and
 minified. The `tests` module contains the unit and integration tests in the 'src' directory. The tests are run "raw",
 only depending on the actual JS files, but also bundled up in EMD and UMD bundles and run. This is to ensure that the
 bundled UMD client works as expected.
@@ -14,8 +14,8 @@ The Gradle client build will create JavaScript bundles in several formats, as we
 set of distributions are as such:
 
 * Native EcmaScript Modules (ESM) - use the files directly - `lib/MatsSocket.js` and siblings.
-* Native EcmaScript Modules (EMS) - bundled - `dist/MatsSocket.esm.js`
-* Native EcmaScript Modules (EMS) - bundled, minified - `dist/MatsSocket.esm.min.js`
+* Native EcmaScript Modules (ESM) - bundled - `dist/MatsSocket.esm.js`
+* Native EcmaScript Modules (ESM) - bundled, minified - `dist/MatsSocket.esm.min.js`
 * Universal Module Definition (UMD) - bundled ("by definition") - `dist/MatsSocket.umd.cjs`
 * Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
 * A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`

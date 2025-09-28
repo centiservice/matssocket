@@ -10,8 +10,8 @@ This is the JavaScript client library for MatsSocket. Compatible with web browse
 using EcmaScript Modules (ESM), and bundled into USM (Universal Module Definition) modules, also minified, using Rollup.
 
 * Native EcmaScript Modules (ESM) - use the files directly - `lib/MatsSocket.js` and siblings.
-* Native EcmaScript Modules (EMS) - bundled - `dist/MatsSocket.esm.js`
-* Native EcmaScript Modules (EMS) - bundled, minified - `dist/MatsSocket.esm.min.js`
+* Native EcmaScript Modules (ESM) - bundled - `dist/MatsSocket.esm.js`
+* Native EcmaScript Modules (ESM) - bundled, minified - `dist/MatsSocket.esm.min.js`
 * Universal Module Definition (UMD) - bundled ("by definition") - `dist/MatsSocket.umd.cjs`
 * Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
 * A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`
