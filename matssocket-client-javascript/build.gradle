@@ -1,7 +1,7 @@
 // MatsSocket-Client-JavaScript
 
-// Nothing here - go to subprojects 'client', 'tests_esm' and 'test_umd'
+// Nothing here - go to subprojects 'client' and 'tests'.
 
 // Test: Depend on both test subprojects' tests
-tasks.register('test') { dependsOn 'tests_esm:test', 'tests_umd:test' }
+tasks.register('test') { dependsOn 'tests:test' }
 tasks.register('build') { dependsOn 'client:build', test }

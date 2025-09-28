@@ -9,7 +9,11 @@
   "type": "module",
 
   "scripts": {
-    "test": "mocha src/all_tests.js"
+    "build": "rollup --config",
+    "test:raw": "mocha src/all_tests.js",
+    "test:esm": "mocha bundle/all_tests.esm.js",
+    "test:umd": "mocha bundle/all_tests.umd.cjs",
+    "test": "npm run test:raw && npm run test:esm && npm run test:umd"
   },
 
   "dependencies": {
@@ -20,6 +24,7 @@
   "devDependencies": {
     "chai": "^6.0.1",
     "mocha": "^11.7.2",
+    "rollup": "^4.50.1",
     "npm-check-updates": "^18.1.0"
   }
 }

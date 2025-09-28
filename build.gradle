@@ -54,9 +54,9 @@ ext {
     // .. full path for the JMS lib
     jmsApiDependency = 'jakarta.jms:jakarta.jms-api:2.0.3'
 
-    // Build tools
-    nodeVersion = '24.7.0' // Current as of 2025-09-08, will become LTS.
+    // Build tools: Dart SDK and Node.js
     dartSdkVersion = '3.9.3'
+    nodeVersion = '24.7.0' // Current as of 2025-09-08, will become LTS.
 }
 
 // :: Find which Java version to use for the toolchain.

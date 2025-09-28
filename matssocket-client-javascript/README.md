@@ -12,10 +12,8 @@ minified, using Rollup.
 
 ## Layout
 
-There are three sub modules: `client`, `tests_esm`, and `tests_umd`.
-
-The `client` module contains the actual MatsSocket client code in the 'lib' directory, coded as EcmaScript Modules 
-(ESM) - and its build step creates EMD and UMD bundles, both full and minified. The `tests_esm` module contains the unit
-and integration tests in the 'src' directory. The `tests_umd` module bundles up the tests from the 'tests_esm' module as
-an UMD module, and then runs the resulting UMD bundle. This is to ensure that the bundled UMD-bundled client works as
-expected.
+There are two sub modules: `client` and `tests`. The `client` module contains the actual MatsSocket client code in the '
+lib' directory, coded as EcmaScript Modules (ESM) - and its build step creates EMD and UMD bundles, both full and
+minified. The `tests` module contains the unit and integration tests in the 'src' directory. The tests are run "raw",
+only depending on the actual JS files, but also bundled up in EMD and UMD bundles and run. This is to ensure that the
+bundled UMD client works as expected.

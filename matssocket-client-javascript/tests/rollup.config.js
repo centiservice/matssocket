@@ -1,5 +1,5 @@
 export default {
-    input: '../tests_esm/src/all_tests.js',
+    input: 'src/all_tests.js',
     // Suppress warning about dynamic loading of dependent modules used in the tests, which will be supplied by env.
     // https://rollupjs.org/guide/en/#warning-treating-module-as-external-dependency
     external: [ 'matssocket', 'chai' ],
@@ -10,7 +10,7 @@ export default {
             sourcemap: true
         },
         {
-            file: 'bundle/all_tests.umd.js',
+            file: 'bundle/all_tests.umd.cjs',
             format: 'umd',
             name: 'mats',
             sourcemap: true,

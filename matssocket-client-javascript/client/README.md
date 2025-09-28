@@ -9,27 +9,26 @@ there currently exists JavaScript and Dart/Flutter implementations.
 This is the JavaScript client library for MatsSocket. Compatible with web browsers and Node.js. The client is coded
 using EcmaScript Modules (ESM), and bundled into USM (Universal Module Definition) modules, also minified, using Rollup.
 
-The available bundles:
-
-* Native EcmaScript Modules (ESM) - just use the files directly
+* Native EcmaScript Modules (ESM) - use the files directly - `lib/MatsSocket.js` and siblings.
 * Native EcmaScript Modules (EMS) - bundled - `dist/MatsSocket.esm.js`
 * Native EcmaScript Modules (EMS) - bundled, minified - `dist/MatsSocket.esm.min.js`
-* Universal Module Definition (UMD) - bundled - `dist/MatsSocket.umd.cjs`
+* Universal Module Definition (UMD) - bundled ("by definition") - `dist/MatsSocket.umd.cjs`
 * Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
 * A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`
 
-JSDoc is provided in `jsdoc\index.html`.
+Other deliverables:
+* JSDoc is provided in `jsdoc/index.html`.
+* TS type files are created in `dist/`.
+* Map files of all are also created in `dist/`.
 
-*The JS Client doesn't have any dependencies*, except for the WebSocket implementation provided by the
-environment (browser or Node.js). When running in Node.js, it expects the module `ws` for WebSockets to be available,
-require()'ing it dynamically.
+*This JS Client doesn't have any dependencies*, except for the WebSocket implementation provided by the
+environment (browser or Node.js). When running in Node.js, it expects the module `ws` to be available, require()'ing it
+dynamically.
 
 MatsSocket code is at [GitHub](https://github.com/centiservice/matssocket), with the JavaScript client library residing
-in the [matssocket-client-javascript](https://github.com/centiservice/matssocket/tree/main/matssocket-client-javascript) 
-subproject.
+in the [matssocket-client-javascript](https://github.com/centiservice/matssocket/tree/main/matssocket-client-javascript) subproject.
 
-For Development of the library itself, see
-[README-development.md](https://github.com/centiservice/matssocket/blob/main/matssocket-client-javascript/client/README-development.md).
+For Development of the library itself, see [README-development.md](https://github.com/centiservice/matssocket/blob/main/matssocket-client-javascript/client/README-development.md).
 
 To get a gist of how this works on the client, here is a small JavaScript client code example:
 ```javascript
@@ -57,6 +56,5 @@ matsSocket.request("MatsSocketEndpoint", "TraceId_" + matsSocket.id(6), {
         + messageEvent.roundTripMillis + " ms: " + JSON.stringify(messageEvent.data));
 });
 ```
-More examples are in the [MatsSocket README.md](https://github.com/centiservice/matssocket/blob/main/README.md).
-The [JS integration tests](https://github.com/centiservice/matssocket/tree/main/matssocket-client-javascript/tests_esm/src)
-shows all features of the MatsSocket client.
+More examples are in the [MatsSocket README.md](https://github.com/centiservice/matssocket/blob/main/README.md). The [JS integration tests](https://github.com/centiservice/matssocket/tree/main/matssocket-client-javascript/tests/src) shows all features of the
+MatsSocket client.
