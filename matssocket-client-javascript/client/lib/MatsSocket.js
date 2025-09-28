@@ -486,7 +486,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      *        taken into account (e.g. for calling into another API that also needs a valid token). If
      *        expirationTimestamp is '-1', then this parameter is not used. <i>Default value is 30000 (30 seconds).</i>
      */
-    this.setCurrentAuthorization = function (authorizationValue, expirationTimestamp, roomForLatencyMillis = 30000) {
+    this.setCurrentAuthorization = function (authorizationValue, expirationTimestamp= -1, roomForLatencyMillis = 30000) {
         if (this.logging) log("Got Authorization which "
             + (expirationTimestamp !== -1 ? "Expires in [" + (expirationTimestamp - Date.now()) + " ms]" : "[Never expires]")
             + ", roomForLatencyMillis: " + roomForLatencyMillis);
