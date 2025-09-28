@@ -8,7 +8,7 @@
 
   "scripts": {
     "build": "rollup --config",
-    "test": "mocha bundle/all_tests.umd.js"
+    "test": "mocha bundle/all_tests.umd.js bundle/all_tests.esm.js"
   },
 
   "dependencies": {
