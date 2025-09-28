@@ -14,10 +14,10 @@ The Gradle build will create JavaScript bundles in several formats, as well as J
 of distributions are as such:
 
 * Native EcmaScript Modules (ESM) - just use the files directly
-* Native EcmaScript Modules (EMS) - bundled - `bundles/MatsSocket.esm.js`
-* Native EcmaScript Modules (EMS) - bundled, minified - `bundles/MatsSocket.esm.min.js`
-* Universal Module Definition (UMD) - bundled ("by definition") - `bundles/MatsSocket.umd.cjs`
-* Universal Module Definition (UMD) - bundled, minified - `bundles/MatsSocket.umd.min.cjs`
+* Native EcmaScript Modules (EMS) - bundled - `dist/MatsSocket.esm.js`
+* Native EcmaScript Modules (EMS) - bundled, minified - `dist/MatsSocket.esm.min.js`
+* Universal Module Definition (UMD) - bundled ("by definition") - `dist/MatsSocket.umd.cjs`
+* Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
 * A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`
 
 JSDoc will be created, `jsdoc\index.html` being the entry point.

@@ -12,10 +12,10 @@ using EcmaScript Modules (ESM), and bundled into USM (Universal Module Definitio
 The available bundles:
 
 * Native EcmaScript Modules (ESM) - just use the files directly
-* Native EcmaScript Modules (EMS) - bundled - `bundles/MatsSocket.esm.js`
-* Native EcmaScript Modules (EMS) - bundled, minified - `bundles/MatsSocket.esm.min.js`
-* Universal Module Definition (UMD) - bundled - `bundles/MatsSocket.umd.cjs`
-* Universal Module Definition (UMD) - bundled, minified - `bundles/MatsSocket.umd.min.cjs`
+* Native EcmaScript Modules (EMS) - bundled - `dist/MatsSocket.esm.js`
+* Native EcmaScript Modules (EMS) - bundled, minified - `dist/MatsSocket.esm.min.js`
+* Universal Module Definition (UMD) - bundled - `dist/MatsSocket.umd.cjs`
+* Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
 * A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`
 
 JSDoc is provided in `jsdoc\index.html`.

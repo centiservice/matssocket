@@ -25,15 +25,15 @@ Damn strange, chai does not have an ESM bundle! Fixt: https://github.com/esm-bun
 <script type="importmap">
 {
   "imports": {
-    "matssocket": "/mats/client/src/MatsSocket.js",
+    "matssocket": "/mats/client/lib/MatsSocket.js",
     "sinon": "https://cdn.jsdelivr.net/npm/sinon@21.0.0/pkg/sinon-esm.js",
     "chai": "https://cdn.jsdelivr.net/npm/chai@6.0.1/+esm"
   }
 }
 </script>
-<!-- Note that the "matssocket" ref above can be changed from "/mats/client/src/MatsSocket.js" to
-1. "/mats/client/bundles/MatsSocket.esm.js"
-2. "/mats/client/bundles/MatsSocket.esm.min.js"
+<!-- Note that the "matssocket" ref above can be changed from "/mats/client/lib/MatsSocket.js" to
+1. "/mats/client/dist/MatsSocket.esm.js"
+2. "/mats/client/dist/MatsSocket.esm.min.js"
 .. and run just as well - assuming that they have been built, of course. (run './gradlew build')
  -->
 
