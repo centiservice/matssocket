@@ -53,7 +53,7 @@ void main() {
                 greaterThanOrEqualTo(Duration.zero)); // Might take 0.4ms, and Firefox will round that to 0.
           });
         });
-        await matsSocket.send('Test.ignoreInIncomingHandler', 'PingPong_listener_${randomId(6)}', {});
+        await matsSocket.send('Test.ignoreInIncomingHandler', 'PingPong_listener_${matsSocket.randomId(6)}', {});
         await testCompleter.future;
       });
     });
@@ -64,7 +64,7 @@ void main() {
 
       Future runSendTest(bool includeInitiationMessage) async {
         var listenerProcessed = Completer();
-        var traceId = 'InitiationProcessedEvent_send_${includeInitiationMessage}_${randomId(6)}';
+        var traceId = 'InitiationProcessedEvent_send_${includeInitiationMessage}_${matsSocket.randomId(6)}';
         var msg = {'string': 'The String', 'number': math.pi};
 
         void assertCommon(InitiationProcessedEvent init) {
@@ -154,7 +154,7 @@ void main() {
         var initiationProcessedEvent = Completer<InitiationProcessedEvent>();
         var receivedCompleter = Completer<ReceivedEvent>.sync();
         var repliedMessageEvent = Completer<MessageEvent>();
-        var traceId = 'InitiationProcessedEvent_request_${randomId(6)}';
+        var traceId = 'InitiationProcessedEvent_request_${matsSocket.randomId(6)}';
         var msg = {'string': 'The Strange', 'number': math.e};
 
         double? receivedRoundTripMillisFromReceived;
@@ -263,7 +263,7 @@ void main() {
         var initiationProcessedEvent = Completer<InitiationProcessedEvent>();
         var repliedMessageEvent = Completer<MessageEvent>();
 
-        var traceId = 'InitiationProcessedEvent_requestReplyTo_${randomId(6)}';
+        var traceId = 'InitiationProcessedEvent_requestReplyTo_${matsSocket.randomId(6)}';
         var msg = {'string': 'The Curious', 'number': math.pi};
 
         double? receivedRoundTripMillisFromReceived;
@@ -359,7 +359,7 @@ void main() {
         var initiationProcessedEvent = Completer<InitiationProcessedEvent>();
         var repliedMessageEvent = Completer<MessageEvent>();
 
-        var traceId = 'InitiationProcessedEvent_requestReplyToWithTimeout_${randomId(6)}';
+        var traceId = 'InitiationProcessedEvent_requestReplyToWithTimeout_${matsSocket.randomId(6)}';
         var msg = {
           'string': 'The Straight-Out Frightening',
           'number': math.sqrt2,

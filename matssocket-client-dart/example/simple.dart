@@ -16,12 +16,12 @@ Future<void> main() async {
     Uri.parse('ws://localhost:8081/matssocket'),
   ]);
 
-  // TOTALLY FAKE DUMMY Authentication, do NOT copy this in production code!!!
+  // TOTALLY FAKE DUMMY Authentication, do NOT copy this logic in production code!!!
   matsSocket.setCurrentAuthorization('DummyAuth:DummyUser:'
-      '${DateTime.now().add(Duration(seconds: 10)).millisecondsSinceEpoch}');
+      '${DateTime.now().add(Duration(minutes: 10)).millisecondsSinceEpoch}');
 
   // Perform a request to MatsSocketEndpoint 'Test.single', which on server forwards to Mats endpoint 'Test.single'
-  final result = await matsSocket.request('Test.single', 'REQUEST-with-Promise_${randomId(6)}', {
+  final result = await matsSocket.request('Test.single', 'REQUEST-with-Promise_${matsSocket.randomId(6)}', {
     'string': 'Request String',
     'number': 123.456,
     'requestTimestamp': DateTime.now().millisecondsSinceEpoch,

@@ -50,8 +50,9 @@ Future<void> main() async {
 
   // :: Set Authentication - true gives a good auth, false gives a bad one, demonstrating errors downstream.
   if (true) {
+    // TOTALLY FAKE DUMMY Authentication, do NOT copy this logic in production code!!!
     matsSocket.setCurrentAuthorization('DummyAuth:DummyUser:'
-        '${DateTime.now().add(Duration(seconds: 10)).millisecondsSinceEpoch}');
+        '${DateTime.now().add(Duration(minutes: 10)).millisecondsSinceEpoch}');
   }
   else {
     matsSocket.setCurrentAuthorization('ThisWontFly');
@@ -61,16 +62,15 @@ Future<void> main() async {
   matsSocket.preConnectOperation = true;
 
   // Special OutOfBandClose handler (true gives default handling (default), String sends POST there)
-  // matsSocket.outOfBandClose = (Uri webSocketUri, String sessionId) {
-  //   print(" ----- Just a dummy for OutOfBandClose handling: uri=$webSocketUri, sessionId=$sessionId"
-  //       " - would typically have sent a HTTP POST/GET to server as additional layer of session cleanup.");
-  // };
-
-  matsSocket.outOfBandClose = false;
+  matsSocket.outOfBandClose = (Uri webSocketUri, String sessionId) {
+    print(" ----- Just a dummy for OutOfBandClose handling: uri=$webSocketUri, sessionId=$sessionId"
+        " - would typically have sent a HTTP POST/GET to server as additional layer of session cleanup.");
+  };
 
   // Wrap the request to capture both resolve and reject, and ensure stacktrace is shown
+  // This is way overkill wrt. normal usage, but demonstrates all ways of handling the Future.
   try {
-    final future = matsSocket.request('Test.single', 'REQUEST-with-Promise_${randomId(6)}',
+    final future = matsSocket.request('Test.single', 'REQUEST-with-Promise_${matsSocket.randomId(6)}',
       {'string': 'Request String', 'number': 123.456, 'requestTimestamp': DateTime.now().millisecondsSinceEpoch},
       receivedCallback: (received) {
         print(' == Received callback, ReceivedEvent: type=${received.type} traceId=${received.traceId}'
@@ -98,11 +98,13 @@ Future<void> main() async {
     print('    Stacktrace:\n$st');
   }
   finally {
-    print(" == Chilling before closing, so we can see how the MatsSocket normally behaves wrt. ACK/ACK2");
+    print("\n == Chilling before closing, so we can see how the MatsSocket normally behaves wrt. ACK/ACK2");
     await Future.delayed(const Duration(milliseconds: 1000));
     print('\n == Closing MatsSocket...');
+    // NOTE: Closing the MatsSocket after one request makes no sense in the real world: The MatsSocket is a long-
+    // lived connection, featuring automatic reconnects, keep-alive ping-pongs, reauthentication when needed etc,
+    // and should be kept open for the whole application lifetime. This is just for demonstration purposes.
     await matsSocket.close('demo done!');
-    print(' == Finished');
   }
 
   print(' == Finished MatsSocket test.');

@@ -37,7 +37,7 @@ void main() {
       setUp(setAuth);
 
       test('Send a message to Server, which responds by sending a message to terminator at Client (us!), directly in the MatsStage', () async {
-        var traceId = 'MatsSocketServer.send_test_${randomId(6)}';
+        var traceId = 'MatsSocketServer.send_test_${matsSocket.randomId(6)}';
         var reply = matsSocket.terminator('ClientSide.terminator').first;
         await matsSocket.send('Test.server.send.matsStage', traceId, {'number': math.e});
         var msg = await reply;
@@ -46,7 +46,7 @@ void main() {
       });
 
       test('Send a message to Server, which responds by sending a message to terminator at Client (us!), in a separate Thread', () async {
-        var traceId = 'MatsSocketServer.send_test_${randomId(6)}';
+        var traceId = 'MatsSocketServer.send_test_${matsSocket.randomId(6)}';
         var reply = matsSocket.terminator('ClientSide.terminator').first;
 
         await matsSocket.send('Test.server.send.thread', traceId, {'number': math.e});
@@ -62,9 +62,9 @@ void main() {
       setUp(setAuth);
 
       Future doTest(String startEndpoint, bool resolveReject) async {
-        var traceId = 'MatsSocketServer.send_test_${randomId(6)}';
+        var traceId = 'MatsSocketServer.send_test_${matsSocket.randomId(6)}';
 
-        var initialMessage = 'Message_${randomId(20)}';
+        var initialMessage = 'Message_${matsSocket.randomId(20)}';
 
         // This endpoint will get a request from the Server, to which we respond - and the server will then send the reply back to the Terminator below.
         matsSocket.endpoint('ClientSide.endpoint', (messageEvent) {
@@ -160,7 +160,7 @@ void main() {
         // Set special userId that gives us all DebugOptions
         setAuth('enableAllDebugOptions');
 
-        var traceId = 'MatsSocketServer.DebugOptions_server.send_${randomId(6)}';
+        var traceId = 'MatsSocketServer.DebugOptions_server.send_${matsSocket.randomId(6)}';
 
         // These will become the server's initiation requested DebugOptions upon the subsequent 'send'
         matsSocket.debug = debugOptions;
@@ -188,11 +188,11 @@ void main() {
         // Set special userId that gives us all DebugOptions
         setAuth('enableAllDebugOptions');
 
-        var traceId = 'MatsSocketServer.DebugOptions_server.send_${randomId(6)}';
+        var traceId = 'MatsSocketServer.DebugOptions_server.send_${matsSocket.randomId(6)}';
 
         // These will become the server's initiation requested DebugOptions upon the subsequent 'send'
         matsSocket.debug = debugOptions;
-        var initialMessage = 'Message_${randomId(20)}';
+        var initialMessage = 'Message_${matsSocket.randomId(20)}';
 
         matsSocket.endpoint('ClientSide.endpoint', (msg) {
           expect(msg.data['number'], equals(math.e));
@@ -228,7 +228,7 @@ void main() {
         // Set special userId that gives us all DebugOptions
         setAuth('enableAllDebugOptions');
 
-        var traceId = 'MatsSocketServer.DebugOptions_server.send_${randomId(6)}';
+        var traceId = 'MatsSocketServer.DebugOptions_server.send_${matsSocket.randomId(6)}';
         var terminator = matsSocket.terminator('ClientSide.terminator');
 
         // :: These will become the server's initiation requested DebugOptions upon the subsequent 'send'

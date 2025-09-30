@@ -46,46 +46,6 @@ class ConnectResult {
 /// otherwise lingering session.
 typedef OutOfBandClose = Function(Uri webSocketUri, String sessionId);
 
-/// Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
-/// alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
-/// finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
-///
-/// - [length] length how long the string should be, default is 6.
-String randomId([int length = 6]) {
-  var result = '';
-  for (var i = 0; i < length; i++) {
-    result += ALPHABET[_rnd.nextInt(ALPHABET.length)];
-  }
-  return result;
-}
-
-/// Convenience method for making random strings for correlationIds, not meant for human reading as the alphabet
-/// consist of all visible ACSII chars that won't be quoted in a JSON string. Should you want to make actual Session
-/// cookies or similar, that is, ids being very unique and hard to brute force, you would want to have a longer length,
-/// use e.g. length=16. The alphabet is 92 chars.
-///
-/// - [length] how long the string should be, default is 10.
-String randomCId([int length = 10]) {
-  var result = '';
-  for (var i = 0; i < length; i++) {
-    result += JSON_ALPHABET[_rnd.nextInt(JSON_ALPHABET.length)];
-  }
-  return result;
-}
-
-// Random used throughout, for ids, and shuffle, and random delays.
-final _rnd = math.Random();
-
-// https://stackoverflow.com/a/12646864/39334
-void _shuffleList(List items) {
-  for (var i = items.length - 1; i > 0; i--) {
-    var j = _rnd.nextInt(i + 1);
-    var temp = items[i];
-    items[i] = items[j];
-    items[j] = temp;
-  }
-}
-
 class MatsSocket {
 
   // ==============================================================================================
@@ -104,7 +64,7 @@ class MatsSocket {
 
   /// Default is 3-7 seconds for the initial ping delay, and then 15 seconds for subsequent pings. Can be overridden
   /// for tests.
-  int initialPingDelay = 3000 + _rnd.nextInt(4000);
+  late int initialPingDelay = 3000 + _rnd.nextInt(4000);
   /// The time between pings, 15 seconds.
   int pingInterval = 15000;
 
@@ -236,11 +196,14 @@ class MatsSocket {
 
   /// An random three-char id, useful for uniquely identifying this MatsSocket among others in one app instance, or in
   /// one test run. Not a globally unique id.
-  final matsSocketInstanceId = randomId(3);
+  late final matsSocketInstanceId = randomId(3);
 
   // ==============================================================================================
   // PRIVATE fields
   // ==============================================================================================
+
+  // Random used throughout, for ids, and shuffle, and random delays.
+  final _rnd = math.Random();
 
   Object _preConnectOperation = false;
   Object _outOfBandClose = true;
@@ -300,7 +263,7 @@ class MatsSocket {
   // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
   final Map<String?, _Initiation> _outboxInitiations = {};
   // .. "guard object" to avoid having to retransmit messages sent /before/ the WELCOME is received for the HELLO handshake
-  String _outboxInitiations_RetransmitGuard = randomCId(5);
+  late String _outboxInitiations_RetransmitGuard = randomCId(5);
   // Outbox for REPLYs
   final Map<String?, _OutboxReply> _outboxReplies = {};
   // The Inbox - to be able to catch double deliveries from Server
@@ -1132,6 +1095,43 @@ class MatsSocket {
     _webSocket!.onMessage = null;
     // Now closing the WebSocket (thus getting the 'onclose' handler invoked - just as if we'd lost connection, or got this RECONNECT close from Server).
     _webSocket!.close(closeCode.code, reason);
+  }
+
+  /// Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
+  /// alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
+  /// finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
+  ///
+  /// - [length] length how long the string should be, default is 6.
+  String randomId([int length = 6]) {
+    var result = '';
+    for (var i = 0; i < length; i++) {
+      result += ALPHABET[_rnd.nextInt(ALPHABET.length)];
+    }
+    return result;
+  }
+
+  /// Convenience method for making random strings for correlationIds, not meant for human reading as the alphabet
+  /// consist of all visible ACSII chars that won't be quoted in a JSON string. Should you want to make actual Session
+  /// cookies or similar, that is, ids being very unique and hard to brute force, you would want to have a longer length,
+  /// use e.g. length=16. The alphabet is 92 chars.
+  ///
+  /// - [length] how long the string should be, default is 10.
+  String randomCId([int length = 10]) {
+    var result = '';
+    for (var i = 0; i < length; i++) {
+      result += JSON_ALPHABET[_rnd.nextInt(JSON_ALPHABET.length)];
+    }
+    return result;
+  }
+
+  // https://stackoverflow.com/a/12646864/39334
+  void _shuffleList(List items) {
+    for (var i = items.length - 1; i > 0; i--) {
+      var j = _rnd.nextInt(i + 1);
+      var temp = items[i];
+      items[i] = items[j];
+      items[j] = temp;
+    }
   }
 
   void _beforeunloadHandler(dynamic event) {
