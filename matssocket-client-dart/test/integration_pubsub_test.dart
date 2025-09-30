@@ -35,12 +35,13 @@ void main() {
     group('basic subscription with a publish from server', () {
       test('Subscribe, then send a message directing the server to publish a message.', () async {
         setAuth();
+        var testTopic = "Test.topic.in-band.${matsSocket.randomId()}";
         var messageEvent = Completer<MessageEvent>();
-        matsSocket.subscribe('Test.topic', messageEvent.complete);
+        matsSocket.subscribe(testTopic, messageEvent.complete);
 
         // Refer to the other test, where we handle asyncness by only requesting server to publish after SUB_OK:
         // This is not necessary here, as this message is *in-band*, and guaranteed to happen *after* the sub.
-        await matsSocket.send('Test.publish', 'PUBLISH_testSend${randomId(5)}', 'Testmessage');
+        await matsSocket.send('Test.publish', 'PUBLISH_testSend${matsSocket.randomId(5)}', testTopic);
         await messageEvent.future;
       });
 

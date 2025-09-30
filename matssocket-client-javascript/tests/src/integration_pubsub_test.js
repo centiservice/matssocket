@@ -42,13 +42,14 @@ describe('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', fu
 
         it('Subscribe, then send a message directing the server to publish a message.', function (done) {
             setAuth();
-            matsSocket.subscribe("Test.topic", function (messageEvent) {
+            const testTopic = "Test.topic.in-band." + matsSocket.randomId();
+            matsSocket.subscribe(testTopic, function (messageEvent) {
                 done();
             });
 
             // Refer to the other test, where we handle asyncness by only requesting server to publish after SUB_OK:
             // This is not necessary here, as this message is *in-band*, and guaranteed to happen *after* the sub.
-            matsSocket.send("Test.publish", "PUBLISH_testSend" + matsSocket.randomId(5), "Testmessage");
+            matsSocket.send("Test.publish", "PUBLISH_testSend" + matsSocket.randomId(5), testTopic);
         });
 
         /*
@@ -58,16 +59,17 @@ describe('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', fu
          */
         it('Subscribe, then use a side-channel over HTTP to direct the server to publish a message, verifying that a subscribe alone will still be sent to server.', function (done) {
             // Due to async nature, we'll only request the Server to publish *when we have been notified of SUB_OK*
+            const testTopic = "Test.topic.over-http." + matsSocket.randomId();
             matsSocket.addSubscriptionEventListener((event) => {
                 if (event.type === mats.SubscriptionEventType.OK) {
                     // The subscription has gone through, so ask server - via HTTP - to publish a message.
                     let url = urls.split(",")[0].replace('ws', 'http');
-                    fetch(url + '/sendMessageOnTestTopic?topic=Test.Topic_Http');
+                    fetch(url + '/sendMessageOnTestTopic?topic='+ testTopic);
                 }
             })
 
             setAuth();
-            matsSocket.subscribe("Test.Topic_Http", function (messageEvent) {
+            matsSocket.subscribe(testTopic, function (messageEvent) {
                 done();
             });
         });

@@ -391,9 +391,9 @@ public class SetupTestMatsAndMatsSocketEndpoints {
 
     private static void setupSocket_Publish(MatsSocketServer matsSocketServer) {
         matsSocketServer.matsSocketTerminator("Test.publish",
-                String.class, (ctx, principal, msg) -> {
+                String.class, (ctx, principal, topicToSendTo) -> {
                     new Thread(() -> {
-                        matsSocketServer.publish("Test 1 2 3", "Test.topic", new MatsDataTO(Math.PI, "Test from Java!",
+                        matsSocketServer.publish("Test 1 2 3", topicToSendTo, new MatsDataTO(Math.PI, "Test from Java!",
                                 42));
                     }, "Send message").start();
                 });
