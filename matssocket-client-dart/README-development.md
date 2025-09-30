@@ -13,7 +13,7 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
 * `dartDoc`: generates Dart documentation, open `doc/api/index.html`
 * `test`: runs all VM and Node tests on all compilers.
-* `testAll`: runs all tests, including the tests on the Web target
+* `testDart`: runs all tests, including the tests on the Web target
 * Other test tasks, see _'Running Dart tests'_ chapter below.
 * `dartBinPath`: Installs Dart, and then prints out the path to the Dart binary, and PATH variables for Unix and Windows.
 * `nodeBinDir`: NodeTask, so it downloads Node, and then prints out the path to the Node bin dir.
@@ -29,9 +29,9 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 
 ### Publishing
 * `dartPublishDryRun`: Runs `pub publish --dry-run` to get a preview of what will be published, with scoring/warnings.
-    Depends on `dartDoc` and only `testVmKernel` for test, for fast iteration. **Make sure `testAll` passes before
+    Depends on `dartDoc` and only `testVmKernel` for test, for fast iteration. **Make sure `testDart` passes before
     publishing!**
-* `dartPublish`: Runs `pub publish` to publish the lib to pub.dev. **Make sure `testAll` passes before publishing!**
+* `dartPublish`: Runs `pub publish` to publish the lib to pub.dev. **Make sure `testDart` passes before publishing!**
 
 ## Running Dart tests
 
@@ -40,32 +40,33 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 Gradle handles downloading the Dart SDK, and firing up the backend MatsSocketTestServer, before running the integration
 tests.
 
-When standing in the project root directory, the following `test` task runs the default platform/compiler variant of the
-integration tests, which is VM/Kernel.
+When standing in the project root directory, the following standard `test` task runs all test on all platform/compiler
+targets, except those depending on Chrome ('testWeb').
 ```shell
 ./gradlew matssocket-client-dart:test
 ```
 
-**For running the tests on the Web target, you need to have Chrome/Chromium installed.** You may set the path to your
+**For running the tests on the Web targets, you need to have Chrome/Chromium installed.** You may set the path to your
 Chrome/Chromium binary, if it is not in the default location. This is done with the `-PchromePath=` parameter.
 
-Standing in the project root directory, the following `testAll` task runs all platform/compiler variants of the
+Standing in the project root directory, the following `testDart` task runs all platform/compiler variants of the
 integration tests, setting the Chrome path to `/snap/bin/chromium`.
 
 ```shell
-./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:testAll   # replace path with your Chrome path
+./gradlew -PchromePath=/snap/bin/chromium testDart   # replace path with your Chrome path
 ```
 
 There are also separate tasks `testVmKernel`, `testVmSource`, `testVmExe`, `testNodeJs` and `testNodeWasm`, `testWebJs`,
 and `testWebWasm` if you want to run a specific combination, and `testVm`, `testWeb` and `testNode` for subsets.
-The default `test` task runs the `testVm` and `testNode` task, thus not depending on Chrome on DI server.
-The VM tasks don't need Chrome, while the Node tasks need Node which Gradle installs.
+`testDart` runs all tests. The default `test` task runs the `testVm` and `testNode` tasks, thus not depending on Chrome
+on DI server. The VM tasks don't need Chrome, while the Node tasks need Node which Gradle installs.
 
 ### From command line using Gradle-downloaded Dart SDK and Node.js
 
 You may use the Gradle-downloaded Dart SDK to run the tests directly from command line. The Dart SDK will be downloaded
-by the Gradle task `./gradlew dartBinPath` run from project root, where it also will print out the path to the dart
-executable _(Note that it is also possible to let IntelliJ use this downloaded Dart SDK, read below on IDE)_
+by the Gradle task `./gradlew dartBinPath` (or `download`) run from project root, where it also will print out the path
+to the dart executable. _(Note that it is also possible to let e.g. IntelliJ use this downloaded Dart SDK, read below on
+IDE)_
 
 **You need to have the test server running**, as the tests are integration tests that connect to a test-specific
 MatsSocketServer with multiple test MatsSocket endpoints, as well as a few HTTP endpoints. This server is the

@@ -35,8 +35,9 @@ tasks.register('jsdoc', NpmTask) {
     inputs.files('package.json', 'package-lock.json', 'rollup.config.js')
     inputs.dir('lib')
     outputs.dir('jsdoc')
+    File jsdocFile = file("$projectDir/jsdoc/index.html")
     doLast {
-        println("##### JavaScript Client API docs: " + file("$projectDir/jsdoc/index.html").toURI())
+        println("##### JavaScript Client API docs: " + jsdocFile.toURI())
     }
 }
 

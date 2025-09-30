@@ -1321,13 +1321,11 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
-     * Convenience method for making random strings meant for user reading, e.g. in TraceIds, since this
+     * Convenience method for making random strings meant for user reading, e.g. as a part of a good TraceIds, since this
      * alphabet only consists of lower and upper case letters, and digits. To make a traceId "unique enough" for
-     * finding it in a log system, a length of 6 should be plenty.
+     * finding it in a log system, a length of 6 should be plenty. The alphabet is 62 chars.
      *
-     * @param {number} length how long the string should be. 6 should be enough to make a TraceId "unique enough"
-     * to uniquely find it in a log system. If you want "absolute certainty" that there never will be any collisions,
-     * i.e. a "GUID", go for 20.
+     * @param {number} length how long the string should be, default is 6.
      * @returns {string} a random string consisting of characters from from digits, lower and upper case letters
      * (62 chars).
      */
@@ -1340,11 +1338,11 @@ function MatsSocket(appName, appVersion, urls, config) {
     };
 
     /**
-     * Convenience method for making random strings for correlationIds, not meant for human reading
-     * (choose e.g. length=8), as the alphabet consist of all visible ACSII chars that won't be quoted in a JSON
-     * string. If you want "absolute certainty" that there never will be any collisions, i.e. a "GUID", go for 16.
-     *
-     * @param {number} length how long the string should be, e.g. 8 chars for a very safe correlationId.
+     * Convenience method for making random strings for correlationIds, not meant for human reading as the alphabet
+     * consist of all visible ACSII chars that won't be quoted in a JSON string. Should you want to make actual Session
+     * cookies or similar, that is, ids being very unique and hard to brute force, you would want to have a longer length,
+     * use e.g. length=16. The alphabet is 92 chars.
+     * @param {number} length how long the string should be, default is 10.
      * @returns {string} a random string consisting of characters from all visible and non-JSON-quoted chars of
      * ASCII (92 chars).
      */

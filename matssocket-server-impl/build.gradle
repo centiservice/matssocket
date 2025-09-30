@@ -51,14 +51,10 @@ dependencies {
     testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            pom {
-                name = 'MatsSocket Server Implementation'
-                description = 'Implementation of the MatsSocket Server API: Built on the Mats^3 API and' +
-                        ' JSR 356 Java API for WebSockets.'
-            }
-        }
+mavenPublishing {
+    pom {
+        name = 'MatsSocket Server Implementation'
+        description = 'Implementation of the MatsSocket Server API: Built on the Mats^3 API and' +
+                ' JSR 356 Java API for WebSockets.'
     }
 }

@@ -4,12 +4,10 @@ import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import org.gradle.internal.jvm.Jvm
 
-// mats-websockets
 plugins {
-    id 'com.github.node-gradle.node' version '7.1.0'
+    id 'com.github.node-gradle.node' version '7.1.0' // For Node.js download & tasks
     id 'java-library'
-    id 'signing'
-    id 'maven-publish'
+    id "com.vanniktech.maven.publish" version "0.34.0" // Publish to Maven Central, over Portal Publisher API
 }
 
 // Specify Gradle version, run update by './gradlew wrapper'
@@ -22,7 +20,7 @@ wrapper {
 // Version, common config for all projects
 allprojects {
     group = 'io.mats3.matssocket'
-    version = '0.19.0-2022-11-11'
+    version = '0.19.1-2025-09-30'
     // NOTE!! Versions are spread around 6 places:
     // * Here, in root build.gradle
     // * matssocket-server-impl/src/main/java/io/mats3/matssocket/impl/DefaultMatsSocketServer.java
@@ -69,8 +67,7 @@ if (project.properties.containsKey('mats.build.java_version')) {
 // Common config for the two Java subprojects
 configure([project('matssocket-server-api'), project('matssocket-server-impl')]) {
     apply plugin: 'java-library'
-    apply plugin: 'signing'
-    apply plugin: 'maven-publish'
+    apply plugin: "com.vanniktech.maven.publish"
 
     repositories { mavenCentral() }
 
@@ -81,8 +78,6 @@ configure([project('matssocket-server-api'), project('matssocket-server-impl')])
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(javaVersion))
         }
-        withJavadocJar()
-        withSourcesJar()
     }
 
     compileJava {
@@ -128,63 +123,41 @@ configure([project('matssocket-server-api'), project('matssocket-server-impl')])
         // NOTICE: Currently no Java tests. These properties are also forwarded to the MatsSocketTestServer exec below.
         systemProperties project.properties.subMap(["mats.test.brokerurl", "mats.test.broker"])
 
+        // Move over the CI environment variable, so that we can increase timings of tests if on CI environment.
+        // (Check MatsTestLatch.WAIT_MILLIS_FOR_NON_OCCURENCE)
+        systemProperties System.getenv().subMap(["CI"])
+
         testLogging {
             exceptionFormat = 'full'
         }
     }
 
-    signing {
-        // "configurations.archives" didn't sign anything, while this even signs the MDS5s and SHAs..
-        sign publishing.publications
-    }
+    mavenPublishing { // 'publishToMavenCentral' task.
+        publishToMavenCentral()
+        signAllPublications()
+        coordinates(group.toString(), name, version.toString())
 
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                pom {
-                    name = 'MatsSockets'
-                    description = 'WebSocket-based server and client libs for asynchronous, bidirectional interaction with Mats3 from end-user clients'
-                    url = 'https://github.com/centiservice/mats3'
-                    licenses {
-                        license {
-                            name = 'Apache License, Version 2.0'
-                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'stolsvik'
-                            name = 'Endre Stølsvik'
-                            email = 'endre@stolsvik.com'
-                        }
-                    }
-                    scm {
-                        connection = 'scm:git:https://github.com/centiservice/matssocket.git'
-                        developerConnection = 'scm:git:ssh://github.com:centiservice/matssocket.git'
-                        url = 'https://github.com/centiservice/matssocket'
-                    }
-                }
-                from components.java
-            }
-        }
-        repositories {
-            maven {
-                name = 'SonatypeOSSRHSnapshot'
-                url = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-                credentials {
-                    // using findProperty(..) to be able to build without it being defined.
-                    username = findProperty('sonatypeUsername') as String ?: "should be in different file"
-                    password = findProperty('sonatypePassword') as String ?: "should be in different file"
+        pom {
+            name = 'MatsSockets'
+            description = 'WebSocket-based server and client libs for asynchronous, bidirectional interaction with Mats3 from end-user clients'
+            url = 'https://github.com/centiservice/matssocket'
+             licenses {
+                license {
+                    name = 'Apache License, Version 2.0'
+                    url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                 }
             }
-            maven {
-                name = 'SonatypeOSSRHStaging'
-                url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2'
-                credentials {
-                    // using findProperty(..) to be able to build without it being defined.
-                    username = findProperty('sonatypeUsername') as String ?: "should be in different file"
-                    password = findProperty('sonatypePassword') as String ?: "should be in different file"
+            developers {
+                developer {
+                    id = 'stolsvik'
+                    name = 'Endre Stølsvik'
+                    email = 'endre@stolsvik.com'
                 }
+            }
+            scm {
+                connection = 'scm:git:https://github.com/centiservice/matssocket.git'
+                developerConnection = 'scm:git:ssh://github.com:centiservice/matssocket.git'
+                url = 'https://github.com/centiservice/matssocket'
             }
         }
     }
@@ -194,10 +167,6 @@ configure([project('matssocket-server-api'), project('matssocket-server-impl')])
         dependsOn clean
         delete "$projectDir/out/"
     }
-
-    // Tasks to publish to Sonatype's OSSRH (OSS Repository Hosting), Snapshot and Staging
-    tasks.register('matssocketPublishSnapshot') { dependsOn[publishAllPublicationsToSonatypeOSSRHSnapshotRepository] }
-    tasks.register('matssocketPublishStaging') { dependsOn[publishAllPublicationsToSonatypeOSSRHStagingRepository] }
 
     // Define dependency report task that the Java subprojects gets. Invoke with "./gradlew allDeps | less"
     tasks.register('allDeps', DependencyReportTask) {}
@@ -210,17 +179,45 @@ tasks.register('alljavadoc', Javadoc) {
     def relevantProjects = subprojects.findAll { it.name != 'mats-api-test' }
     source relevantProjects.collect { it.sourceSets.main.allJava }
     classpath = files(relevantProjects.collect { it.sourceSets.main.compileClasspath })
-    destinationDir = file("${buildDir}/docs/javadoc")
+    destinationDir = file("${layout.buildDirectory}/docs/javadoc")
     options.addStringOption('Xdoclint:none', '-quiet')
     options.addStringOption('--frames')
 }
 // .. ensure 'alljavadoc' is run together with './gradlew clean javadoc', thus building 'all' + submodules.
 javadoc.dependsOn alljavadoc
 
+
+// ------------------------------------------------------------
+// -- Shared Parameters needed between tasks and subprojects
+
+// "Shared build services allow tasks to share state or resources." Yes.
+abstract class SharedParametersService implements BuildService<StaticParams> {
+    interface StaticParams extends BuildServiceParameters {
+        Property<String> getMatsSocketTestServerClassName();
+    }
+    @Inject
+    abstract ObjectFactory getObjects()
+    /* mutable data that tasks can read/write at execution time */
+    private final RegularFileProperty logFile = getObjects().fileProperty()
+    private final ListProperty<String> matsSocketUris = getObjects().listProperty(String.class)
+
+    ListProperty<String> getMatsSocketUris() { matsSocketUris }
+
+    RegularFileProperty getLogFile() { logFile }
+}
+def sharedParamsService = gradle.sharedServices.registerIfAbsent('sharedParamsService', SharedParametersService) { spec ->
+    spec.parameters.matsSocketTestServerClassName.set("io.mats3.matssocket.MatsSocketTestServer")
+}
+// Store it for subprojects.
+ext.sharedParamsService = sharedParamsService
+
+
+// ------------------------------------------------------------------------------------------------
 // Task to start a MatsSocketTestServer. We will monitor the log until we get the expected number
 // of ws urls, that other tasks can then depend on
 tasks.register('startMatsSocketTestServer_internal') {
     dependsOn configurations.testRuntimeClasspath, 'matssocket-server-impl:compileTestJava', 'matssocket-server-impl:processTestResources'
+    usesService(sharedParamsService)
 
     // Precompute values at configuration time to avoid accessing Task.project during execution
     def matsSystemProps = ['mats.test.brokerurl', 'mats.test.broker']
@@ -235,14 +232,18 @@ tasks.register('startMatsSocketTestServer_internal') {
             project(':matssocket-server-impl').sourceSets.test.runtimeClasspath
     )
 
+    File buildDirectory = layout.buildDirectory.get().asFile
+
     doLast {
         int numberOfServers = 3
-        logger.info("Starting MatsSocketTestServer");
+        String matsSocketTestServerClassname = sharedParamsService.get().parameters.matsSocketTestServerClassName.get()
+
+        logger.info("Starting MatsSocketTestServer - class $matsSocketTestServerClassname, numberOfServers $numberOfServers")
 
         // :: Create cmd-line for MatsSocketTestServer Java-process to execute
         def javaExe = Jvm.current().javaExecutable.absolutePath
 
-        println "MatsSocketTestServer: Using Java executable: $javaExe"
+        println "MatsSocketTestServer: Using Java executable: $javaExe, class: $matsSocketTestServerClassname, numberOfServers: $numberOfServers"
 
         List<String> cmd = [javaExe]
         // Add the MatsTestBroker -P properties as -D properties to the JVM, if set (precomputed above)
@@ -257,15 +258,18 @@ tasks.register('startMatsSocketTestServer_internal') {
         Process server = cmd.execute()
 
         // Keep a log file of the server output
-        logFile = new File("${layout.buildDirectory.get().asFile}/logs/matsSocketServer-${LocalDateTime.now().withNano(0).toString().replace(':', '.')}.log")
+
+        def logFile = new File("${buildDirectory}/logs/matsSocketServer-${LocalDateTime.now().withNano(0).toString().replace(':', '.')}.log")
         println "MatsSocketTestServer: Logging to ${logFile.path}"
         logFile.parentFile.mkdirs();
+
+        def matsSocketUris = []
 
         // :: Find the WebSocket URLs from the output, via magic hook-line in log output
         Reader reader = new InputStreamReader(server.inputStream, StandardCharsets.UTF_8)
         logFile.withWriterAppend { out ->
             String line;
-            while (wsUrls.size < numberOfServers && (line = reader.readLine()) != null) {
+            while (matsSocketUris.size < numberOfServers && (line = reader.readLine()) != null) {
                 out.writeLine(line)
                 logger.info("TestServer: $line")
                 if (line.contains('HOOK_FOR_GRADLE_WEBSOCKET_URL')) {
@@ -273,19 +277,22 @@ tasks.register('startMatsSocketTestServer_internal') {
                     int urlEnd = line.indexOf("]#")
                     if (urlStart > -1 && urlEnd > urlStart) {
                         String url = line.substring(urlStart + 2, urlEnd)
-                        wsUrls.add(url)
+                        matsSocketUris.add(url)
                         logger.info("!! Registering WS URL: $url");
                     }
                 }
             }
         }
-        if (wsUrls.isEmpty()) {
+        if (matsSocketUris.isEmpty()) {
             server.errorStream.eachLine { logger.error(it) }
             logger.error("Failed to execute: [${cmd.join(" ")}]")
             throw new GradleException("Failed to start $matsSocketTestServerClassname, check log above for command.")
         }
-        println "MatsSocketTestServer: Started, WebSocket URLs: ${wsUrls}"
-        logger.info "$matsSocketTestServerClassname started, WebSocket URLs: ${wsUrls}"
+        println "MatsSocketTestServer: Started, WebSocket URLs: ${matsSocketUris}"
+        logger.info "$matsSocketTestServerClassname started, WebSocket URLs: ${matsSocketUris}"
+
+        sharedParamsService.get().logFile.set(logFile)
+        sharedParamsService.get().matsSocketUris.set(matsSocketUris)
 
         // Fork a new thread to just keep reading and logging the MatsSocketTestServer
         // Notice: It will exit once the process exits, as the reader will then be done.
@@ -299,23 +306,23 @@ tasks.register('startMatsSocketTestServer_internal') {
         }, "MatsSocketTestServer-logprinter").start()
     }
 }
-ext {
-    matsSocketTestServerClassname = "io.mats3.matssocket.MatsSocketTestServer"
-    wsUrls = []
-    logFile = null
-}
 
 // Task for starting the MatsSocketTestServer and keeping it alive - so that it can be accessed and used from command
 // line tests etc.
 tasks.register('matsSocketTestServer') {
+    usesService(sharedParamsService)
     dependsOn 'startMatsSocketTestServer_internal'
     doLast {
+        File logFile = sharedParamsService.get().logFile.get().asFile
+        String matsSocketTestServerClassname = sharedParamsService.get().parameters.matsSocketTestServerClassName.get()
+        List<String> matsSocketUris = sharedParamsService.get().matsSocketUris.get()
+        println "LogFile: $logFile"
         println ''
         println "MatsSocketTestServer is running!  (class: ${matsSocketTestServerClassname})"
         println ''
-        println "HTTP URLs:       " + wsUrls.collect { it.replace("ws://", "http://").replace("/matssocket", "") }
-        println "MatsSocket URLs: ${wsUrls}"
-        println 'Logfile:         ' + (logFile != null ? logFile.path : "Unknown")
+        println "HTTP URLs:       " + matsSocketUris.collect { it.replace("ws://", "http://").replace("/matssocket", "") }
+        println "MatsSocket URLs: ${matsSocketUris}"
+        println "Logfile:         ${logFile.path}"
         println ''
         println '  #####################################################################'
         println '  ### PRESS [Enter] IN THIS TERMINAL WINDOW TO TERMINATE THE SERVER ###'
@@ -339,9 +346,11 @@ tasks.register('startMatsSocketTestServer') {
 // and creating a url to the shutdown page based on the first websocket url. The shutdown page is
 // a servlet that will do System.exit(0) to shutdown the server.
 tasks.register('stopMatsSocketTestServer') {
+    usesService(sharedParamsService)
     dependsOn startMatsSocketTestServer
     doLast {
-        String shutdownUrl = wsUrls[0]
+        List<String> matsSocketUris = sharedParamsService.get().matsSocketUris.get()
+        String shutdownUrl = matsSocketUris[0]
                 .replace("ws://", "http://")
                 .replace("/matssocket", "/shutdown");
         logger.info("Shutting down MatsSocketTestServer by invoking '$shutdownUrl")
@@ -379,16 +388,13 @@ tasks.register('systemInformation') {
         System.env.sort().each { k, v ->
             println("$k = $v")
         }
-        println ''
-        println "** Java Version:   " + System.getProperty("java.version")
-        println "** Groovy Version: " + GroovySystem.getVersion()
-        println "** Gradle Version: " + gradle.gradleVersion
     }
 }
 
 tasks.register('versions') {
+    def gradleVersion = gradle.gradleVersion
     doLast {
-        println "** Gradle Version: " + gradle.gradleVersion
+        println "** Gradle Version: " + gradleVersion
         println "** Java Version:   " + System.getProperty("java.version")
         println "** Groovy Version: " + GroovySystem.getVersion()
     }

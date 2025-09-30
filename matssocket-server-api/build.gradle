@@ -6,15 +6,11 @@ dependencies {
     api "javax.websocket:javax.websocket-api:$javaxWebsocketsVersion"
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            pom {
-                name = 'MatsSocket Server API'
-                description = 'API for the MatsSocket Server: Create MatsSocket server endpoints to which you can' +
-                        ' connect using JavaScript and Dart client libraries, connecting over WebSocket for' +
-                        ' asynchronous, bidirectional interaction with Mats^3 from end-user clients.'
-            }
-        }
+mavenPublishing {
+    pom {
+        name = 'MatsSocket Server API'
+        description = 'API for the MatsSocket Server: Create MatsSocket server endpoints to which you can' +
+                ' connect using JavaScript and Dart client libraries, connecting over WebSocket for' +
+                ' asynchronous, bidirectional interaction with Mats^3 from end-user clients.'
     }
 }

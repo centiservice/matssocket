@@ -12,6 +12,3 @@ kahadb/
 
 # H2 test database
 matsTestH2DB.mv.db
-
-# Might contain secrets
-gradle.properties

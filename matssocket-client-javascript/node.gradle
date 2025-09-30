@@ -12,23 +12,15 @@ node {
     npmWorkDir = file("$projectDir/node_download/npm")
 }
 
-// :: Find where Node was installed.
-def nodeOut = new ByteArrayOutputStream()
-tasks.register('nodeBinDir', NodeTask) {
-    // node-gradle requires the script property, so just point to something harmless.
-    script = [file('package.json'), file('pubspec.yaml'), file('README.md')].find { it.exists() }
-    options = ['-p', "require('path').dirname(process.execPath)"] // small script to get its own dir.
-    // Capture stdout so we can read it out.
-    execOverrides {
-        standardOutput = nodeOut
-    }
+
+// ensure Node is installed
+tasks.register('nodeBinDir') {
+    dependsOn tasks.named('nodeSetup')
+    String nodeBinDir = "${node.resolvedNodeDir.get()}${org.gradle.internal.os.OperatingSystem.current().isWindows() ? '\\' : '/bin'}"
     doLast {
-        def binDir = nodeOut.toString().trim()
-        println "=== Node.js bin dir: ${binDir}"
-        println "    Unix:     export PATH=${binDir}:\$PATH"
-        println "    Windows:  set PATH=${binDir};%PATH%"
-        // Stash it for other tasks to use
-        project.ext.set('NODE_BIN_DIR', binDir);
+        println "=== Node.js bin dir: $nodeBinDir"
+        println "    Unix:     export PATH=${nodeBinDir}:\$PATH"
+        println "    Windows:  set PATH=${nodeBinDir};%PATH%"
     }
 }
 

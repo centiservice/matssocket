@@ -14,39 +14,51 @@ tasks.register('build_internal', NpmTask) {
 }
 
 // Execute all tests
-tasks.register('test') {
+tasks.register('testJs') {
     dependsOn testRaw, testEsm, testUmd
 }
+// Alias 'test' for 'testJs' so that it is part of the standard Gradle lifecycle
+tasks.register('test') {dependsOn testJs }
+
 
 // Execute test:raw - only need direct access to both client and tests files, plus deps (chai and ws).
 tasks.register('testRaw', NpmTask) {
+    usesService(rootProject.sharedParamsService)
     dependsOn npmInstall, ':startMatsSocketTestServer'  // Note: Don't need no building of lib nor test bundles.
+    def sharedParamsService =  rootProject.sharedParamsService;
     args = ['run', 'test:raw']
     doFirst {
+        def matsSocketUrls = sharedParamsService.get().matsSocketUris.get().join(',')
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", matsSocketUrls)
         }
     }
 }
 
 // Execute test:umd
 tasks.register('testUmd', NpmTask) {
+    usesService(rootProject.sharedParamsService)
     dependsOn npmInstall, 'build_internal', ':startMatsSocketTestServer'
+    def sharedParamsService =  rootProject.sharedParamsService;
     args = ['run', 'test:umd']
     doFirst {
+        def matsSocketUrls = sharedParamsService.get().matsSocketUris.get().join(',')
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", matsSocketUrls)
         }
     }
 }
 
 // Execute test:esm
 tasks.register('testEsm', NpmTask) {
+    usesService(rootProject.sharedParamsService)
     dependsOn npmInstall, 'build_internal', ':startMatsSocketTestServer'
+    def sharedParamsService =  rootProject.sharedParamsService;
     args = ['run', 'test:esm']
     doFirst {
+        def matsSocketUrls = sharedParamsService.get().matsSocketUris.get().join(',')
         execOverrides {
-            it.environment("MATS_SOCKET_URLS", rootProject.wsUrls.join(","))
+            it.environment("MATS_SOCKET_URLS", matsSocketUrls)
         }
     }
 }
