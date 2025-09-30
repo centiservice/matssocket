@@ -96,7 +96,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
 
             // First SEND a message to instance A, so as to perform HELLO and get a WELCOME with sessionId
             function firstStep() {
-                matsSocket_A.send("Test.ignoreInIncomingHandler", "SEND_twiceConnect_ensureAssignedSessionId_" + matsSocket_A.id(6), {})
+                matsSocket_A.send("Test.ignoreInIncomingHandler", "SEND_twiceConnect_ensureAssignedSessionId_" + matsSocket_A.randomId(6), {})
                     .then(function (receivedEvent) {
                         // Assert that the Resolve is MessageEventType.REPLY
                         chai.assert.strictEqual(receivedEvent.type, mats.ReceivedEventType.ACK, "xxx");
@@ -126,7 +126,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
                     sleepTime: 0
                 };
                 let receivedCallbackInvoked = 0;
-                matsSocket_B.request("Test.simpleMats", "REQUEST_twiceConnect_requestOnNewMatsSocket" + matsSocket_A.id(6), req,
+                matsSocket_B.request("Test.simpleMats", "REQUEST_twiceConnect_requestOnNewMatsSocket" + matsSocket_A.randomId(6), req,
                     function () {
                         receivedCallbackInvoked++;
                     })
@@ -228,7 +228,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
             };
             let receivedCallbackInvoked = 0;
             // Request to a service that will reply either AFTER A DELAY or IMMEDIATELY
-            matsSocket.request(serverEndpointId, "REQUEST_reconnect_" + whichTest + "_" + matsSocket.id(6), req,
+            matsSocket.request(serverEndpointId, "REQUEST_reconnect_" + whichTest + "_" + matsSocket.randomId(6), req,
                 function () {
                     receivedCallbackInvoked++;
                 })
@@ -271,7 +271,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
             matsSocket.logging = false;
 
             // Run a SEND just to get the show going
-            matsSocket.send("Test.ignoreInIncomingHandler", "SEND_to_" + matsSocket.id(6), {})
+            matsSocket.send("Test.ignoreInIncomingHandler", "SEND_to_" + matsSocket.randomId(6), {})
                 .then(_ => {
                     step2A_Chill();
                 });
@@ -290,7 +290,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
             }
 
             function step3B_SendToReconnect() {
-                let promise = matsSocket.send("Test.ignoreInIncomingHandler", "SEND_to_" + matsSocket.id(6), {});
+                let promise = matsSocket.send("Test.ignoreInIncomingHandler", "SEND_to_" + matsSocket.randomId(6), {});
                 promise.then(_ => {
                     step4A_Chill();
                 });
@@ -343,7 +343,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
 
             // When we get a SessionClosed from the Server, outstanding initiations are NACKed / Rejected
             let receivedCallbackInvoked = 0;
-            matsSocket.request("Test.resolveInIncomingHandler", "REQUEST_reconnect1_" + matsSocket.id(6), {},
+            matsSocket.request("Test.resolveInIncomingHandler", "REQUEST_reconnect1_" + matsSocket.randomId(6), {},
                 function (event) {
                     receivedCallbackInvoked++;
                 })
@@ -374,7 +374,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
                 sessionClosed++;
             });
 
-            matsSocket.send("Test.single", "SEND_should_reject_on_close_" + matsSocket.id(6), {})
+            matsSocket.send("Test.single", "SEND_should_reject_on_close_" + matsSocket.randomId(6), {})
                 .catch(function (messageEvent) {
                     // Assert that the Reject is MessageEventType.SESSION_CLOSED
                     chai.assert.strictEqual(messageEvent.type, mats.MessageEventType.SESSION_CLOSED, "Send's Promise's Reject Event should be a MessageEventType.SESSION_CLOSED.");
@@ -395,7 +395,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
 
             // When we close session from Client side, receivedCallback should be invoked with SESSION_CLOSED, and Promise should reject with SESSION_CLOSED
             let receivedCallbackInvoked = 0;
-            matsSocket.request("Test.single", "REQUEST_should_reject_on_close_" + matsSocket.id(6), {},
+            matsSocket.request("Test.single", "REQUEST_should_reject_on_close_" + matsSocket.randomId(6), {},
                 function (receivedEvent) {
                     chai.assert.strictEqual(receivedEvent.type, mats.ReceivedEventType.SESSION_CLOSED, "receivedCallback should get a ReceivedEventType.SESSION_CLOSED.");
                     receivedCallbackInvoked++;
@@ -434,7 +434,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
             });
 
             let sendReceivedAck = false;
-            matsSocket.send("Test.closeThisSession", "SEND_server.CloseThisSession_" + matsSocket.id(6), {})
+            matsSocket.send("Test.closeThisSession", "SEND_server.CloseThisSession_" + matsSocket.randomId(6), {})
                 .then(receivedEvent => {
                     chai.assert.strictEqual(receivedEvent.type, mats.ReceivedEventType.ACK, "Send's Promise's should be resolved with ACK.");
                     sendReceivedAck = true;
@@ -447,7 +447,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
                 sleepTime: 500 // Sleeptime before replying - *more* than the wait on server side to server.closeSession(..)
             };
             let receivedCallbackInvoked = false;
-            matsSocket.request("Test.slow", "REQUEST_server.CloseThisSession_" + matsSocket.id(6), req, {
+            matsSocket.request("Test.slow", "REQUEST_server.CloseThisSession_" + matsSocket.randomId(6), req, {
                 receivedCallback: function (event) {
                     chai.assert.strictEqual(event.type, mats.ReceivedEventType.ACK);
                     receivedCallbackInvoked = true;

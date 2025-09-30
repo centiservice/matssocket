@@ -48,7 +48,7 @@ describe('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', fu
 
             // Refer to the other test, where we handle asyncness by only requesting server to publish after SUB_OK:
             // This is not necessary here, as this message is *in-band*, and guaranteed to happen *after* the sub.
-            matsSocket.send("Test.publish", "PUBLISH_testSend" + matsSocket.id(5), "Testmessage");
+            matsSocket.send("Test.publish", "PUBLISH_testSend" + matsSocket.randomId(5), "Testmessage");
         });
 
         /*

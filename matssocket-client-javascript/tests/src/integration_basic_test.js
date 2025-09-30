@@ -49,14 +49,14 @@ describe('MatsSocket integration tests, basics', function () {
 
         it('Should have a promise that resolves when received', function () {
             // Return a promise, that mocha will watch and resolve
-            return matsSocket.send("Test.single", "SEND_" + matsSocket.id(6), {
+            return matsSocket.send("Test.single", "SEND_" + matsSocket.randomId(6), {
                 string: "The String",
                 number: Math.PI
             });
         });
 
         it('Send to non-existing endpoint should NACK from Server and reject Promise', function (done) {
-            let promise = matsSocket.send("NON EXISTING!", "SEND_NonExisting" + matsSocket.id(6), {
+            let promise = matsSocket.send("NON EXISTING!", "SEND_NonExisting" + matsSocket.randomId(6), {
                 string: "The String",
                 number: Math.PI
             });
@@ -74,7 +74,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Request should resolve Promise", function () {
             // Return a promise, that mocha will watch and resolve
-            return matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.id(6), {
+            return matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.randomId(6), {
                 string: "Request String",
                 number: Math.E
             });
@@ -82,7 +82,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Request should invoke both the ack callback and resolve Promise", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.single", "REQUEST-with-Promise-and-receivedCallback_" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.single", "REQUEST-with-Promise-and-receivedCallback_" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -95,7 +95,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it('Request to non-existing endpoint should NACK from Server, invoking receivedCallback and reject Promise', function (done) {
             let received = false;
-            let promise = matsSocket.request("NON EXISTING!", "REQUEST_NonExisting" + matsSocket.id(6), {},
+            let promise = matsSocket.request("NON EXISTING!", "REQUEST_NonExisting" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -113,21 +113,21 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Should reply to our own endpoint", function (done) {
             matsSocket.terminator("ClientSide.testTerminator", () => done());
-            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_" + matsSocket.id(6), {
+            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_" + matsSocket.randomId(6), {
                 string: "Request String",
                 number: Math.E
             }, "ClientSide.testTerminator");
         });
 
         it("Should reply to our own endpoint with our correlation data", function (done) {
-            const correlationInformation = matsSocket.id(5);
+            const correlationInformation = matsSocket.randomId(5);
             matsSocket.terminator("ClientSide.testTerminator", ({correlationInformation: correlationInformation}) => {
                 standardStateAssert();
                 chai.assert.equal(correlationInformation, correlationInformation);
                 chai.assert(matsSocket.connected, "MatsSocket has been closed, which was not expected here!");
                 done();
             });
-            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_withCorrelationInfo_" + matsSocket.id(6), {
+            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_withCorrelationInfo_" + matsSocket.randomId(6), {
                 string: "Request String",
                 number: Math.E
             }, "ClientSide.testTerminator", correlationInformation);
@@ -148,7 +148,7 @@ describe('MatsSocket integration tests, basics', function () {
                     sleepTime: 50 // Sleeptime before replying
                 };
                 let receivedCallbackInvoked = false;
-                matsSocket.request("Test.slow", "Timeout_request_" + matsSocket.id(6), req, {
+                matsSocket.request("Test.slow", "Timeout_request_" + matsSocket.randomId(6), req, {
                     // Low timeout to NOT get ReceivedEventType.ACK.
                     timeout: 10,
                     receivedCallback: function (event) {
@@ -177,7 +177,7 @@ describe('MatsSocket integration tests, basics', function () {
         });
 
         it("requestReplyTo with timeout earlier than slow endpoint", function (done) {
-            let correlationInformation = matsSocket.jid(100);
+            let correlationInformation = matsSocket.randomCId(100);
 
             /**
              * NOTICE: We should FIRST get the rejection on the Received Promise from requestReplyTo, and THEN
@@ -195,7 +195,7 @@ describe('MatsSocket integration tests, basics', function () {
                     sleepIncoming: 50, // Sleeptime before acknowledging
                     sleepTime: 50 // Sleeptime before replying
                 };
-                matsSocket.requestReplyTo("Test.slow", "Timeout_requestReplyTo_" + matsSocket.id(6), req, "Test.terminator", correlationInformation, {
+                matsSocket.requestReplyTo("Test.slow", "Timeout_requestReplyTo_" + matsSocket.randomId(6), req, "Test.terminator", correlationInformation, {
                     // Low timeout to NOT get ReceivedEventType.ACK.
                     timeout: 5
                 }).then(_ => {
@@ -257,15 +257,15 @@ describe('MatsSocket integration tests, basics', function () {
 
             // These three will be "autopipelined".
 
-            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_Pipeline_msg1of3_" + matsSocket.id(6),
+            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_Pipeline_msg1of3_" + matsSocket.randomId(6),
                 {string: "Messge 1", number: 100.001, requestTimestamp: Date.now()},
-                "ClientSide.testEndpoint", "pipeline_msg1of3_" + matsSocket.id(10));
-            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_Pipeline_msg2of3_" + matsSocket.id(6),
+                "ClientSide.testEndpoint", "pipeline_msg1of3_" + matsSocket.randomId(10));
+            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_Pipeline_msg2of3_" + matsSocket.randomId(6),
                 {string: "Message 2", number: 200.002, requestTimestamp: Date.now()},
-                "ClientSide.testEndpoint", "pipeline_msg2of3_" + matsSocket.id(10));
-            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_Pipeline_msg3of3_" + matsSocket.id(6),
+                "ClientSide.testEndpoint", "pipeline_msg2of3_" + matsSocket.randomId(10));
+            matsSocket.requestReplyTo("Test.single", "REQUEST-with-ReplyTo_Pipeline_msg3of3_" + matsSocket.randomId(6),
                 {string: "Message 3", number: 300.003, requestTimestamp: Date.now()},
-                "ClientSide.testEndpoint", "pipeline_msg3of3_" + matsSocket.id(10));
+                "ClientSide.testEndpoint", "pipeline_msg3of3_" + matsSocket.randomId(10));
             matsSocket.flush();
         });
     });
@@ -278,7 +278,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Ignored (handler did nothing), should NACK when REQUEST (and thus reject Promise) since it is not allowed to ignore a Request (must either deny, insta-settle or forward)", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.ignoreInIncomingHandler", "REQUEST_ignored_in_incomingHandler" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.ignoreInIncomingHandler", "REQUEST_ignored_in_incomingHandler" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -291,7 +291,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("context.deny() should NACK (and thus reject Promise)", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.denyInIncomingHandler", "REQUEST_denied_in_incomingHandler" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.denyInIncomingHandler", "REQUEST_denied_in_incomingHandler" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -304,7 +304,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("context.resolve(..) should ACK received, and RESOLVE the Promise.", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.resolveInIncomingHandler", "REQUEST_resolved_in_incomingHandler" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.resolveInIncomingHandler", "REQUEST_resolved_in_incomingHandler" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -318,7 +318,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("context.reject(..) should ACK received, and REJECT the Promise", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.rejectInIncomingHandler", "REQUEST_rejected_in_incomingHandler" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.rejectInIncomingHandler", "REQUEST_rejected_in_incomingHandler" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -331,7 +331,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Exception in incomingAdapter should NACK (and thus reject Promise)", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.throwsInIncomingHandler", "REQUEST_throws_in_incomingHandler" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.throwsInIncomingHandler", "REQUEST_throws_in_incomingHandler" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -350,7 +350,7 @@ describe('MatsSocket integration tests, basics', function () {
         // FOR ALL: Both the received callback should be invoked, and the Promise resolved/rejected
 
         it("Ignored (handler did nothing) should ACK when SEND (thus resolve Promise)", function (done) {
-            let promise = matsSocket.send("Test.ignoreInIncomingHandler", "SEND_ignored_in_incomingHandler" + matsSocket.id(6), {});
+            let promise = matsSocket.send("Test.ignoreInIncomingHandler", "SEND_ignored_in_incomingHandler" + matsSocket.randomId(6), {});
             promise.then(function () {
                 standardStateAssert();
                 done();
@@ -358,7 +358,7 @@ describe('MatsSocket integration tests, basics', function () {
         });
 
         it("context.deny() should NACK (reject Promise)", function (done) {
-            let promise = matsSocket.send("Test.denyInIncomingHandler", "SEND_denied_in_incomingHandler" + matsSocket.id(6), {});
+            let promise = matsSocket.send("Test.denyInIncomingHandler", "SEND_denied_in_incomingHandler" + matsSocket.randomId(6), {});
             promise.catch(function () {
                 standardStateAssert();
                 done();
@@ -366,7 +366,7 @@ describe('MatsSocket integration tests, basics', function () {
         });
 
         it("context.resolve(..) should NACK (reject Promise) since it is not allowed to resolve/reject a send", function (done) {
-            let promise = matsSocket.send("Test.resolveInIncomingHandler", "SEND_resolved_in_incomingHandler" + matsSocket.id(6), {});
+            let promise = matsSocket.send("Test.resolveInIncomingHandler", "SEND_resolved_in_incomingHandler" + matsSocket.randomId(6), {});
             promise.catch(function () {
                 standardStateAssert();
                 done();
@@ -375,7 +375,7 @@ describe('MatsSocket integration tests, basics', function () {
         });
 
         it("context.reject(..) should NACK (reject Promise) since it is not allowed to resolve/reject a send", function (done) {
-            let promise = matsSocket.send("Test.rejectInIncomingHandler", "SEND_rejected_in_incomingHandler" + matsSocket.id(6), {});
+            let promise = matsSocket.send("Test.rejectInIncomingHandler", "SEND_rejected_in_incomingHandler" + matsSocket.randomId(6), {});
             promise.catch(function () {
                 standardStateAssert();
                 done();
@@ -383,7 +383,7 @@ describe('MatsSocket integration tests, basics', function () {
         });
 
         it("Exception in incomingAdapter should NACK (reject Promise)", function (done) {
-            let promise = matsSocket.send("Test.throwsInIncomingHandler", "SEND_throws_in_incomingHandler" + matsSocket.id(6), {});
+            let promise = matsSocket.send("Test.throwsInIncomingHandler", "SEND_throws_in_incomingHandler" + matsSocket.randomId(6), {});
             promise.catch(function () {
                 done();
             });
@@ -398,7 +398,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Ignored (handler did nothing) should NACK when Request handled in adaptReply(..) (thus nack receivedCallback, and reject Promise)", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.ignoreInReplyAdapter", "REQUEST_ignored_in_replyAdapter" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.ignoreInReplyAdapter", "REQUEST_ignored_in_replyAdapter" + matsSocket.randomId(6), {},
                 function () {
                     standardStateAssert();
                     received = true;
@@ -413,7 +413,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("context.resolve(..)", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.resolveInReplyAdapter", "REQUEST_resolved_in_replyAdapter" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.resolveInReplyAdapter", "REQUEST_resolved_in_replyAdapter" + matsSocket.randomId(6), {},
                 function () {
                     standardStateAssert();
                     received = true;
@@ -428,7 +428,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("context.reject(..)", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.rejectInReplyAdapter", "REQUEST_rejected_in_replyAdapter" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.rejectInReplyAdapter", "REQUEST_rejected_in_replyAdapter" + matsSocket.randomId(6), {},
                 function () {
                     standardStateAssert();
                     received = true;
@@ -443,7 +443,7 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("Exception in replyAdapter should reject", function (done) {
             let received = false;
-            let promise = matsSocket.request("Test.throwsInReplyAdapter", "REQUEST_throws_in_replyAdapter" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.throwsInReplyAdapter", "REQUEST_throws_in_replyAdapter" + matsSocket.randomId(6), {},
                 function () {
                     standardStateAssert();
                     received = true;
@@ -467,7 +467,7 @@ describe('MatsSocket integration tests, basics', function () {
                 standardStateAssert();
                 receivedEventReceived = receivedEvent;
             };
-            matsSocket.request("Test.single", "Request_DebugObject_" + config.debug + "_" + matsSocket.debug + "_" + matsSocket.id(6), {}, config)
+            matsSocket.request("Test.single", "Request_DebugObject_" + config.debug + "_" + matsSocket.debug + "_" + matsSocket.randomId(6), {}, config)
                 .then(function (messageEvent) {
                     standardStateAssert();
                     chai.assert.isDefined(receivedEventReceived);
@@ -556,7 +556,7 @@ describe('MatsSocket integration tests, basics', function () {
             setAuth('enableAllDebugOptions');
 
             let receivedEventReceived;
-            matsSocket.request("Test.single", "Request_DebugObject_non_requested_" + matsSocket.id(6), {},
+            matsSocket.request("Test.single", "Request_DebugObject_non_requested_" + matsSocket.randomId(6), {},
                 function (receivedEvent) {
                     standardStateAssert();
                     receivedEventReceived = receivedEvent;
@@ -576,7 +576,7 @@ describe('MatsSocket integration tests, basics', function () {
             matsSocket.debug = 0;
 
             let receivedEventReceived;
-            matsSocket.request("Test.single", "Request_DebugObject_non_requested_" + matsSocket.id(6), {},
+            matsSocket.request("Test.single", "Request_DebugObject_non_requested_" + matsSocket.randomId(6), {},
                 function (receivedEvent) {
                     standardStateAssert();
                     receivedEventReceived = receivedEvent;

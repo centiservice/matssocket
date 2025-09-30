@@ -31,11 +31,12 @@ in the [matssocket-client-javascript](https://github.com/centiservice/matssocket
 For Development of the library itself, see [README-development.md](https://github.com/centiservice/matssocket/blob/main/matssocket-client-javascript/client/README-development.md).
 
 To get a gist of how this works on the client, here is a small JavaScript client code example:
+
 ```javascript
 // Set up the MatsSocket.
 var matsSocket = new MatsSocket("TestApp", "1.2.3",
     ['wss://matssocketserver-one.example.com/matssocket',
-     'wss://matssocketserver-two.example.com/matssocket']);
+        'wss://matssocketserver-two.example.com/matssocket']);
 
 // Using bogus example authorization.
 matsSocket.setAuthorizationExpiredCallback(function (event) {
@@ -48,7 +49,7 @@ matsSocket.setAuthorizationExpiredCallback(function (event) {
 
 // Perform a Request to server, which will forward the Request to a Mats endpoint, whose Reply comes
 // back here, resolving the returned Promise.
-matsSocket.request("MatsSocketEndpoint", "TraceId_" + matsSocket.id(6), {
+matsSocket.request("MatsSocketEndpoint", "TraceId_" + matsSocket.randomId(6), {
     string: "Request String",
     number: Math.E
 }).then(function (messageEvent) {

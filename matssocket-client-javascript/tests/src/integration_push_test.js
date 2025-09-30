@@ -32,7 +32,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
         beforeEach(() => setAuth());
 
         it('Send a message to Server, which responds by sending a message to terminator at Client (us!), directly in the MatsStage', function (done) {
-            let traceId = "MatsSocketServer.send_test_" + matsSocket.id(6);
+            let traceId = "MatsSocketServer.send_test_" + matsSocket.randomId(6);
 
             matsSocket.terminator("ClientSide.terminator", (msg) => {
                 chai.assert.strictEqual(msg.data.number, Math.E);
@@ -45,7 +45,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
         });
 
         it('Send a message to Server, which responds by sending a message to terminator at Client (us!), in a separate Thread', function (done) {
-            let traceId = "MatsSocketServer.send_test_" + matsSocket.id(6);
+            let traceId = "MatsSocketServer.send_test_" + matsSocket.randomId(6);
 
             matsSocket.terminator("ClientSide.terminator", (msg) => {
                 chai.assert.strictEqual(msg.data.number, Math.E);
@@ -63,9 +63,9 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
         beforeEach(() => setAuth());
 
         function doTest(startEndpoint, resolveReject, done) {
-            let traceId = "MatsSocketServer.send_test_" + matsSocket.id(6);
+            let traceId = "MatsSocketServer.send_test_" + matsSocket.randomId(6);
 
-            let initialMessage = "Message_" + matsSocket.id(20);
+            let initialMessage = "Message_" + matsSocket.randomId(20);
 
             // This endpoint will get a request from the Server, to which we respond - and the server will then send the reply back to the Terminator below.
             matsSocket.endpoint("ClientSide.endpoint", function (messageEvent) {
@@ -164,7 +164,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             // Set special userId that gives us all DebugOptions
             setAuth('enableAllDebugOptions');
 
-            let traceId = "MatsSocketServer.DebugOptions_server.send_" + matsSocket.id(6);
+            let traceId = "MatsSocketServer.DebugOptions_server.send_" + matsSocket.randomId(6);
 
             // These will become the server's initiation requested DebugOptions upon the subsequent 'send'
             matsSocket.debug = debugOptions;
@@ -196,11 +196,11 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             // Set special userId that gives us all DebugOptions
             setAuth('enableAllDebugOptions');
 
-            let traceId = "MatsSocketServer.DebugOptions_server.send_" + matsSocket.id(6);
+            let traceId = "MatsSocketServer.DebugOptions_server.send_" + matsSocket.randomId(6);
 
             // These will become the server's initiation requested DebugOptions upon the subsequent 'send'
             matsSocket.debug = debugOptions;
-            let initialMessage = "Message_" + matsSocket.id(20);
+            let initialMessage = "Message_" + matsSocket.randomId(20);
 
             matsSocket.endpoint("ClientSide.endpoint", (msg) => {
                 chai.assert.strictEqual(msg.data.number, Math.E);
@@ -241,7 +241,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             // Set special userId that gives us all DebugOptions
             setAuth('enableAllDebugOptions');
 
-            let traceId = "MatsSocketServer.DebugOptions_server.send_" + matsSocket.id(6);
+            let traceId = "MatsSocketServer.DebugOptions_server.send_" + matsSocket.randomId(6);
 
             matsSocket.terminator("ClientSide.terminator", (msg) => {
                 chai.assert.strictEqual(msg.data.number, Math.E);

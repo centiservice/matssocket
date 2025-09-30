@@ -46,7 +46,7 @@ describe('MatsSocket integration tests, listeners', function () {
                 chai.assert.isTrue(pingPong.roundTripMillis >= 0);  // Might take 0.4ms, and Firefox will round that to 0.
                 done();
             });
-            matsSocket.send("Test.ignoreInIncomingHandler", "PingPong_listener_" + matsSocket.id(6), {});
+            matsSocket.send("Test.ignoreInIncomingHandler", "PingPong_listener_" + matsSocket.randomId(6), {});
         });
 
     });
@@ -84,7 +84,7 @@ describe('MatsSocket integration tests, listeners', function () {
             });
 
             let received = false;
-            let promise = matsSocket.request("Test.resolveInIncomingHandler", "ErrorEvent-listener_" + matsSocket.id(6), {},
+            let promise = matsSocket.request("Test.resolveInIncomingHandler", "ErrorEvent-listener_" + matsSocket.randomId(6), {},
                 function () {
                     received = true;
                 });
@@ -126,7 +126,7 @@ describe('MatsSocket integration tests, listeners', function () {
 
             // Nothing of this should be invoked at the point where the test checks.
             let anythingInvoked = false;
-            matsSocket.request("Test.resolveInIncomingHandler", "ErrorEvent-listener_" + matsSocket.id(6), {},
+            matsSocket.request("Test.resolveInIncomingHandler", "ErrorEvent-listener_" + matsSocket.randomId(6), {},
                 function () {
                     anythingInvoked = true;
                 })
@@ -144,7 +144,7 @@ describe('MatsSocket integration tests, listeners', function () {
         beforeEach(() => setAuth());
 
         function runSendTest(includeInitiationMessage, done) {
-            let traceId = "InitiationProcessedEvent_send_" + includeInitiationMessage + "_" + matsSocket.id(6);
+            let traceId = "InitiationProcessedEvent_send_" + includeInitiationMessage + "_" + matsSocket.randomId(6);
             let msg = {
                 string: "The String",
                 number: Math.PI
@@ -229,7 +229,7 @@ describe('MatsSocket integration tests, listeners', function () {
 
 
         function runRequestTest(includeStash, done) {
-            let traceId = "InitiationProcessedEvent_request_" + matsSocket.id(6);
+            let traceId = "InitiationProcessedEvent_request_" + matsSocket.randomId(6);
             let msg = {
                 string: "The Strange",
                 number: Math.E
@@ -342,7 +342,7 @@ describe('MatsSocket integration tests, listeners', function () {
 
 
         function runRequestReplyToTest(includeStash, done) {
-            let traceId = "InitiationProcessedEvent_requestReplyTo_" + matsSocket.id(6);
+            let traceId = "InitiationProcessedEvent_requestReplyTo_" + matsSocket.randomId(6);
             let msg = {
                 string: "The Curious",
                 number: Math.PI
@@ -454,7 +454,7 @@ describe('MatsSocket integration tests, listeners', function () {
         });
 
         function runRequestReplyToWithTimeoutTest(includeStash, replyTimeout, done) {
-            let traceId = "InitiationProcessedEvent_requestReplyToWithTimeout_" + matsSocket.id(6);
+            let traceId = "InitiationProcessedEvent_requestReplyToWithTimeout_" + matsSocket.randomId(6);
             let msg = {
                 string: "The Straight-Out Frightening",
                 number: Math.SQRT2,

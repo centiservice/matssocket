@@ -72,7 +72,7 @@ describe('MatsSocket unit tests', function () {
             // We should not have created the WebSocket yet.
             chai.assert(!webSocketCreated);
             // This 'send' will create the WebSocket (sending HELLO+auth and SEND), and thus invoke the WebSocket constructor.
-            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.randomId(6), {});
             chai.assert(webSocketCreated);
             matsSocket.close("test done.");
             webSocketCreated = undefined;
@@ -89,7 +89,7 @@ describe('MatsSocket unit tests', function () {
                 authCallbackCalled = true;
                 matsSocket.setCurrentAuthorization("Test", Date.now() + 20000, 0);
             });
-            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.randomId(6), {});
 
             chai.assert(authCallbackCalled);
 
@@ -105,7 +105,7 @@ describe('MatsSocket unit tests', function () {
             matsSocket.setAuthorizationExpiredCallback(function (event) {
                 authCallbackCalled = true;
             });
-            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.randomId(6), {});
 
             chai.assert(!authCallbackCalled);
             matsSocket.close("Test done");
@@ -121,7 +121,7 @@ describe('MatsSocket unit tests', function () {
                 authCallbackCalled = true;
                 matsSocket.setCurrentAuthorization("Test", Date.now() + 20000, 0);
             });
-            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.randomId(6), {});
 
             chai.assert(authCallbackCalled);
             matsSocket.close("Test done");
@@ -137,7 +137,7 @@ describe('MatsSocket unit tests', function () {
                 authCallbackCalled = true;
                 matsSocket.setCurrentAuthorization("Test", Date.now() + 20000, 0);
             });
-            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.randomId(6), {});
 
             chai.assert(authCallbackCalled);
             matsSocket.close("Test done");
@@ -174,7 +174,7 @@ describe('MatsSocket unit tests', function () {
                 authCallbackCalled = true;
                 matsSocket.setCurrentAuthorization("Test", Date.now() + 20000, 0);
             });
-            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.id(6), {});
+            await matsSocket.send("Test.authCallback", "SEND_" + matsSocket.randomId(6), {});
 
             chai.assert(preConnectRequestCalled);
             chai.assert(authCallbackCalled);

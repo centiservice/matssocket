@@ -45,7 +45,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 authCallbackCalled = true;
                 setAuth();
             });
-            matsSocket.send("Test.single", "SEND_" + matsSocket.id(6), {})
+            matsSocket.send("Test.single", "SEND_" + matsSocket.randomId(6), {})
                 .then(reply => {
                     chai.assert(authCallbackCalled);
                     done();
@@ -58,7 +58,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
             matsSocket.setAuthorizationExpiredCallback(function (event) {
                 authCallbackCalled = true;
             });
-            matsSocket.send("Test.single", "SEND_" + matsSocket.id(6), {})
+            matsSocket.send("Test.single", "SEND_" + matsSocket.randomId(6), {})
                 .then(reply => {
                     chai.assert(!authCallbackCalled);
                     done();
@@ -72,7 +72,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 authCallbackCalled = true;
                 setAuth();
             });
-            matsSocket.send("Test.single", "SEND_" + matsSocket.id(6), {})
+            matsSocket.send("Test.single", "SEND_" + matsSocket.randomId(6), {})
                 .then(reply => {
                     chai.assert(authCallbackCalled);
                     done();
@@ -88,7 +88,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 authCallbackCalled = true;
                 setAuth();
             });
-            matsSocket.send("Test.single", "SEND_" + matsSocket.id(6), {})
+            matsSocket.send("Test.single", "SEND_" + matsSocket.randomId(6), {})
                 .then(reply => {
                     chai.assert(authCallbackCalled);
                     done();
@@ -123,7 +123,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 sleepTime: 0
             };
             let receivedCallbackInvoked = 0;
-            matsSocket.request("Test.slow", "REQUEST_authentication_from_server_" + matsSocket.id(6), req,
+            matsSocket.request("Test.slow", "REQUEST_authentication_from_server_" + matsSocket.randomId(6), req,
                 function () {
                     receivedCallbackInvoked++;
                 })
@@ -173,7 +173,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 authCallbackCalledEvent = event;
                 setTimeout(function () {
                     const expiry = Date.now() + 20000;
-                    authValue = "DummyAuth:MatsSocket.renewAuth_" + matsSocket.id(10) + ":" + expiry;
+                    authValue = "DummyAuth:MatsSocket.renewAuth_" + matsSocket.randomId(10) + ":" + expiry;
                     matsSocket.setCurrentAuthorization(authValue, expiry, 0);
                 }, 5);
             });
@@ -193,7 +193,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 number: Math.E,
                 sleepTime: 0
             };
-            matsSocket.send("Test.renewAuth", "MatsSocket.renewAuth_" + matsSocket.id(6), req);
+            matsSocket.send("Test.renewAuth", "MatsSocket.renewAuth_" + matsSocket.randomId(6), req);
         });
     });
 
@@ -221,7 +221,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
             const authValue = "DummyAuth:PreConnectionOperation:" + expiry;
             matsSocket.setCurrentAuthorization(authValue, expiry, 5000);
 
-            matsSocket.request("Test.replyWithCookieAuthorization", "PreConnectionOperation_" + matsSocket.id(6), {})
+            matsSocket.request("Test.replyWithCookieAuthorization", "PreConnectionOperation_" + matsSocket.randomId(6), {})
                 .then(value => {
                     // Assert that we get back the Authorization value that we supplied - which comes from the HTTP Handshake Request, evaluated in checkHandshake(..).
                     chai.assert.strictEqual(value.data.string, authValue);
@@ -255,7 +255,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 done();
             });
 
-            matsSocket.request("Test.replyWithCookieAuthorization", "PreConnectionOperation_" + matsSocket.id(6), {})
+            matsSocket.request("Test.replyWithCookieAuthorization", "PreConnectionOperation_" + matsSocket.randomId(6), {})
                 .catch(messageEvent => {
                     chai.assert.strictEqual(messageEvent.type, mats.MessageEventType.SESSION_CLOSED);
                 });
@@ -287,7 +287,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
                 done();
             });
 
-            matsSocket.request("Test.replyWithCookieAuthorization", "PreConnectionOperation_" + matsSocket.id(6), {})
+            matsSocket.request("Test.replyWithCookieAuthorization", "PreConnectionOperation_" + matsSocket.randomId(6), {})
                 .catch(messageEvent => {
                     chai.assert.strictEqual(messageEvent.type, mats.MessageEventType.SESSION_CLOSED);
                 });

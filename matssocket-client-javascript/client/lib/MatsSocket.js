@@ -1331,7 +1331,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * @returns {string} a random string consisting of characters from from digits, lower and upper case letters
      * (62 chars).
      */
-    this.id = function (length) {
+    this.randomId = function (length= 6) {
         let result = '';
         for (let i = 0; i < length; i++) {
             result += _alphabet[Math.floor(Math.random() * _alphabet.length)];
@@ -1348,7 +1348,7 @@ function MatsSocket(appName, appVersion, urls, config) {
      * @returns {string} a random string consisting of characters from all visible and non-JSON-quoted chars of
      * ASCII (92 chars).
      */
-    this.jid = function (length) {
+    this.randomCId = function (length= 10) {
         let result = '';
         for (let i = 0; i < length; i++) {
             result += _jsonAlphabet[Math.floor(Math.random() * _jsonAlphabet.length)];
@@ -1405,7 +1405,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     // Shuffle the URLs
     _shuffleArray(_useUrls);
 
-    const _matsSocketInstanceId = that.id(3);
+    const _matsSocketInstanceId = that.randomId(3);
     let _lastMessageEnqueuedTimestamp = Date.now(); // Start by assuming that it was just used.
     let _initialSessionEstablished_PerformanceNow = undefined;
 
@@ -1453,7 +1453,7 @@ function MatsSocket(appName, appVersion, urls, config) {
     // Outbox for SEND and REQUEST messages waiting for Received ACK/NACK
     const _outboxInitiations = Object.create(null);
     // .. "guard object" to avoid having to retransmit messages sent /before/ the WELCOME is received for the HELLO handshake
-    let _outboxInitiations_RetransmitGuard = this.jid(5);
+    let _outboxInitiations_RetransmitGuard = this.randomCId(5);
     // Outbox for REPLYs
     const _outboxReplies = Object.create(null);
     // The Inbox - to be able to catch double deliveries from Server
@@ -1527,7 +1527,7 @@ function MatsSocket(appName, appVersion, urls, config) {
         // Reset Reconnect state vars
         _resetReconnectStateVars();
         // Make new RetransmitGuard - so that any previously "guarded" messages now will be retransmitted.
-        _outboxInitiations_RetransmitGuard = that.jid(5);
+        _outboxInitiations_RetransmitGuard = that.randomCId(5);
         // :: Clear out _webSocket;
         if (_webSocket) {
             // We don't want the onclose callback invoked from this event that we initiated ourselves.
@@ -1786,7 +1786,7 @@ function MatsSocket(appName, appVersion, urls, config) {
                 an: appName,
                 av: appVersion,
                 auth: _authorization,  // This is guaranteed to be in place and valid, see above
-                cid: that.id(10)
+                cid: that.randomId(10)
             };
             // ?: Have we requested a reconnect?
             if (that.sessionId !== undefined) {
@@ -2215,7 +2215,7 @@ function MatsSocket(appName, appVersion, urls, config) {
 
             // :: Actually create the WebSocket instance
             let url = _currentWebSocketUrl + (that.preconnectoperation ? "?preconnect=true" : "");
-            const webSocketInstanceId = that.id(6);
+            const webSocketInstanceId = that.randomId(6);
             if (that.logging) log("INSTANTIATING new WebSocket(\"" + url + "\", \"matssocket\") - InstanceId:[" + webSocketInstanceId + "]");
             websocketAttempt = webSocketFactory(url, "matssocket");
             websocketAttempt.webSocketInstanceId = webSocketInstanceId;
