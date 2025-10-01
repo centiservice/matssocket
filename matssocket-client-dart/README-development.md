@@ -9,16 +9,22 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 ## Gradle targets
 
 ### General
+
+*Note: When run without subproject qualifier (i.e. `matssocket-client-dart:...`), the `build`, `archiveLib`, `test`,
+`nodeBinDir`, `download` and `downloadAll` tasks will execute the corresponding tasks both in Dart and JavaScript
+clients. `matsSocketTestServer` is a root project task that all testing relies on. The other tasks are unique to the
+Dart client and can thus be invoked without qualifier.*
+
 * `build`: runs `archiveLib`, `dartDoc` and `test` (target from DI server; GitHub Actions).
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
 * `dartDoc`: generates Dart documentation, open `doc/api/index.html`
 * `test`: runs all VM and Node tests on all compilers.
-* `testDart`: runs all tests, including the tests on the Web target
+* `testDart`: runs all tests in all platform/compiler combinations, including the tests on the Web target
 * Other test tasks, see _'Running Dart tests'_ chapter below.
-* `dartBinPath`: Installs Dart, and then prints out the path to the Dart binary, and PATH variables for Unix and Windows.
-* `nodeBinDir`: NodeTask, so it downloads Node, and then prints out the path to the Node bin dir.
+* `dartBinPath`: Downloads Dart, then prints out the path to the Dart binary, and PATH variables for Unix and Windows.
+* `nodeBinDir`: Downloads Node, then prints out the path to the Node bin dir, and PATH variables for Unix and Windows.
 * `download`: depends on both `dartBinPath` and `nodeBinDir` - i.e. downloads Dart and Node, and prints out the paths. 
-* `downloadAll`: Download + dependencies ('dart pub get' and 'npm install')
+* `downloadAll`: Download + dependencies ('dart pub get')
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
 
 ### Dart tasks
@@ -50,7 +56,7 @@ targets, except those depending on Chrome ('testWeb').
 Chrome/Chromium binary, if it is not in the default location. This is done with the `-PchromePath=` parameter.
 
 Standing in the project root directory, the following `testDart` task runs all platform/compiler variants of the
-integration tests, setting the Chrome path to `/snap/bin/chromium`.
+integration tests, including Web, setting the Chrome path to `/snap/bin/chromium`.
 
 ```shell
 ./gradlew -PchromePath=/snap/bin/chromium testDart   # replace path with your Chrome path

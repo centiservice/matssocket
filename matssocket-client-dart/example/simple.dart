@@ -1,6 +1,6 @@
-import 'dart:async';
-import 'package:logging/logging.dart';
 import 'package:matssocket/matssocket.dart';
+import 'package:logging/logging.dart';
+import 'dart:async';
 
 void _configureLogging() {
   Logger.root.level = Level.INFO;
@@ -20,6 +20,8 @@ Future<void> main() async {
   matsSocket.setCurrentAuthorization('DummyAuth:DummyUser:'
       '${DateTime.now().add(Duration(minutes: 10)).millisecondsSinceEpoch}');
 
+  // ----- Setup is now done, we can start interacting with the server -----
+
   // Perform a request to MatsSocketEndpoint 'Test.single', which on server forwards to Mats endpoint 'Test.single'
   final result = await matsSocket.request('Test.single', 'REQUEST-with-Promise_${matsSocket.randomId(6)}', {
     'string': 'Request String',
@@ -31,7 +33,7 @@ Future<void> main() async {
   print('   \\- Data: ${result.data.toString()}');
 
   // Close the MatsSocket.
-  // NOTE: Closing the MatsSocket after one request makes no sense in the real world: The MatsSocket is a long-lived
+  // NOTE: Closing the MatsSocket after one request makes no sense in a real application: A MatsSocket is a long-lived
   // connection, featuring automatic reconnects, keep-alive ping-pongs, reauthentication when needed etc, and should
   // be kept open for the whole application lifetime. This is just for demonstration purposes.
   await matsSocket.close("Demo done!");

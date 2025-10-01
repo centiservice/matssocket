@@ -67,7 +67,7 @@ Future<void> main() async {
         " - would typically have sent a HTTP POST/GET to server as additional layer of session cleanup.");
   };
 
-  // Wrap the request to capture both resolve and reject, and ensure stacktrace is shown
+  // Wrap the request to capture both resolve and reject, and ensure stacktrace is shown.
   // This is way overkill wrt. normal usage, but demonstrates all ways of handling the Future.
   try {
     final future = matsSocket.request('Test.single', 'REQUEST-with-Promise_${matsSocket.randomId(6)}',
@@ -101,9 +101,9 @@ Future<void> main() async {
     print("\n == Chilling before closing, so we can see how the MatsSocket normally behaves wrt. ACK/ACK2");
     await Future.delayed(const Duration(milliseconds: 1000));
     print('\n == Closing MatsSocket...');
-    // NOTE: Closing the MatsSocket after one request makes no sense in the real world: The MatsSocket is a long-
-    // lived connection, featuring automatic reconnects, keep-alive ping-pongs, reauthentication when needed etc,
-    // and should be kept open for the whole application lifetime. This is just for demonstration purposes.
+    // NOTE: Closing the MatsSocket after one request makes no sense in a real application: A MatsSocket is a long-lived
+    // connection, featuring automatic reconnects, keep-alive ping-pongs, reauthentication when needed etc, and should
+    // be kept open for the whole application lifetime. This is just for demonstration purposes.
     await matsSocket.close('demo done!');
   }
 
