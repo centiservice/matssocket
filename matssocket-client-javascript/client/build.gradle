@@ -54,24 +54,24 @@ tasks.register('archiveLib', Zip) {
     }
 }
 
-tasks.register('packDryRun', NpmTask) {
+tasks.register('jsPackDryRun', NpmTask) {
     dependsOn build
     args = ['pack', '--dry-run']
 }
 
-tasks.register('publishDryRun', NpmTask) {
+tasks.register('jsPublishDryRun', NpmTask) {
     dependsOn packDryRun
     args = ['publish', '--dry-run', '--tag', 'experimental']
 }
 
-tasks.register('publishExperimental', NpmTask) {
+tasks.register('jsPublishExperimental', NpmTask) {
     dependsOn build
     // Remember to update version in package.json, it shall read "0.0.0-experimental-<iso datetime>" (e.g. 2021-07-14T18-06)
     // TODO: Also update in clients and build.gradle files.
     args = ['publish', '--tag', 'experimental']
 }
 
-tasks.register('publish', NpmTask) {
+tasks.register('jsPublish', NpmTask) {
     dependsOn build
     // Remember to update version in package.json, it shall read "x.y.z"
     // TODO: Also update in clients and build.gradle files.
@@ -81,7 +81,7 @@ tasks.register('publish', NpmTask) {
 
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
-tasks.register('javascriptTestWatch', NpmTask) {
+tasks.register('testWatch', NpmTask) {
     args = ['test', '--watch']
     workingDir = file('./tests')
 }

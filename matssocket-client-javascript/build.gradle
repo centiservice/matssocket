@@ -5,3 +5,5 @@
 // Test: Depend on both test subprojects' tests
 tasks.register('test') { dependsOn 'tests:test' }
 tasks.register('build') { dependsOn 'client:build', test }
+tasks.register('download') { dependsOn 'client:download', 'tests:download' }
+tasks.register('downloadAll') { dependsOn 'client:downloadAll', 'tests:downloadAll' }

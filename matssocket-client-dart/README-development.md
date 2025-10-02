@@ -11,21 +11,23 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 ### General
 
 *Note: When run without subproject qualifier (i.e. `matssocket-client-dart:...`), the `build`, `archiveLib`, `test`,
-`nodeBinDir`, `download` and `downloadAll` tasks will execute the corresponding tasks both in Dart and JavaScript
-clients. `matsSocketTestServer` is a root project task that all testing relies on. The other tasks are unique to the
-Dart client and can thus be invoked without qualifier.*
+`nodeBinDir`, `download`, `downloadAll` and `distclean` tasks will execute the corresponding tasks both in Dart and
+JavaScript clients. `matsSocketTestServer` is a root project task that all testing relies on. The other tasks are unique
+to the Dart client, and it thus doesn't matter with qualifier._
 
 * `build`: runs `archiveLib`, `dartDoc` and `test` (target from DI server; GitHub Actions).
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
 * `dartDoc`: generates Dart documentation, open `doc/api/index.html`
-* `test`: runs all VM and Node tests on all compilers.
-* `testDart`: runs all tests in all platform/compiler combinations, including the tests on the Web target
+* `test`: runs all VM and Node tests on all compilers _(not Web targets, due to dependency on Chrome/Chromium)_
+* `testDart`: runs all tests in all platform/compiler combinations, including the Web targets. _(Path to Chrome/Chromium
+  can be set using `-PchromePath=...`)._
 * Other test tasks, see _'Running Dart tests'_ chapter below.
 * `dartBinPath`: Downloads Dart, then prints out the path to the Dart binary, and PATH variables for Unix and Windows.
 * `nodeBinDir`: Downloads Node, then prints out the path to the Node bin dir, and PATH variables for Unix and Windows.
 * `download`: depends on both `dartBinPath` and `nodeBinDir` - i.e. downloads Dart and Node, and prints out the paths. 
 * `downloadAll`: Download + dependencies ('dart pub get')
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
+* `distclean`: In addition to `clean` which deletes build artifacts, also deletes all downloaded infrastructure.
 
 ### Dart tasks
 * `dartVersion`: Runs `dart --version` to print out the Dart version. (`versions` depends on this)
@@ -39,12 +41,26 @@ Dart client and can thus be invoked without qualifier.*
     publishing!**
 * `dartPublish`: Runs `pub publish` to publish the lib to pub.dev. **Make sure `testDart` passes before publishing!**
 
+# Build
+
+"Building" on Dart only refers to testing and generating documentation, as there is no compile or bundling step. Dart
+libraries are delivered as raw source code, the target compilation is done by the actual application. Dart uses tree
+shaking to minimize the final application before compile. Compared to JavaScript, minimized source files thus don't make
+sense.
+
+The deliverables are thus the `/lib` folder (with its child `/lib/src/`), and the generated `/doc/api` folder, as well
+as most of the rest in `matssocket-client-dart/`.
+
+Run `./gradlew dartPublishDryRun` to see what will be published.
+
+Dependencies: `logging` for all targets, and `web` and `http` for the JS targets (Node and Web).
+
 ## Running Dart tests
 
 ### Via Gradle
 
-Gradle handles downloading the Dart SDK, and firing up the backend MatsSocketTestServer, before running the integration
-tests.
+Gradle handles downloading the Dart SDK (and if relevant for chosen tests, Node.js), and handles firing up the backend
+MatsSocketTestServer, before running the integration tests.
 
 When standing in the project root directory, the following standard `test` task runs all test on all platform/compiler
 targets, except those depending on Chrome ('testWeb').

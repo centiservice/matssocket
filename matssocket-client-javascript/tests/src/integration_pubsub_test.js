@@ -29,7 +29,6 @@ function setAuth(userId = "standard", duration = 20000, roomForLatencyMillis = 1
 
 
 describe('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', function () {
-
     describe('basic subscription with a publish from server', function () {
         // Create Socket before each request
         beforeEach(() => {
