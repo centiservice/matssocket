@@ -47,8 +47,10 @@
   "files": [
     "lib/",
     "dist/",
+    "package.json",
     "build.gradle",
     "rollup.config.js",
+    "tsconfig.json",
     "README.md",
     "README-development.md",
     "LICENSE"
