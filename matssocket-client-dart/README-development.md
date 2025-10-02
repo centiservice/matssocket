@@ -10,10 +10,10 @@ as possible wrt. "look and feel" and wrt. keeping them 100% in sync functionally
 
 ### General
 
-*Note: When run without subproject qualifier (i.e. `matssocket-client-dart:...`), the `build`, `archiveLib`, `test`,
-`nodeBinDir`, `download`, `downloadAll` and `distclean` tasks will execute the corresponding tasks both in Dart and
-JavaScript clients. `matsSocketTestServer` is a root project task that all testing relies on. The other tasks are unique
-to the Dart client, and it thus doesn't matter with qualifier._
+_Note: When run without subproject qualifier (i.e. `matssocket-client-dart:...`), the `build`, `archiveLib`, `test`,
+`nodeBinDir`, `download`, `downloadAll`, `versions` and `distclean` tasks will execute the corresponding tasks both in
+Dart and JavaScript clients. `matsSocketTestServer` is a root project task that all testing relies on. The other tasks
+are unique to the Dart client, and it thus doesn't matter with qualifier._
 
 * `build`: runs `archiveLib`, `dartDoc` and `test` (target from DI server; GitHub Actions).
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
@@ -27,6 +27,7 @@ to the Dart client, and it thus doesn't matter with qualifier._
 * `download`: depends on both `dartBinPath` and `nodeBinDir` - i.e. downloads Dart and Node, and prints out the paths. 
 * `downloadAll`: Download + dependencies ('dart pub get')
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
+* `versions`: tasks `dartVersion` + `nodeVersion`.
 * `distclean`: In addition to `clean` which deletes build artifacts, also deletes all downloaded infrastructure.
 
 ### Dart tasks

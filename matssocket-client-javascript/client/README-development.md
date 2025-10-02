@@ -10,10 +10,10 @@ the bundled ESM and UMD modules works as expected.
 
 ## Gradle tasks
 
-_Note: When run without subproject qualifier (i.e. `matssocket-client-javascript:[client|tests]:...`), the `build`,
-`archiveLib`,`test`, `nodeBinDir`, `download`, `downloadAll` and `distclean` tasks will execute the corresponding tasks
-both in Dart and JavaScript clients. `matsSocketTestServer` is a root project task that all testing relies on. The other
-tasks are unique to the JavaScript client, and it thus doesn't matter with qualifier._
+_Note: When run without subproject qualifier (i.e. `matssocket-client-javascript:[client|tests]:...`),
+the `build`, `archiveLib`,`test`, `nodeBinDir`, `download`, `downloadAll`, `versions` and `distclean` tasks will execute
+the corresponding tasks both in Dart and JavaScript clients. `matsSocketTestServer` is a root project task that all
+testing relies on. The other tasks are unique to the JavaScript client, and it thus doesn't matter with qualifier._
 
 * `build`: (for 'client') Builds the modules, including `tsc` to make TypeScript defs + tasks `archiveLib` and `jsDoc`.
 * `build`: (for 'tests') Builds the modules for tests + task `testJs`.
@@ -25,9 +25,12 @@ tasks are unique to the JavaScript client, and it thus doesn't matter with quali
 * `download`: synonym for `nodeBinDir`.
 * `downloadAll`: .. download + `npm install` to fetch dependencies.
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
+* `versions`: tasks `nodeVersion` + `npmVersion`.
 * `distclean`: In addition to `clean` which deletes build artifacts, also deletes all downloaded infrastructure.
 
 ### Node/NPM tasks
+* `nodeVersion`: prints out the Node version.
+* `npmVersion`: prints out the NPM version.
 * `npmInstall`: runs `npm install` to install all JS deps in package.json.
 * `npmCleanUpdate`: deletes 'node_modules' and 'package-lock.json', and then runs `npm update` to update deps to latest
   specified in 'package.json'.
@@ -37,13 +40,24 @@ tasks are unique to the JavaScript client, and it thus doesn't matter with quali
   versions in 'package.json'
 
 ### Publishing
+* `jsPackDryRun`: Runs `npm pack --dry-run` - Quick way to get the contents of publish package.
 * `jsPublishDryRun`: Runs `npm publish --dry-run --tag --experimental` to get a preview of what will be published,
   with scoring/warnings. Depends on `jsDoc` and `testRaw` for fast iteration. **Make sure `testJs` passes before
   publishing!**
 * `jsPublishExperimental`: Runs `npm publish --tag experimental` XXXXXXXXX
-* `jsPublishStable`: Runs `npm publish --tag stable` to publish the lib to NPM. **Make sure `testJs` passes before`
-* `jsPackDryRun`: Runs `npm pack --dry-run` - What publish would do. XXXXXXXX
-* `jsPublish`: Runs `npm publish` to publish the lib to NPM. **Make sure `testJs` passes before publishing!**
+* `jsPublish`: Runs `npm publish` to publish the lib to NPM, with default `--tag latest`. **Make sure `testJs` passes
+  before publishing!**
+
+## Development
+
+Running the `MatsSocketTestServer` makes it simple to both test and develop on the JS Client. It is the class
+`io.mats3.matssocket.MatsSocketTestServer`, residing in the 'matssocket-server-impl' - you may find it in e.g. IntelliJ,
+right-click and select 'Run' or 'Debug'. Or run it from command line with Gradle, from project root:
+`./gradlew matsSocketTestServer`.
+
+Access the test server on http://localhost:8080/. Here you can run the unit and integration tests in
+the browser. It maps directly to the source files. Also available are test-runs using the bundled ESM and UMD modules of
+both the client and the tests, but then you first need to build the project so that these bundles exists.
 
 ## Build
 
@@ -97,7 +111,6 @@ MatsSocketServer with multiple test MatsSocket endpoints, as well as a few HTTP 
 right-click and select 'Run' or 'Debug'. **Or run it from command line with Gradle, from project root:
 `./gradlew matsSocketTestServer`.**
 
-
 #### Using the scripts in `package.json`:
 Stand in the `matssocket-client-javascript/tests` directory. Have the Node bin dir on your PATH (see above).
 ```shell
@@ -110,7 +123,7 @@ npm run test      // All of the above, requires building first
 #### Using npx and mocha directly:
 Stand in the `matssocket-client-javascript/tests` directory. Have the Node bin dir on your PATH (see above).
 ```shell
-npx mocha src/all_tests.js
+npx mocha src/*test.js
 npx mocha bundle/all_tests.esm.js   // requires building first
 npx mocha bundle/all_tests.umd.cjs  // requires building first
 ```
@@ -122,13 +135,16 @@ the result in the log). Open a browser and navigate to http://localhost:8080/, w
 HTML files that run the tests in the browser. To run the bundled variants, you must first build them, both client and
 tests - `./gradlew matssocket-client-javascript:build` will do that.
 
-## Development / Building
+### Watching tests and lib for changes
 
-Running the `MatsSocketTestServer` makes it simple to both test and develop on the JS Client. It is the class
-`io.mats3.matssocket.MatsSocketTestServer`, residing in the 'matssocket-server-impl' - you may find it in e.g. IntelliJ,
-right-click and select 'Run' or 'Debug'. Or run it from command line with Gradle, from project root:
-`./gradlew matsSocketTestServer`.
+Gradle: `./gradlew jsTestWatch`
 
-Access the test server on http://localhost:8080/. Here you can run the unit and integration tests in
-the browser. It maps directly to the source files. Also available is a test-run using the UMD-files of both the
-client and the tests, but then you first need to build the project so that the UMD modules exist.
+Command line, standing in `matssocket-client-javascript/tests/` directory - giving a nice colorization:  
+_(Prerequisite: Set PATH, read above)_
+```shell
+npm run test:raw -- --node-option=watch --watch-files=../client/lib
+```
+or - this one makes it possible to specify the test file to run:
+```shell
+npx mocha src/*test.js --node-option=watch --watch-files=../client/lib
+```

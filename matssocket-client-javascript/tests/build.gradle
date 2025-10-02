@@ -63,6 +63,16 @@ tasks.register('testEsm', NpmTask) {
     }
 }
 
+// Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
+// a server listening on ws://localhost:8080/matssocket
+tasks.register('jsTestWatch', NpmTask) {
+    dependsOn npmInstall
+    // Either "--watch --parallel", or "--node-option=watch"
+    // Note: "--watch-files=../client/lib" is to also include the library itself.
+    // Note: '--' is to separate the arguments to npm from the arguments to the script.
+    args = ['run', 'test:raw', '--', '--node-option=watch', '--watch-files=../client/lib']
+}
+
 tasks.register('download') {
     dependsOn nodeBinDir
 }

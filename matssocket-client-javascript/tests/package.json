@@ -10,7 +10,7 @@
 
   "scripts": {
     "build": "rollup --config",
-    "test:raw": "mocha src/all_tests.js",
+    "test:raw": "mocha src/*test.js",
     "test:esm": "mocha bundle/all_tests.esm.js",
     "test:umd": "mocha bundle/all_tests.umd.cjs",
     "test": "npm run test:raw && npm run test:esm && npm run test:umd"
