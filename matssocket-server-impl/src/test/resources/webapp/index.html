@@ -18,10 +18,13 @@
     </ul>
 
     <h3>Unit and Integration tests, run in browser</h3>
+    <i><b>NOTE! You should click these in the active tab!</b> Opening all three concurrently in separate tabs will typically not work
+        due to the browser slowing down JavaScript for the non-active tab! (The default test-timeout of 2 seconds kicks in)</i>
     <ul>
-        <li><a href="unit_and_integration_tests_esm.html">ESM Unit and Integration tests</a> - runs source ES Module files directly, both tests and MatsSocket.js, as <code>type="module"</code>.</li>
-        <li><a href="unit_and_integration_tests_umd.html">UMD Unit and Integration tests</a> - <b>(The project must be built first:
-            <code>./gradlew build</code> or <code>./gradlew test</code> so that the UMD modules are present!)</b> runs UMDified tests and <code>MatsSocket.umd.cjs</code>, </li>
+        <li><a href="unit_and_integration_tests_raw.html">"Raw" ESM Unit and Integration tests</a> - runs source ES Module files directly, both tests and <code>MatsSocket.js</code>, as <code>type="module"</code>.</li>
+        <li><a href="unit_and_integration_tests_esm.html">ESM module Unit and Integration tests</a> - runs ESM modules tests and <code>MatsSocket.esm.js</code>, as <code>type="module"</code>
+            - <b>(The project must be built first: '<code>./gradlew build</code>' so that the bundles are present!)</b></li>
+        <li><a href="unit_and_integration_tests_umd.html">UMD module Unit and Integration tests</a> - runs UMDified tests and <code>MatsSocket.umd.cjs</code> - <b>(The project must be built first!)</b> </li>
     </ul>
 
     <h3>Some pure HTML+JavaScript tests:</h3>

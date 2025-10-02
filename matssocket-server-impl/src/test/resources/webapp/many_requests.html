@@ -75,7 +75,7 @@ the specific cell with its timing information.<br>
                 requestCell.innerHTML = "Req " + innerI;
 
                 // Fire off the MatsSocket request
-                matsSocket.request("Test.single", requestId + ":" + matsSocket.id(6),
+                matsSocket.request("Test.single", requestId + ":" + matsSocket.randomId(3),
                     // The Request DTO
                     {
                         string: "Request String:" + requestId,

@@ -51,16 +51,16 @@ NOTE! You must open the browser's DevTool Console to see what happens in the con
 
     // ===== Perform some operations.
 
-    matsSocket.send("Test.single", "SEND_" + matsSocket.id(6), {string: "The String", number: Math.PI});
+    matsSocket.send("Test.single", "SEND_" + matsSocket.randomId(6), {string: "The String", number: Math.PI});
     matsSocket.flush();
 
-    matsSocket.send("Test.single", "SEND-with-Promise_" + matsSocket.id(6), {string: "The String", number: Math.PI})
+    matsSocket.send("Test.single", "SEND-with-Promise_" + matsSocket.randomId(6), {string: "The String", number: Math.PI})
         .then(function (receivedEvent) {
             console.log("SEND-with-Promise resolved! (message received on server) Took " + receivedEvent.roundTripMillis + "ms: " + JSON.stringify(receivedEvent));
         });
     matsSocket.flush();
 
-    matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.id(6), {
+    matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.randomId(6), {
         string: "Request String",
         number: Math.E
     }).then(function (messageEvent) {
@@ -69,7 +69,7 @@ NOTE! You must open the browser's DevTool Console to see what happens in the con
     });
     matsSocket.flush();
 
-    matsSocket.request("Test.single", "REQUEST-with-Promise-and-receivedCallback_" + matsSocket.id(6), {
+    matsSocket.request("Test.single", "REQUEST-with-Promise-and-receivedCallback_" + matsSocket.randomId(6), {
         string: "Request String",
         number: Math.E
     }, function (receivedEvent) {
@@ -80,15 +80,15 @@ NOTE! You must open the browser's DevTool Console to see what happens in the con
     matsSocket.flush();
 
     setTimeout(function () {
-        matsSocket.requestReplyTo("Test.single", "REQUEST-autoPipeline-with-ReplyTo_1_" + matsSocket.id(6),
+        matsSocket.requestReplyTo("Test.single", "REQUEST-autoPipeline-with-ReplyTo_1_" + matsSocket.randomId(6),
             {string: "Messge 1", number: 100.001, requestTimestamp: Date.now()},
-            "ClientSide.testEndpoint", "pipeline_1_" + matsSocket.id(10));
-        matsSocket.requestReplyTo("Test.single", "REQUEST-autoPipeline-with-ReplyTo_2_" + matsSocket.id(6),
+            "ClientSide.testEndpoint", "pipeline_1_" + matsSocket.randomId(10));
+        matsSocket.requestReplyTo("Test.single", "REQUEST-autoPipeline-with-ReplyTo_2_" + matsSocket.randomId(6),
             {string: "Message 2", number: 200.002, requestTimestamp: Date.now()},
-            "ClientSide.testEndpoint", "pipeline_2_" + matsSocket.id(10));
-        matsSocket.requestReplyTo("Test.single", "REQUEST-autoPipeline-with-ReplyTo_3_" + matsSocket.id(6),
+            "ClientSide.testEndpoint", "pipeline_2_" + matsSocket.randomId(10));
+        matsSocket.requestReplyTo("Test.single", "REQUEST-autoPipeline-with-ReplyTo_3_" + matsSocket.randomId(6),
             {string: "Message 3", number: 300.003, requestTimestamp: Date.now()},
-            "ClientSide.testEndpoint", "pipeline_3_" + matsSocket.id(10));
+            "ClientSide.testEndpoint", "pipeline_3_" + matsSocket.randomId(10));
     }, 300);
 
     // ===== Dump some stats: Print all initiations, and repeatedly print pings.

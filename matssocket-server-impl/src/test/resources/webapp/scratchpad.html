@@ -6,7 +6,7 @@
 NOTE! You must open the browser's DevTool Console to get any effect of this!
 
 <script type="module">
-    import * as mats from './mats/client/src/MatsSocket.js';
+    import * as mats from './mats/client/lib/MatsSocket.js';
 
     const matsSocket = new mats.MatsSocket("TestApp", "1.2.3", ['ws://localhost:8080/matssocket', 'ws://localhost:8081/matssocket']);
 
@@ -38,7 +38,7 @@ NOTE! You must open the browser's DevTool Console to get any effect of this!
     matsSocket.debug = 0;
 
 
-    matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.id(6), {
+    matsSocket.request("Test.single", "REQUEST-with-Promise_" + matsSocket.randomId(6), {
             string: "Request String",
             number: Math.E
         }, function (event) {

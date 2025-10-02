@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MatsSocket Tests</title>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mocha@11.7.2/mocha.css">
+    <script src="https://cdn.jsdelivr.net/npm/mocha@11.7.2/mocha.js"></script>
+</head>
+<body>
+
+<h1>Unit and Integration tests, directly from EcmaScript Module files</h1>
+<i>(Both the MatsSocket.js code, and the unit/integration tests code, is accessed and run directly from the source.)</i>
+<p/>
+Uses import maps to reference MatsSocket.js and chai.
+
+<div id="mocha"></div>
+<script type="importmap">
+{
+  "imports": {
+    "matssocket": "/mats/client/lib/MatsSocket.js",
+    "chai": "https://cdn.jsdelivr.net/npm/chai@6.0.1/+esm"
+  }
+}
+</script>
+
+<script type="module">mocha.setup('bdd');</script>
+
+<script type="module" src="mats/tests/src/all_tests.js"></script>
+
+<script type="module">mocha.run();</script>
+
+</body>
+</html>

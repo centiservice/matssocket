@@ -3,62 +3,32 @@
 <head>
     <title>MatsSocket Tests</title>
     <meta charset="utf-8"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mocha@9.0.2/mocha.css">
-    <script src="https://cdn.jsdelivr.net/npm/mocha@9.0.2/mocha.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mocha@11.7.2/mocha.css">
+    <script src="https://cdn.jsdelivr.net/npm/mocha@11.7.2/mocha.js"></script>
 </head>
 <body>
 
-<h1>Unit and Integration tests, directly from EcmaScript Module files</h1>
-Both the MatsSocket.js code, and the unit/integration tests code, is accessed and run directly from the source.
+<h1>Unit and Integration tests, from the bundled EcmaScript Module files</h1>
+You must have built the code, '<code>./gradlew build</code>', to have the ESM files available.
+<p/>
+Uses import maps to reference <code>MatsSocket.js</code> and <code>chai</code>.
 
 <div id="mocha"></div>
-<!--
-- Employing "Import maps" to handle Module Loading in browser using "bare references", e.g. "chai" and "matssocket".
-- Polyfilling Import Maps", since Firefox is lacking support.
-Can I use: https://caniuse.com/import-maps
-Import maps: https://blog.logrocket.com/es-modules-in-browsers-with-import-maps/
-Polyfill: https://github.com/guybedford/es-module-shims
-
-Damn strange, chai does not have an ESM bundle! Fixt: https://github.com/esm-bundle/chai
--->
-<script src="https://cdn.jsdelivr.net/npm/es-module-shims@1.6.2/dist/es-module-shims.js"></script>
+<!-- Note that the "matssocket" ref below can be changed from "/mats/client/dist/MatsSocket.esm.js" to
+     the minified version "/mats/client/dist/MatsSocket.esm.min.js" -->
 <script type="importmap">
 {
   "imports": {
-    "matssocket": "/mats/client/lib/MatsSocket.js",
+    "matssocket": "/mats/client/dist/MatsSocket.esm.js",
     "chai": "https://cdn.jsdelivr.net/npm/chai@6.0.1/+esm"
   }
 }
 </script>
-<!-- Note that the "matssocket" ref above can be changed from "/mats/client/lib/MatsSocket.js" to
-1. "/mats/client/dist/MatsSocket.esm.js"
-2. "/mats/client/dist/MatsSocket.esm.min.js"
-.. and run just as well - assuming that they have been built, of course. (run './gradlew build')
- -->
 
-<script type="module">
-    mocha.setup('bdd');
-</script>
+<script type="module">mocha.setup('bdd');</script>
 
-<!--
-Getting testing to work in browser with Mocha while using same ESM test files as when running tests in Node.js CLI.
-Good article: https://medium.com/dailyjs/running-mocha-tests-as-native-es6-modules-in-a-browser-882373f2ecb0
-Found "Import maps" to handle the bare imports, and then 'es-module-shim' since Firefox is f... slow to implement this.
--->
+<script type="module" src="mats/tests/bundle/all_tests.esm.js"></script>
 
-<script type="module">
-    // This import is just to force the 'es-module-shim' to kick in here, and thus ensure that mocha.run() is executed
-    // after all the tests have been loaded and registered (i.e. the "describe(..)" methods in the included tests files
-    // above have run).
-    import * as chai from "chai"
-    // This is just to actually use the imported chai, so that IntellJ doesn't complain..
-    chai.assert(true === true, "Nå står ikke verden til påske!");
-</script>
-
-<script type="module" src="mats/tests/src/all_tests.js"></script>
-
-<script type="module">
-    mocha.run();
-</script>
+<script type="module">mocha.run();</script>
 </body>
 </html>

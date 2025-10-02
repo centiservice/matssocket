@@ -3,31 +3,27 @@
 <head>
     <title>MatsSocket Tests</title>
     <meta charset="utf-8"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/7.0.0/mocha.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mocha@11.7.2/mocha.css">
+    <script src="https://cdn.jsdelivr.net/npm/mocha@11.7.2/mocha.js"></script>
 </head>
 <body>
 
-<h1>Unit and Integration tests, bundled UMD</h1>
+<h1>Unit and Integration tests, from the bundled UMD files</h1>
 You must have built the code, '<code>./gradlew build</code>', to have the UMD files available.
 
 <div id="mocha"></div>
 
+<!-- Note that the "matssocket" ref below can be changed from "/mats/client/dist/MatsSocket.umd.cjs" to
+     the minified version "/mats/client/dist/MatsSocket.umd.min.cjs" -->
 <script src="/mats/client/dist/MatsSocket.umd.cjs"></script>
-<!-- Note that the "matssocket" ref above can both be
-1. "/mats/client/dist/MatsSocket.umd.cjs"
-2. "/mats/client/dist/MatsSocket.umd.min.cjs"
-.. assuming that they have been built, of course. (run './gradlew build')
- -->
 
 <script src="https://cdn.jsdelivr.net/npm/chai@4.2.0/chai.js"></script>
 
 <script>mocha.setup('bdd')</script>
 
-<script src="mats/tests/bundle/all_tests.umd.js"></script>
+<script src="mats/tests/bundle/all_tests.umd.cjs"></script>
 
-<script>
-    mocha.run();
-</script>
+<script> mocha.run();</script>
+
 </body>
 </html>

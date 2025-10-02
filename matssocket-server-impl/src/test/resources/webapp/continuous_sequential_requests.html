@@ -22,7 +22,8 @@
 Sends off requests one by one, immediately sending off the next when the last reply is received.<br>
 After one "screenful", timings are calculated, and we start over. The memory situation can be viewed over time in Dev
 Tools.<br>
-<b>If you just started the <code>MatsSocketTestServer</code>, you should let it run for a while to let it warm up!</b><br/>
+<i>For fun, you can open a few browsers (Chrome + Firefox) and have a few private windows of each with this same page!</i><br>
+<b>If you just started the <code>MatsSocketTestServer</code>, you should let it run for a while to let it warm up!</b><br>
 <i id="statistics">Here will be statistics...</i>
 
 <script type="module">
@@ -69,13 +70,13 @@ Tools.<br>
     function doRequest(cellNum) {
         let requestCell = cells[cellNum];
         requestCell.innerText = "Req!";
-        let traceId = cellNum + ":" + matsSocket.id(6);
+        let traceId = cellNum + ":" + matsSocket.randomId(3);
 
         // Fire off the MatsSocket request
         matsSocket.request("MatsSocket.matsPing", traceId,
             // The Request DTO
             {
-                payload: "Payload:" + cellNum + ":" + matsSocket.jid(100),
+                payload: "Payload:" + cellNum + ":" + matsSocket.randomCId(3),
                 number: Math.E * cellNum
             })
             .then(function (event) {
