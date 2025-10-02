@@ -22,9 +22,9 @@
   },
 
   "devDependencies": {
-    "chai": "^6.0.1",
-    "mocha": "^11.7.2",
-    "rollup": "^4.50.1",
-    "npm-check-updates": "^18.1.0"
+    "chai": "^6.2.0",
+    "mocha": "^11.7.4",
+    "rollup": "^4.52.3",
+    "npm-check-updates": "^19.0.0"
   }
 }
