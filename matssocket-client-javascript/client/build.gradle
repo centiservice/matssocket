@@ -26,7 +26,7 @@ tasks.register('download') {
 }
 
 tasks.register('downloadAll') {
-    dependsOn download, npmUpdate
+    dependsOn download, npmInstall
 }
 
 tasks.register('jsdoc', NpmTask) {

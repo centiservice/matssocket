@@ -68,7 +68,7 @@ tasks.register('download') {
 }
 
 tasks.register('downloadAll') {
-    dependsOn download, npmUpdate
+    dependsOn download, npmInstall
 }
 
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is

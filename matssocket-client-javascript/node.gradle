@@ -42,37 +42,39 @@ tasks.register('distcleanNode', Delete) {
     delete "$projectDir/node_download/"
 }
 
-// :: Update npm dependencies tasks
+// :: Tasks only relevant if 'package.json' is present (not for Dart!)
 
-// :: 'npm update' to download deps
-tasks.register('npmUpdate', NpmTask) {
-    inputs.file("$projectDir/package.json")
-    outputs.file("$projectDir/package-lock.json")
-    outputs.dir("$projectDir/node_modules")
-    args = ['update']
-}
-// :: 'npm update' to download deps - after deleting them all.
-tasks.register('npmCleanUpdate') {
-    dependsOn deletePackageLock, deleteNodeModules, npmUpdate
-}
-npmCleanUpdate.mustRunAfter deletePackageLock
-npmCleanUpdate.mustRunAfter deleteNodeModules
+if (file("$projectDir/package.json").exists()) {
 
-// :: Check uppdate and audit tasks.
+    // :: Update npm dependencies tasks
 
-tasks.register('npmCheckUpdates', NpxTask) {
-    command = 'npm-check-updates@latest'
-}
+    // 'npm update' to update dependencies to the latest version specified in package.json
+    tasks.register('npmUpdate', NpmTask) {
+        args = ['update']
+    }
+    // 'npm update' to download deps - after deleting them all.
+    tasks.register('npmCleanUpdate') {
+        dependsOn deletePackageLock, deleteNodeModules, npmUpdate
+    }
+    npmCleanUpdate.mustRunAfter deletePackageLock
+    npmCleanUpdate.mustRunAfter deleteNodeModules
 
-// 'npmCheckUpdatesUpdate' to force update of all deps, ignore specified versions in package.json.
-tasks.register('npmCheckUpdatesUpdate_internal', NpxTask) {
-    command = 'npm-check-updates@latest'
-    args = ['-u']
-}
-tasks.register('npmCheckUpdatesUpdate') {dependsOn npmCheckUpdatesUpdate_internal, npmUpdate }
-npmUpdate.mustRunAfter npmCheckUpdatesUpdate_internal
+    // :: Check uppdate and audit tasks.
 
-tasks.register('npmAudit', NpmTask) {
-    dependsOn npmInstall
-    args = ['audit']
+    tasks.register('npmCheckUpdates', NpxTask) {
+        command = 'npm-check-updates@latest'
+    }
+
+    // 'npmCheckUpdatesUpdate' to force update of all deps, ignore specified versions in package.json.
+    tasks.register('npmCheckUpdatesUpdate_internal', NpxTask) {
+        command = 'npm-check-updates@latest'
+        args = ['-u']
+    }
+    tasks.register('npmCheckUpdatesUpdate') { dependsOn npmCheckUpdatesUpdate_internal, npmUpdate }
+    npmUpdate.mustRunAfter npmCheckUpdatesUpdate_internal
+
+    tasks.register('npmAudit', NpmTask) {
+        dependsOn npmInstall
+        args = ['audit']
+    }
 }
