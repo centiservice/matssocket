@@ -30,12 +30,12 @@ the JS Client integration tests in the browser (which connects to the same serve
   read more in [matssocket-client-dart/README.md](matssocket-client-dart/README.md). _(Path to Chrome/Chromium can be set using `-PchromePath=...`)._
 * `./gradlew testJs` - runs the JavaScript client tests for Node.js, both "raw ESM" (straight from files), ESM bundled,
   and UMD bundled. _(JS Client tests in browser can be done using the test server, read above)_
-* `./gradlew clean` - deletes all build output.
-* `./gradlew distclean` - .. clean + deletes all dependencies: Node and Dart SDK + deps - `distclean build` for a
-  fully fresh build.
 * `./gradlew download` - downloads Dart and Node for all modules. Prints out the paths to the bin-directories, with
   convenient PATH-setting for running tests on command line.
 * `./gradlew downloadAll` - .. download + dependencies ('dart pub get' and 'npm install') for all modules.
+* `./gradlew clean` - deletes all build output.
+* `./gradlew distclean` - .. clean + deletes all dependencies: Node and Dart SDK + deps -
+  `distclean downloadAll` to get a fresh dev env, `distclean build` for a fresh build.
 * `./gradlew versions` - displays versions of tooling: Java, Gradle, Groovy, Node, npm, Dart SDK.
 * `./gradlew allDeps` - Library dependencies for Java projects.
 
