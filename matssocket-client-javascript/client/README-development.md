@@ -26,7 +26,8 @@ testing relies on. The other tasks are unique to the JavaScript client, and it t
 * `downloadAll`: .. download + `npm install` to fetch dependencies.
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
 * `versions`: tasks `nodeVersion` + `npmVersion`.
-* `distclean`: In addition to `clean` which deletes build artifacts, also deletes all downloaded infrastructure.
+* `distclean`: In addition to `clean` which deletes build artifacts, also deletes Node.js, node_modules etc.
+  Shall be as clean as newly cloned repo.
 
 ### Node/NPM tasks
 * `nodeVersion`: prints out the Node version.
@@ -40,13 +41,33 @@ testing relies on. The other tasks are unique to the JavaScript client, and it t
   versions in 'package.json'
 
 ### Publishing
-* `jsPackDryRun`: Runs `npm pack --dry-run` - Quick way to get the contents of publish package.
+
+**NOTE: First update the version in `package.json` and `MatsSocket.js`!**
+
+All of these depends on `build`.
+* `jsPackDryRun`: Runs `npm pack --dry-run` - Quick way to get the contents of published tarball.
 * `jsPublishDryRun`: Runs `npm publish --dry-run --tag --experimental` to get a preview of what will be published,
-  with scoring/warnings. Depends on `jsDoc` and `testRaw` for fast iteration. **Make sure `testJs` passes before
-  publishing!**
-* `jsPublishExperimental`: Runs `npm publish --tag experimental` XXXXXXXXX
+  with scoring/warnings. **Make sure `testJs` passes before publishing!**
+* `jsPublishExperimental`: Runs `npm publish --tag experimental`, publishing the package and moving the
+  'experimental' tag to this version. Add '-experimental+<iso datetiome>' to the version.
+* `jsPublishRc`: Runs `npm publish --tag rc`, publishing the package and moving the 'rc' tag to this version.
+  Add '-rcX+<iso date>' to the version, X being a counter from 0.
 * `jsPublish`: Runs `npm publish` to publish the lib to NPM, with default `--tag latest`. **Make sure `testJs` passes
   before publishing!**
+
+**Remember to commit the version bump before publishing!**
+
+Normal for new versions would be to first publish a 'rc' version, and then publish a 'latest' version.
+
+There are effectively three projects in MatsSocket: Backend, and the two clients. However, versions do not necessarily
+need to be bumped for all three: The clients only depend on the _wire protocol_ of the server. If there are no logical
+changes to the wire protocol, then the client versions and server versions can be bumped independently. Also, a bugfix
+or minor improvement to one of the clients does not necessarily require a bump in the other client. A wire-protocol
+change must be very carefully handled, since clients might be extremely sticky: Installed phone apps might not be
+updated timely by the users. _(This is technically not as important for the JS client on a web page, since it will
+typically be downloaded each time the user opens the web page.)_
+
+The project version in root's build.gradle is mainly referring to the version of the server API and implementation.
 
 ## Development
 

@@ -28,7 +28,8 @@ are unique to the Dart client, and it thus doesn't matter with qualifier._
 * `downloadAll`: Download + dependencies ('dart pub get')
 * `matsSocketTestServer`: Runs the MatsSocketTestServer, which is used for integration tests.
 * `versions`: tasks `dartVersion` + `nodeVersion`.
-* `distclean`: In addition to `clean` which deletes build artifacts, also deletes all downloaded infrastructure.
+* `distclean`: In addition to `clean` which deletes build artifacts, also deletes Node.js and node_modules; and
+  Dart SDK and deps. Shall be as clean as newly cloned repo.
 
 ### Dart tasks
 * `dartVersion`: Runs `dart --version` to print out the Dart version. (`versions` depends on this)

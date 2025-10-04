@@ -64,17 +64,27 @@ tasks.register('jsPublishDryRun', NpmTask) {
     args = ['publish', '--dry-run', '--tag', 'experimental']
 }
 
+// NOTE! Wrt. npmjs tags: It is possible to move tags without publish new packet, using e.g.
+// `npm dist-tag add matssocket@2.0.0-beta.1 next` or `npm dist-tag rm matssocket beta`
+
 tasks.register('jsPublishExperimental', NpmTask) {
     dependsOn build
-    // Remember to update version in package.json, it shall read "0.0.0-experimental-<iso datetime>" (e.g. 2021-07-14T18-06)
-    // TODO: Update version in package.json and MatsSocket.js!!!
+    // Remember to update version in package.json, it shall read "x.y.z-experimental+<iso datetime>" (e.g. 2021-07-14T18-06)
+    // REMEMBER: Update version in package.json and MatsSocket.js!!!
     args = ['publish', '--tag', 'experimental']
+}
+
+tasks.register('jsPublishRc', NpmTask) {
+    dependsOn build
+    // Remember to update version in package.json, it shall read "x.y.z-rcX+<iso date>" (e.g. 2021-07-14)
+    // REMEMBER: Update version in package.json and MatsSocket.js!!!
+    args = ['publish', '--tag', 'rc']
 }
 
 tasks.register('jsPublish', NpmTask) {
     dependsOn build
-    // Remember to update version in package.json, it shall read "x.y.z"
-    // TODO: Update version in package.json and MatsSocket.js!!!
+    // Remember to update version in package.json, it shall read "x.y.z-rc+<iso date>" (e.g. 2021-07-14)
+    // REMEMBER: Update version in package.json and MatsSocket.js!!!
     // 'publish' by default uses '--tag latest'
     args = ['publish']
 }
