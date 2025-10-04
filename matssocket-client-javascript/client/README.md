@@ -23,7 +23,7 @@ Other deliverables:
 
 *This JS Client doesn't have any dependencies*, except for the WebSocket implementation provided by the
 environment (browser or Node.js). When running in Node.js, it expects the module `ws` to be available, require()'ing it
-dynamically.*
+dynamically.
 
 MatsSocket code is at [GitHub](https://github.com/centiservice/matssocket), with the JavaScript client library residing
 in the [matssocket-client-javascript](https://github.com/centiservice/matssocket/tree/main/matssocket-client-javascript)
