@@ -45,7 +45,7 @@ tasks.register('jsdoc', NpmTask) {
 tasks.register('archiveLib', Zip) {
     from "$projectDir/lib"
     into "matssocket-${project.version}-js"
-    def destinationDir = layout.buildDirectory.dir("dist").get().asFile
+    def destinationDir = layout.projectDirectory.dir("dist")
     def archiveName = "matssocket-${project.version}-js.zip"
     destinationDirectory = destinationDir
     archiveFileName = archiveName

@@ -18,6 +18,21 @@ export default {
             plugins: [terser()],
             sourcemap: true
         },
+
+        {
+            file: 'dist/MatsSocket.umd.js',
+            format: 'umd',
+            name: 'matssocket',
+            sourcemap: true
+        },
+        {
+            file: 'dist/MatsSocket.umd.min.js',
+            format: 'umd',
+            plugins: [terser()],
+            name: 'matssocket',
+            sourcemap: true
+        },
+
         {
             file: 'dist/MatsSocket.umd.cjs',
             format: 'umd',

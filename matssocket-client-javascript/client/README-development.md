@@ -140,14 +140,14 @@ set of distributions are as such:
 * Native EcmaScript Modules (ESM) - "raw", use the files directly - `lib/MatsSocket.js` and siblings.
 * Native EcmaScript Modules (ESM) - bundled - `dist/MatsSocket.esm.js`
 * Native EcmaScript Modules (ESM) - bundled, minified - `dist/MatsSocket.esm.min.js`
-* Universal Module Definition (UMD) - bundled - `dist/MatsSocket.umd.cjs`
-* Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
-* A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`
+* Universal Module Definition (UMD) - bundled - `dist/MatsSocket.umd.cjs` and `..umd.js`
+* Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs` and `..umd.min.js`
+* A ZIP-file containing the source files - `dist/matssocket-<version>-js.zip`
 
 Other deliverables:
-* JSDoc is provided in `jsdoc/index.html`.
 * TS type files are created in `dist/`.
 * Map files of all are also created in `dist/`.
+* JSDoc is provided in `jsdoc/index.html`.
 
 Run `./gradlew jsPublishDryRun` to see what will be published.
 

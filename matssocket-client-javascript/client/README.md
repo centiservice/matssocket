@@ -12,14 +12,14 @@ using EcmaScript Modules (ESM), and bundled into USM (Universal Module Definitio
 * Native EcmaScript Modules (ESM) - use the files directly - `lib/MatsSocket.js` and siblings.
 * Native EcmaScript Modules (ESM) - bundled - `dist/MatsSocket.esm.js`
 * Native EcmaScript Modules (ESM) - bundled, minified - `dist/MatsSocket.esm.min.js`
-* Universal Module Definition (UMD) - bundled ("by definition") - `dist/MatsSocket.umd.cjs`
-* Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs`
-* A ZIP-file containing the source files - `build-gradle/dist/matssocket-<version>-js.zip`
+* Universal Module Definition (UMD) - bundled - `dist/MatsSocket.umd.cjs` and `..umd.js`
+* Universal Module Definition (UMD) - bundled, minified - `dist/MatsSocket.umd.min.cjs` and `..umd.min.js`
+* A ZIP-file containing the source files - `dist/matssocket-<version>-js.zip`
 
 Other deliverables:
-* JSDoc is provided in `jsdoc/index.html`.
 * TS type files are created in `dist/`.
 * Map files of all are also created in `dist/`.
+* JSDoc is provided in `jsdoc/index.html`.
 
 *This JS Client doesn't have any dependencies*, except for the WebSocket implementation provided by the
 environment (browser or Node.js). When running in Node.js, it expects the module `ws` to be available, require()'ing it
