@@ -40,29 +40,76 @@ testing relies on. The other tasks are unique to the JavaScript client, and it t
 * `npmCheckUpdatesUpdate`: runs `npx npm-check-updates@latest -u` to force update of all deps, ignoring specified
   versions in 'package.json'
 
-### Publishing
+## Publishing
 
-**NOTE: First update the version in `package.json` and `MatsSocket.js`!**
+**NOTE: First update the version in `package.json` and `MatsSocket.js`, read below for format per tag/release type!**
 
-All of these depends on `build`.
+**Remember to git commit and tag the version bump before publishing, read below for tag and message format!**
+
+Convenient Gradle tasks to check what will be released - these depends on `build`.
 * `jsPackDryRun`: Runs `npm pack --dry-run` - Quick way to get the contents of published tarball.
 * `jsPublishDryRun`: Runs `npm publish --dry-run --tag --experimental` to get a preview of what will be published,
   with scoring/warnings.
-* `jsPublishExperimental`: Runs `npm publish --tag experimental`, publishing the package and moving the
-  'experimental' tag to this version. Add '-experimental-&lt;iso datetiome&gt;' to the version. **(Do NOT use plus
-  before datetime**, npm cleans this as an error!)
-* `jsPublishRc`: Runs `npm publish --tag rc`, publishing the package and moving the 'rc' tag to this version.
-  Add '-rcX-&lt;iso date&gt;' to the version, X being a counter from 0 **(Do NOT use plus before date**, npm cleans
-  this as an error!).
-* `jsPublish`: Runs `npm publish` to publish the lib to NPM, with default `--tag latest`. Add '-&lt;iso date&gt;'
-  **(Do NOT use plus before date**, npm cleans this as an error!).
 
-**Remember to commit the version bump before publishing!**
+Since the other aspects wrt. publishing requires command line interaction, they can't anymore be expressed as neat
+Gradle tasks - you need to interact directly with `npm`. You must get node/npm on PATH, simple instructions are
+provided by the `./gradlew nodeBinDir` task.
 
-Normal for new versions would be to first publish a 'rc' version, and then publish a 'latest' version.
+There are three relevant NPM tags: 'experimental', 'rc' and 'latest' - the latter is the default.
+We use different version strings for each tag.
+
+To actually interact with NPMjs.com, you need BOTH to be logged in to NPMjs.com with `npm adduser`, and to supply
+One Time Password (OTP) with the `--otp` argument on the `npm publish` command.
+
+Release types / NPM tags:
+* Experimental (testing a new feature / fix):
+  * Add `-experimental-<iso datetiome>` to the version. **(Do NOT use plus before datetime**, npm cleans this as
+    an error!) 
+  * `npm publish --tag experimental --otp XXXXXX`, publishing the package and moving the 'experimental' tag to this
+    version.
+* Release Candidate (before a new version, testing that it works, preferably in production!): 
+  * Add `-rcX-<iso date>` to the version, X being a counter from 0 **(Do NOT use plus before date**, npm
+  cleans this as an error!)
+  * `npm publish --tag rc --otp XXXXXX`, publishing the package and moving the 'rc' tag to this version.
+* Release/Latest:
+  * Add `-<iso date>` to the version. **(Do NOT use plus before date**, npm cleans this as an error!).
+  * `npm publish --otp XXXXXX`, publishing the package and moving the 'rc' tag to this version. 
+
+Standard for new versions would be to first publish a 'rc' version, and then publish a 'latest' release version.
 
 Before publish, do a:
-`./gradlew clean matssocket-client-javascript:build`
+`./gradlew clean jsPublishDryRun`
+
+### Transcript of a successful RC publish:
+
+#### First `npm adduser` to log in to NPMjs.com (requires 2FA):
+```shell
+$ npm adduser
+npm notice Log in on https://registry.npmjs.org/
+Create your account at:
+https://www.npmjs.com/login?next=/login/cli/06c5b41b-3eb8-4897-84d4-cee35aec0f03
+Press ENTER to open in the browser...
+
+Logged in on https://registry.npmjs.org/.
+```
+
+#### Commit and tag git:
+
+Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
+`Bumping JavaScript Client version, RC: 1.0.0-rc0-2025-10-04  (from 0.19.0-2022-11-11)`
+
+Tag git:
+```shell
+git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
+git push --tags
+```
+
+#### Publish to NPMjs.com - notice standing in the client directory:
+```shell
+~/git/matssocket/matssocket-client-javascript/client$ npm publish --tag rc -otp=543491
+```
+
+### Versioning between the different parts of this project:
 
 There are effectively three projects in MatsSocket: Backend, and the two clients. However, versions do not necessarily
 need to be bumped for all three: The clients only depend on the _wire protocol_ of the server. If there are no logical
