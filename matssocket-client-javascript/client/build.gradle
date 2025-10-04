@@ -43,14 +43,21 @@ tasks.register('jsdoc', NpmTask) {
 
 // Package up the JavaScript library
 tasks.register('archiveLib', Zip) {
-    from "$projectDir/lib"
-    into "matssocket-${project.version}-js"
+    inputs.files('package.json')
+    inputs.dir('lib')
+
+    def jsClientVersion = (file("$projectDir/package.json").text =~ /"version"\s*:\s*"([^"]+)"/)[0][1]
     def destinationDir = layout.projectDirectory.dir("dist")
-    def archiveName = "matssocket-${project.version}-js.zip"
+    def archiveName = "matssocket-${jsClientVersion}-js.zip"
+    from "$projectDir/lib"
+    into "matssocket-${jsClientVersion}-js"
     destinationDirectory = destinationDir
     archiveFileName = archiveName
+
+    def archiveFile = file("$destinationDir/$archiveName")
+    outputs.file(archiveFile)
     doLast {
-        println("##### JavaScript Client zip: " + destinationDir + "/" + archiveName)
+        println("##### JavaScript Client zip: " + archiveFile)
     }
 }
 
