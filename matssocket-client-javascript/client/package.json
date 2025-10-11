@@ -17,15 +17,15 @@
   "unpkg": "./dist/MatsSocket.umd.min.js",
   "jsdelivr": "./dist/MatsSocket.umd.min.js",
 
-  "types": "./dist/MatsSocket.d.ts",
+  "types": "./dist/index.d.ts",
   "main": "./dist/MatsSocket.umd.cjs",
-  "module": "./lib/MatsSocket.js",
+  "module": "./lib/index.js",
 
   "exports": {
     ".": {
-      "types": "./dist/MatsSocket.d.ts",
+      "types": "./dist/index.d.ts",
       "require": "./dist/MatsSocket.umd.cjs",
-      "import": "./lib/MatsSocket.js"
+      "import": "./lib/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
