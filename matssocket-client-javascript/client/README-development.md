@@ -206,6 +206,11 @@ $ ./gradlew nodeBinDir   # to get the command.
     Windows:  set PATH=/home/user/git/matssocket/matssocket-client-javascript/client/node_download/nodejs/node-v24.7.0-linux-x64/bin;%PATH%
 
 $ # Use the relevant PATH command for your shell.
+
+$ node --version
+v24.7.0
+$ npm --version
+11.5.1
 ```
 
 #### Then `npm adduser` to log in to NPMjs.com (requires 2FA):
@@ -217,6 +222,9 @@ https://www.npmjs.com/login?next=/login/cli/06c5b41b-3eb8-4897-84d4-cee35aec0f03
 Press ENTER to open in the browser...
 
 Logged in on https://registry.npmjs.org/.
+
+$ npm whoami
+stolsvik
 ```
 
 #### Change version number and build:
