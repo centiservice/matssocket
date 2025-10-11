@@ -40,7 +40,7 @@ export {
  * make WebSockets, not required in a browser setting as it will use window.WebSocket if not set.
  * @class
  */
-function MatsSocket(appName, appVersion, urls, config) {
+function MatsSocket(appName, appVersion, urls, config = null) {
     let clientLibNameAndVersion = "MatsSocket.js,1.0.0-rc1-2025-10-04";
 
     // :: Validate primary arguments
