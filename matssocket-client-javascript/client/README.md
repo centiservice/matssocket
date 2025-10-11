@@ -42,8 +42,8 @@ matsSocket.setAuthorizationExpiredCallback(function (event) {
     }, 100);
 });
 
-// Perform a Request to server, which will forward the Request to a Mats endpoint, whose Reply comes
-// back here, resolving the returned Promise.
+// Perform a Request to server, which will forward the Request to a Mats endpoint, whose
+// reply comes back here, resolving the returned Promise.
 matsSocket.request("MatsSocketEndpoint", "TraceId_" + matsSocket.randomId(6), {
     string: "Request String",
     number: Math.E
@@ -77,8 +77,8 @@ specific version, e.g. [1.0.0-rc1-2025-10-04](https://www.jsdelivr.com/package/n
 * CDN URL (`latest`): [https://cdn.jsdelivr.net/npm/matssocket/](https://cdn.jsdelivr.net/npm/matssocket/),
 specific version, e.g. [1.0.0-rc1-2025-10-04](https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/)
 
-The version property can also be tags like `latest` or `rc`, but only use this in experimentation and development, not
-in production! Using dynamic tags precludes the use of the `integrity` attribute.
+The version property can also be dynamic tags like `latest` or `rc`, but only use this in experimentation and
+development, not in production! Using dynamic tags precludes the use of the `integrity` attribute.
 
 * ESM minified module, `latest`: [https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.esm.min.js](https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.esm.min.js)
 * UMD minified module, `latest`: [https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.umd.min.js](https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.umd.min.js)
@@ -90,6 +90,8 @@ You want to change the `latest` to a specific version, e.g. `1.0.0-rc1-2025-10-0
 * HTML view resides at (`latest`): [https://app.unpkg.com/matssocket/](https://app.unpkg.com/matssocket/),
 specific version, e.g. [1.0.0-rc1-2025-10-04](https://app.unpkg.com/matssocket@1.0.0-rc1-2025-10-04/)
 
+The version property can also be dynamic tags like `latest` or `rc`, but only use this in experimentation and
+development, not in production! Using dynamic tags precludes the use of the `integrity` attribute.
 Note that UNPKG's tags-based URLs redirect to the specific tagged version.
 
 * ESM minified module, `latest`: [https://unpkg.com/matssocket@latest/dist/MatsSocket.esm.min.js](https://unpkg.com/matssocket@latest/dist/MatsSocket.esm.min.js)
@@ -103,8 +105,9 @@ You want to change the `latest` to a specific version, e.g. `1.0.0-rc1-2025-10-0
 Exemplified with the jsDelivr CDN. You must choose the version, and find the hash for the integrity attribute.
 
 To get the integrity hash, a quick way is to first just use a wrong hash, e.g. "sha384-xyz". Both Firefox and Chrome
-will in the console log show the hash it calculated and compared against (based on the prefix you used, e.g. "sha384-"
-or "sha256-"). Remember to add the prefix! You should verify that the hashes are the same for jsDelivr and UNPKG.
+will in the dev console error log show the hash it calculated and compared with (based on the prefix you used, e.g. 
+"sha384-" or "sha256-"). Remember to add the prefix! For a bit of extra paranoia, you should verify that the hashes are
+the same for jsDelivr and UNPKG.
 
 _(If you drop the version, or specify `latest`, you will get the latest stable version, which will change over time -
 and you cannot use the `integrity` attribute. Only for experimentation and development! You could also then drop the

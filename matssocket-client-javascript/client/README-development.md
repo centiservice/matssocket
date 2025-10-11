@@ -233,7 +233,7 @@ Change version in package.json and MatsSocket.js to relevant (RC) version!
 
 Build and test the client. **Note: You should also want to run the tests in the browser.** 
 ```shell
-./gradlew clean matssocket-client-javascript:build
+$ ./gradlew clean matssocket-client-javascript:build
 ```
 
 #### Check over what will be published:
@@ -249,8 +249,8 @@ Commit the version bump (both package.json and MatsSocket.js), message shall rea
 
 Tag git:
 ```shell
-git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
-git push && git push --tags
+$ git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
+$ git push && git push --tags
 ```
 
 #### Publish to NPMjs.com:
