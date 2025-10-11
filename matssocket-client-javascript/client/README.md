@@ -131,6 +131,7 @@ Inclusion using ESM - note the use of modulepreload to be able to use the `integ
 
 <script type="module">
     import * as matssocket from "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/dist/MatsSocket.esm.min.js";
+    // .. or use named imports: import { MatsSocket } from "....."
 
     // Either directly here, or in additional <script type="module"> blocks:
     let matsSocket = new matssocket.MatsSocket("TestApp", "1.2.3", ['ws://localhost:8080/matssocket']);
@@ -155,7 +156,9 @@ Inclusion using ESM - note the use of modulepreload to be able to use the `integ
 
 <script type="module">
     import * as matssocket from "matssocket";
+    // .. or use named imports: import { MatsSocket } from "matssocket"
 
+    // Either directly here, or in additional <script type="module"> blocks:
     let matsSocket = new matssocket.MatsSocket("TestApp", "1.2.3", ['ws://localhost:8080/matssocket']);
     // ...
 </script>
