@@ -41,7 +41,7 @@ export {
  * @class
  */
 function MatsSocket(appName, appVersion, urls, config = null) {
-    let clientLibNameAndVersion = "MatsSocket.js,1.0.0-rc1-2025-10-04";
+    let clientLibNameAndVersion = "MatsSocket.js,1.0.0-rc2-2025-10-11";
 
     // :: Validate primary arguments
     if (typeof appName !== "string") {

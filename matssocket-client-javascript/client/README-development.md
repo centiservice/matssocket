@@ -82,7 +82,19 @@ Before publish, do a:
 
 ### Transcript of a successful RC publish:
 
-#### First `npm adduser` to log in to NPMjs.com (requires 2FA):
+#### First add node to path, using `./gradlew nodeBinDir`
+```shell
+$ ./gradlew nodeBinDir   # to get the command.
+
+> Task :matssocket-client-javascript:client:nodeBinDir
+=== Node.js bin dir: /home/user/git/matssocket/matssocket-client-javascript/client/node_download/nodejs/node-v24.7.0-linux-x64/bin
+    Unix:     export PATH=/home/user/git/matssocket/matssocket-client-javascript/client/node_download/nodejs/node-v24.7.0-linux-x64/bin:$PATH
+    Windows:  set PATH=/home/user/git/matssocket/matssocket-client-javascript/client/node_download/nodejs/node-v24.7.0-linux-x64/bin;%PATH%
+
+$ # Use the relevant PATH command for your shell.
+```
+
+#### Then `npm adduser` to log in to NPMjs.com (requires 2FA):
 ```shell
 $ npm adduser
 npm notice Log in on https://registry.npmjs.org/
@@ -91,6 +103,15 @@ https://www.npmjs.com/login?next=/login/cli/06c5b41b-3eb8-4897-84d4-cee35aec0f03
 Press ENTER to open in the browser...
 
 Logged in on https://registry.npmjs.org/.
+```
+
+#### Change version number and build
+
+Change version in package.json and MatsSocket.js to relevant (RC) version!
+
+Build and test the client:
+```shell
+./gradlew clean matssocket-client-javascript:build
 ```
 
 #### Commit and tag git:
