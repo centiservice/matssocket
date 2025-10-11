@@ -23,22 +23,24 @@
 
   "exports": {
     ".": {
+      "types": "./dist/MatsSocket.d.ts",
       "require": "./dist/MatsSocket.umd.cjs",
-      "import": "./lib/MatsSocket.js",
-      "types": "./dist/MatsSocket.d.ts"
+      "import": "./lib/MatsSocket.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./lib/*.js"
     },
 
     "./esm": {
       "types": "./dist/MatsSocket.d.ts",
       "import": "./dist/MatsSocket.esm.js"
     },
-    "./esm.min.js": "./dist/MatsSocket.esm.min.js",
 
     "./umd": {
       "types": "./dist/MatsSocket.d.ts",
       "require": "./dist/MatsSocket.umd.cjs"
     },
-    "./umd.min.js": "./dist/MatsSocket.umd.min.js",
 
     "./dist/*": "./dist/*",
     "./lib/*": "./lib/*",

@@ -27,7 +27,6 @@ export {
     DebugOption, DebugInformation
 }
 
-
 /**
  * Creates a MatsSocket, requiring the using Application's name and version, and which URLs to connect to.
  * <p/>
