@@ -17,9 +17,9 @@
   "unpkg": "./dist/MatsSocket.umd.min.js",
   "jsdelivr": "./dist/MatsSocket.umd.min.js",
 
+  "types": "./dist/MatsSocket.d.ts",
   "main": "./dist/MatsSocket.umd.cjs",
   "module": "./lib/MatsSocket.js",
-  "types": "./dist/MatsSocket.d.ts",
 
   "exports": {
     ".": {
