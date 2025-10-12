@@ -9,7 +9,7 @@
     "preview": "vite preview --strictPort --port 5173"
   },
   "devDependencies": {
-    "vite": "^5.4.10"
+    "vite": "^7.1.9"
   },
   "dependencies": {
     "matssocket": "file:../../../matssocket-client-javascript/client"

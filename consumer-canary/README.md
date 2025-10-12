@@ -11,3 +11,9 @@
 cd consumer-canary
 npm run install:local
 ```
+
+
+## npm tasks
+
+* `npm run install:local`: Runs `npm install` on all apps, using your local library build.
+* `npm run update:all`: Runs `npx npm-check-updates@latest -u` for root project and all apps. Do `npm run install:local` afterwards.
