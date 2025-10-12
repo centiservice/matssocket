@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "install:local": "node scripts/link-local.mjs",
-    "install:registry": "node scripts/link-registry.mjs",
+    "install:rc": "node scripts/link-rc.mjs",
+    "install:latest": "node scripts/link-latest.mjs",
     "build:all": "node scripts/build-all.mjs",
     "update:all": "node scripts/npm-check-updates-u.mjs",
     "preview:vanilla": "npm --workspace apps/vanilla-js-vite run preview",

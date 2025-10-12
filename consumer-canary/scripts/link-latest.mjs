@@ -12,12 +12,12 @@ const apps = [
 ];
 
 // Published RC tag/version:
-const version = 'matssocket@1.0.0-rc2-2025-10-11';
+const version = 'matssocket@latest';
 
-console.log('Linking apps to REGISTRY package:', version);
+console.log('Linking apps to  REGISTRY package (tag "latest"):', version);
 for (const a of apps) {
     const cmd = `npm --prefix ${resolve(root, a)} i ${version}`;
     console.log('>', cmd);
     x(cmd, {stdio: 'inherit'});
 }
-console.log('Done. (Registry)');
+console.log('Done. (registry, tag "latest")');

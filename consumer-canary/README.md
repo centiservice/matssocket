@@ -19,8 +19,9 @@ npm run install:local
 ## npm tasks
 
 * `npm run install:local`: Runs `npm install` on all apps, using your local library build.
-* `npm run update:all`: Runs `npx npm-check-updates@latest -u` for root project and all apps. Do `npm run install:local` afterwards.
-
+* `npm run install:rc`: Runs `npm install` on all apps, using 'rc' tag.
+* `npm run install:latest`: Runs `npm install` on all apps, using 'latest' tag.
+* `npm run update:all`: Runs `npx npm-check-updates@latest -u` for root project and all apps. Do `npm run install:<xxx>` afterwards.
 
 ## "Dev" - run each of these, and go to the web page to see the results
 ```bash
