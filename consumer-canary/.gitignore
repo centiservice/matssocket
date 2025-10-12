@@ -6,3 +6,6 @@ apps/*/.next
 apps/*/dist
 apps/*/.vite
 npm-debug.log*
+
+# Some stuff that Next spits out..
+apps/next-ts/next-env.d.ts
