@@ -1,3 +1,5 @@
+import './typedefs.js';
+
 export { MessageEvent, MessageEventType }
 
 /**
@@ -76,14 +78,14 @@ function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
      * millis-since-epoch when the Request, for which this message is a Reply, was sent from the
      * Client. If this message is not a Reply to a Client-initiated Request, it is undefined.
      *
-     * @type {number}
+     * @type {Timestamp}
      */
     this.clientRequestTimestamp = undefined;
 
     /**
      * When the message was received on the Client, millis-since-epoch.
      *
-     * @type {number}
+     * @type {Timestamp}
      */
     this.receivedTimestamp = receivedTimestamp;
 
@@ -93,10 +95,8 @@ function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
      * {@link #clientRequestTimestamp}</code>, but depending on the browser/runtime, you might get higher resolution
      * than integer milliseconds (i.e. fractions of milliseconds, a floating point number) - it depends on the
      * resolution of <code>performance.now()</code>.
-     *
-     * <b>Note that this number can be a float, not necessarily integer</b>.
 
-     * @type {number}
+     * @type {FractionalMillis}
      */
     this.roundTripMillis = undefined;
 

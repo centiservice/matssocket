@@ -5,13 +5,20 @@
   "compilerOptions": {
     // Tells TypeScript to read JS files, as normally they are ignored as source files.
     "allowJs": true,
+    // Verify JSDoc types
+    "checkJs": true,
     // Generate d.ts files.
     "declaration": true,
     // This compiler run should only output d.ts files.
     "emitDeclarationOnly": true,
-    // Types should go into the output directory.
-    "outDir": "dist",
     // Go to js file when using IDE functions like "Go to Definition" in VSCode.
-    "declarationMap": true
+    "declarationMap": true,
+    // Stay bleeding edge on TS features. We primarily emit .d.ts files for "IntelliSense".
+    "target": "ESNext",
+    "module": "ESNext",
+    // Follow bundler and ESModule resolution, wrt goal of emitting .d.ts files for "IntelliSense"
+    "moduleResolution": "Bundler",
+    // Types should go into the output directory.
+    "outDir": "dist"
   }
 }

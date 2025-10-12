@@ -7,7 +7,7 @@ import {MessageEvent, MessageEventType} from './MessageEvent.js';
 import {SubscriptionEvent, SubscriptionEventType} from "./SubscriptionEvent.js";
 import {InitiationProcessedEvent, InitiationProcessedEventType} from './InitiationProcessedEvent.js';
 import {PingPong} from './PingPong.js';
-import {MatsSocketCloseCodes} from './MatsSocketCloseCodes.js';
+import {MatsSocketCloseCodes, MatsSocketCloseCodesUtil} from './MatsSocketCloseCodes.js';
 import {ErrorEvent} from './ErrorEvent.js';
 import {DebugInformation, DebugOption} from "./DebugInformation.js";
 
@@ -95,6 +95,8 @@ function MatsSocket(appName, appVersion, urls, config = null) {
             // NOTE: Such import is specified as an asynchronous operation, albeit it seems synchronous when running in Node.
             // However, we'll have to treat it as async, so a bit of handling both here and in the WebSocket creation
             // code below, by means of "stop process and restart once import resolved" logic.
+
+            // @ts-expect-error TS2307: (Cannot find module) it is up to the user to provide 'ws' when used in node, per documentation.
             import('ws')
                 .then((ws) => {
                     log("Constructor: NodeJs import('ws') went OK: Got WebSocket module");
@@ -140,9 +142,13 @@ function MatsSocket(appName, appVersion, urls, config = null) {
     // PUBLIC:
     // ==============================================================================================
 
-    // NOTE!! There is an "implicit"/"hidden" 'sessionId' field too, but we do not make it explicit.
-    // 'sessionId' is set when we get the SessionId from WELCOME, cleared (deleted) upon SessionClose
-    // (along with _matsSocketOpen = false)
+    /**
+     * 'sessionId' is set when we get the SessionId from WELCOME, set back to undefined on SessionClose
+     * (along with _matsSocketOpen = false)
+     *
+     * @type {string}
+     */
+    this.sessionId = undefined;
 
     /**
      * Whether to log via console.log. The logging is quite extensive. <b>Default <code>false</code></b>.
@@ -276,6 +282,24 @@ function MatsSocket(appName, appVersion, urls, config = null) {
      * @type {number}
      */
     this.requestTimeout = 45000;
+
+    /**
+     * Way to let integration tests checking failed connections take a bit less time..! Default is 'undefined', which
+     * yields a small number (60ish x 15 seconds) when we do not have SessionId (i.e. trying to connect, we have still
+     * not started the app), and a rather large one (a full day) if we do have a SessionId (implying that we're trying
+     * to reconnect).
+     *
+     * @type {number}
+     */
+    this.maxConnectionAttempts = undefined;
+
+    /**
+     * Default is 3-7 seconds for the initial ping delay, and then 15 seconds for subsequent pings. Can be overridden
+     * for tests.
+     *
+     * @type {number}
+     */
+    this.initialPingDelay = 3000 + Math.random() * 4000
 
     /**
      * Callback function for {@link MatsSocket#addSessionClosedEventListener}.
@@ -1298,10 +1322,10 @@ function MatsSocket(appName, appVersion, urls, config = null) {
      */
     this.reconnect = function (reason, disconnect = false) {
         let closeCode = disconnect ? MatsSocketCloseCodes.DISCONNECT : MatsSocketCloseCodes.RECONNECT;
-        if (that.logging) log("reconnect(): Closing WebSocket with CloseCode '" + MatsSocketCloseCodes.nameFor(closeCode) + " (" + closeCode + ")'," +
+        if (that.logging) log("reconnect(): Closing WebSocket with CloseCode '" + MatsSocketCloseCodesUtil.nameFor(closeCode) + " (" + closeCode + ")'," +
             " MatsSocketSessionId:[" + that.sessionId + "] due to [" + reason + "], currently connected: [" + (_webSocket ? _webSocket.url : "not connected") + "]");
         if (!_webSocket) {
-            throw new Error("There is no live WebSocket to close with " + MatsSocketCloseCodes.nameFor(closeCode) + " closeCode!");
+            throw new Error("There is no live WebSocket to close with " + MatsSocketCloseCodesUtil.nameFor(closeCode) + " closeCode!");
         }
         // Hack for Node: Node is too fast wrt. handling the reply message, so one of the integration tests fails.
         // The test in question reconnect in face of having the test RESOLVE in the incomingHandler, which exercises
@@ -1480,7 +1504,9 @@ function MatsSocket(appName, appVersion, urls, config = null) {
     // ==== Implementation ====
 
     function _isNodeJs() {
-        return process && process.versions && (typeof process.versions.node !== 'undefined');
+        // @ts-expect-error TS2580: (Cannot find name process): This is node-only, and this is the point.
+        const proc = process;
+        return proc && proc.versions && (typeof proc.versions.node !== 'undefined');
     }
 
     function _invokeLater(that) {
@@ -1540,7 +1566,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
     function _closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages() {
         log("closeSessionAndClearStateAndPipelineAndFuturesAndOutstandingMessages(). Current WebSocket:" + _webSocket);
         // Clear state
-        delete (that.sessionId);
+        that.sessionId = undefined;
         _state = ConnectionState.NO_SESSION;
 
         _clearWebSocketStateAndInfrastructure();
@@ -1916,7 +1942,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
 
     function _maxConnectionAttempts() {
         // ?: Have maxConnectionAttempts been set?
-        if ('maxConnectionAttempts' in that && that.maxConnectionAttempts !== undefined) {
+        if (that.maxConnectionAttempts !== undefined) {
             // -> Yes, so use this.
             return that.maxConnectionAttempts;
         }
@@ -2388,7 +2414,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
             || (closeEvent.code === MatsSocketCloseCodes.CLOSE_SESSION)
             || (closeEvent.code === MatsSocketCloseCodes.SESSION_LOST)) {
             // -> One of the specific "Session is closed" CloseCodes -> Reject all outstanding, this MatsSocket is trashed.
-            error("session closed from server", "The WebSocket was closed with a CloseCode [" + MatsSocketCloseCodes.nameFor(closeEvent.code) + "] signifying that our MatsSocketSession is closed, reason:[" + closeEvent.reason + "].", closeEvent);
+            error("session closed from server", "The WebSocket was closed with a CloseCode [" + MatsSocketCloseCodesUtil.nameFor(closeEvent.code) + "] signifying that our MatsSocketSession is closed, reason:[" + closeEvent.reason + "].", closeEvent);
 
             // Hold on to how many outstanding initiations there are now
             let outstandingInitiations = Object.keys(_outboxInitiations).length;
@@ -2398,14 +2424,14 @@ function MatsSocket(appName, appVersion, urls, config = null) {
 
             // :: Synchronously notify our SessionClosedEvent listeners
             // NOTE: This shall only happen if Close Session is from ServerSide (that is, here), otherwise, if the app invoked matsSocket.close(), one would think the app knew about the close itself..!
-            closeEvent.codeName = MatsSocketCloseCodes.nameFor(closeEvent.code);
+            closeEvent.codeName = MatsSocketCloseCodesUtil.nameFor(closeEvent.code);
             closeEvent.outstandingInitiations = outstandingInitiations;
             _notifySessionClosedEventListeners(closeEvent);
 
         } else {
             // -> NOT one of the specific "Session is closed" CloseCodes -> Reconnect and Reissue all outstanding..
             if (closeEvent.code !== MatsSocketCloseCodes.DISCONNECT) {
-                log("We were closed with a CloseCode [" + MatsSocketCloseCodes.nameFor(closeEvent.code) + "] that does NOT denote that we should close the session. Initiate reconnect and reissue all outstanding.");
+                log("We were closed with a CloseCode [" + MatsSocketCloseCodesUtil.nameFor(closeEvent.code) + "] that does NOT denote that we should close the session. Initiate reconnect and reissue all outstanding.");
             } else {
                 log("We were closed with the special DISCONNECT close code - act as we lost connection, but do NOT start to reconnect.");
             }
@@ -3093,7 +3119,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
         log("Starting PING'er!");
         // Start the pinger with a random 5 +/-2 seconds, in case of mass reconnect.
         // Notice the "magic property" here, used in integration tests
-        _pingLater(that.initialPingDelay ? that.initialPingDelay : 3000 + Math.random() * 4000);
+        _pingLater(that.initialPingDelay);
     }
 
     function _stopPinger() {
@@ -3109,8 +3135,10 @@ function MatsSocket(appName, appVersion, urls, config = null) {
 
     function _pingLater(initialPingDelay) {
         _pinger_TimeoutId = setTimeout(function () {
-            if (that.logging) log("Ping-'thread': About to send ping. ConnectionState:[" + that.state + "], matsSocketOpen:[" + _matsSocketOpen + "].");
-            if ((that.state === ConnectionState.SESSION_ESTABLISHED) && _matsSocketOpen) {
+            // @ts-expect-error TS2339: 'state' is defined via defineProperty; we only read it here.
+            const state= that.state;
+            if (that.logging) log("Ping-'thread': About to send ping. ConnectionState:[" + state + "], matsSocketOpen:[" + _matsSocketOpen + "].");
+            if ((state === ConnectionState.SESSION_ESTABLISHED) && _matsSocketOpen) {
                 let pingId = _pingId++;
                 let pingPong = new PingPong(pingId, Date.now());
                 _pings.push(pingPong);

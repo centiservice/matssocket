@@ -1,4 +1,4 @@
-export { MatsSocketCloseCodes }
+export { MatsSocketCloseCodes, MatsSocketCloseCodesUtil }
 
 /**
  * <b>Copied directly from MatsSocketServer.java</b>:
@@ -7,7 +7,7 @@ export { MatsSocketCloseCodes }
  * <p/>
  * Note: Plural "Codes" since that is what the JSR 356 Java WebSocket API {@link CloseCodes does..!}
  *
- * @enum {int}
+ * @enum {number}
  * @readonly
  */
 const MatsSocketCloseCodes = {
@@ -96,22 +96,28 @@ const MatsSocketCloseCodes = {
      * client does not speak the MatsSocket protocol correctly. Session is closed.
      */
     MATS_SOCKET_PROTOCOL_ERROR: 4004,
-
-    /**
-     * Resolves the numeric "close code" to the String key name of this enum, or <code>"UNKNOWN("+closeCode+")"</code>
-     * for unknown numeric codes.
-     *
-     * @param closeCode the numeric "close code" of the WebSocket.
-     * @returns {string} String key name of this enum, or <code>"UNKNOWN("+closeCode+")"</code> for unknown numeric codes.
-     */
-    nameFor: function (closeCode) {
-        let keys = Object.keys(MatsSocketCloseCodes).filter(function (key) {
-            return MatsSocketCloseCodes[key] === closeCode;
-        });
-        if (keys.length === 1) {
-            return keys[0];
-        }
-        return "UNKNOWN(" + closeCode + ")";
-    }
 };
 Object.freeze(MatsSocketCloseCodes);
+
+/**
+ * Utility functions for {@link MatsSocketCloseCodes}.
+ * @namespace
+ */
+const MatsSocketCloseCodesUtil = (() => {
+    // Build a reverse lookup once, O(1) lookups later.
+    const REVERSE = new Map(
+        Object.entries(MatsSocketCloseCodes).map(([k, v]) => [v, k])
+    );
+
+    return {
+        /**
+         * Resolve numeric code -> enum key name, or "UNKNOWN(<code>)".
+         * @param {number} code
+         * @returns {string}
+         */
+        nameFor(code) {
+            const name = REVERSE.get(code);
+            return name ?? `UNKNOWN(${code})`;
+        },
+    };
+})();

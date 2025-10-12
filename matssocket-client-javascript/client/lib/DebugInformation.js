@@ -1,3 +1,5 @@
+import './typedefs.js';
+
 export { DebugInformation, DebugOption }
 
 /**
@@ -9,12 +11,12 @@ export { DebugInformation, DebugOption }
  * @class
  */
 function DebugInformation(clientMessageSent, requestedDebugOptions, envelope, receivedTimestamp) {
-
     /**
      * From client: When the message was sent, millis-from-epoch.
-     * @type {number}
+     * @type {Timestamp}
      */
     this.clientMessageSent = clientMessageSent;
+
     /**
      * From client: What {@link DebugOption}s (bitfield) was requested by the client of when message was sent.
      * @type {number}
@@ -28,27 +30,68 @@ function DebugInformation(clientMessageSent, requestedDebugOptions, envelope, re
     this.description = envelope.desc;
 
     /**
-     * From server: What {@link DebugOption}s (bitfield) was resolved/given by the server, based on the
+     * When this message was received by the client.
+     * @type {Timestamp}
+     */
+    this.messageReceived = receivedTimestamp;
+
+    /**
+     * (Only if debug) From server: What {@link DebugOption}s (bitfield) was resolved/given by the server, based on the
      * {@link DebugInformation#requestedDebugOptions} and authorization.
      * @type {number}
      */
     this.resolvedDebugOptions = 0; // default to 0 if no debug object in the envelope
 
     /**
-     * From server, only if debug:
-     * @type {number}
+     * (Only if debug) When the MatsSocket message from the client was received by the MatsSocketServer.
+     * @type {Timestamp}
      */
     this.clientMessageReceived = undefined;
+    /**
+     * (Only if debug) Which MatsSocketServer node received (and thus initial-processed) the MatsSocket message.
+     * @type {string}
+     */
     this.clientMessageReceivedNodename = undefined;
 
+    /**
+     * (Only if debug) When the Mats3 message was sent onto the Mats3 Fabric on server side.
+     * @type {Timestamp}
+     */
     this.matsMessageSent = undefined;
+
+    /**
+     * (Only if debug) When the Mats3 reply was received by the MatsSocketServer.
+     * @type {Timestamp}
+     */
     this.matsMessageReplyReceived = undefined;
+    /**
+     * (Only if debug) Which MatsSocketServer node received the reply for the Mats3 message (might not be the same that sent it).
+     * @type {string}
+     */
     this.matsMessageReplyReceivedNodename = undefined;
 
+    /**
+     * (Only if debug) When the MatsSocket message was produced on the server side.
+     * @type {Timestamp}
+     */
     this.serverMessageCreated = undefined;
+    /**
+     * (Only if debug) Which MatsSocketServer node created the MatsSocket message.
+     * @type {string}
+     */
     this.serverMessageCreatedNodename = undefined;
 
+    /**
+     * (Only if debug) When the MatsSocket message was sent from server to client.
+     * @type {Timestamp}
+     */
     this.messageSentToClient = undefined;
+    /**
+     * (Only if debug) Which MatsSocketServer node sent the MatsSocket message to the client (the one that held the
+     * MatsSocket session at the sending time. This might be different from the MatsSocketServer node that held the
+     * session at the receiving time).
+     * @type {string}
+     */
     this.messageSentToClientNodename = undefined;
 
     if (envelope.debug) {
@@ -67,15 +110,13 @@ function DebugInformation(clientMessageSent, requestedDebugOptions, envelope, re
         this.messageSentToClient = envelope.debug.mscts;
         this.messageSentToClientNodename = envelope.debug.mscnn;
     }
-
-    this.messageReceived = receivedTimestamp;
 }
 
 /**
  * <b>Copied directly from AuthenticationPlugin.java</b>:
  * Types of debug information you can request, read more at {@link MatsSocket#debug} and {@link MessageEvent#debug}.
  *
- * @enum {string}
+ * @enum {number}
  * @readonly
  */
 const DebugOption = {

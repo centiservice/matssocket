@@ -1,3 +1,5 @@
+import './typedefs.js';
+
 export { PingPong }
 
 /**
@@ -20,16 +22,14 @@ function PingPong(pingId, sentTimestamp) {
     /**
      * Millis-from-epoch when this ping was sent.
      *
-     * @type {number}
+     * @type {Timestamp}
      */
     this.sentTimestamp = sentTimestamp;
 
     /**
      * The experienced round-trip time for this ping-pong - this is the time back-and-forth.
      *
-     * <b>Note that this number can be a float, not necessarily integer</b>.
-     *
-     * @type {number}
+     * @type {FractionalMillis}
      */
     this.roundTripMillis = undefined;
 }

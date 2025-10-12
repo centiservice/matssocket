@@ -95,6 +95,8 @@ function ConnectionEvent(type, webSocketUrl, webSocketEvent, timeoutSeconds, cou
 
     /**
      * The connection attempt count, starts at 0th attempt and increases for each time the connection attempt fails.
+     *
+     * @type {number}
      */
     this.connectionAttempt = connectionAttempt;
 }

@@ -1,4 +1,9 @@
+import './typedefs.js';
+
+import { MessageEvent, MessageEventType } from './MessageEvent.js';
+
 export { InitiationProcessedEvent, InitiationProcessedEventType }
+
 
 /**
  * (Metrics) Information about Client-to-Server SENDs and REQUESTs (aka <i>Client Initiations</i>), including
@@ -35,14 +40,14 @@ export { InitiationProcessedEvent, InitiationProcessedEventType }
  *
  * @param {string} endpointId
  * @param {string} clientMessageId
- * @param {int} sentTimestamp
- * @param {float} sessionEstablishedOffsetMillis
+ * @param {Timestamp} sentTimestamp
+ * @param {FractionalMillis} sessionEstablishedOffsetMillis
  * @param {string} traceId
  * @param {Object} initiationMessage
- * @param {float} acknowledgeRoundTripMillis
+ * @param {FractionalMillis} acknowledgeRoundTripMillis
  * @param {MessageEventType} replyMessageEventType
  * @param {string} replyToTerminatorId
- * @param {float} requestRoundTripMillis
+ * @param {FractionalMillis} requestRoundTripMillis
  * @param {MessageEvent} replyMessageEvent
  * @class
  */
@@ -72,7 +77,7 @@ function InitiationProcessedEvent(endpointId, clientMessageId, sentTimestamp, se
     /**
      * Millis-from-epoch when this initiation was sent.
      *
-     * @type {int}
+     * @type {Timestamp}
      */
     this.sentTimestamp = sentTimestamp;
 
@@ -86,9 +91,7 @@ function InitiationProcessedEvent(endpointId, clientMessageId, sentTimestamp, se
      * sent in a single pipeline, directly trailing the HELLO, their answers coming in as soon as possible after
      * the WELCOME.
      *
-     * <b>Note that this number can be a float, not necessarily integer</b>.
-     *
-     * @type {float}
+     * @type {FractionalMillis}
      */
     this.sessionEstablishedOffsetMillis = sessionEstablishedOffsetMillis;
 
@@ -111,7 +114,7 @@ function InitiationProcessedEvent(endpointId, clientMessageId, sentTimestamp, se
      *
      * <b>Note that this number can be a float, not necessarily integer</b>.
      *
-     * @type {float}
+     * @type {FractionalMillis}
      */
     this.acknowledgeRoundTripMillis = acknowledgeRoundTripMillis;
 
@@ -134,9 +137,7 @@ function InitiationProcessedEvent(endpointId, clientMessageId, sentTimestamp, se
     /**
      * The experienced round-trip time from a Request initiation to the Reply (RESOLVE or REJECT) comes back.
      *
-     * <b>Note that this number can be a float, not necessarily integer</b>.
-     *
-     * @type {float}
+     * @type {FractionalMillis}
      */
     this.requestReplyRoundTripMillis = requestRoundTripMillis;
 

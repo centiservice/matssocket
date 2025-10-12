@@ -1,26 +1,28 @@
+import './typedefs.js';
+
 export { AuthorizationRequiredEvent, AuthorizationRequiredEventType }
 
 /**
  * Sent by the MatsSocket, via the {@link MatsSocket#setAuthorizationExpiredCallback}, when it requires new or
  * revalidated authentication by the client.
  *
- * @param {AuthorizationRequiredEvent} type - {@link AuthorizationRequiredEvent#type}
+ * @param {AuthorizationRequiredEventType} type - {@link AuthorizationRequiredEvent#type}
  * @param {number} currentExpirationTimestamp - {@link AuthorizationRequiredEvent#currentExpirationTimestamp}
  * @class
  */
 function AuthorizationRequiredEvent(type, currentExpirationTimestamp) {
     /**
-     * Type of the event, one of {@link AuthorizationRequiredEvent}.
+     * Type of the event, one of {@link AuthorizationRequiredEventType}.
      *
-     * @type {AuthorizationRequiredEvent}
+     * @type {AuthorizationRequiredEventType}
      */
     this.type = type;
 
     /**
-     * Millis-from-epoch when the current Authorization expires - note that this might well still be in the future,
+     * Millis-since-epoch when the current Authorization expires - note that this might well still be in the future,
      * but the "slack" left before expiration is used up.
      *
-     * @type {number}
+     * @type {Timestamp}
      */
     this.currentExpirationTimestamp = currentExpirationTimestamp;
 }

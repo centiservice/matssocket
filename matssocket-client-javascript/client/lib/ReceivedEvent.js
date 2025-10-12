@@ -1,3 +1,5 @@
+import './typedefs.js';
+
 export { ReceivedEvent, ReceivedEventType }
 
 /**
@@ -33,14 +35,14 @@ function ReceivedEvent(type, traceId, sentTimestamp, receivedTimestamp, roundTri
     /**
      * Millis-since-epoch when the message was sent from the Client.
      *
-     * @type {number}
+     * @type {Timestamp}
      */
     this.sentTimestamp = sentTimestamp;
 
     /**
      * Millis-since-epoch when the ACK or NACK was received on the Client, millis-since-epoch.
      *
-     * @type {number}
+     * @type {Timestamp}
      */
     this.receivedTimestamp = receivedTimestamp;
 
@@ -54,7 +56,7 @@ function ReceivedEvent(type, traceId, sentTimestamp, receivedTimestamp, roundTri
      * Notice that Received-events might be de-prioritized on the Server side (batched up, with micro-delays
      * to get multiple into the same batch), so this number should not be taken as the "ping time".
      *
-     * @type {number}
+     * @type {FractionalMillis}
      */
     this.roundTripMillis = roundTripMillis;
 
