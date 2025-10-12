@@ -1,0 +1,22 @@
+{
+  "name": "consumer-canary",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Minimal consumer matrix for matssocket integration (npm-only).",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "install:local": "node scripts/link-local.mjs",
+    "install:registry": "node scripts/link-registry.mjs",
+    "build:all": "node scripts/build-all.mjs",
+    "preview:vanilla": "npm --workspace apps/vanilla-js-vite run preview",
+    "preview:react": "npm --workspace apps/react-ts-vite run preview",
+    "start:next": "npm --workspace apps/next-ts run start",
+    "serve:nobundler": "npm --workspace apps/no-bundler run serve",
+    "clean": "rimraf apps/*/node_modules apps/*/dist apps/*/.next || true"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "no-bundler",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "serve": "npx http-server -p 5176 ."
+  },
+  "dependencies": {
+    "matssocket": "file:../../../matssocket-client-javascript/client"
+  }
+}

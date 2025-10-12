@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<body>
+<h1>UMD + ESM page</h1>
+
+<h2>UMD</h2>
+<!-- Adjust the path to your published UMD file name if different -->
+<script src="https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc2-2025-10-11/dist/matssocket.umd.min.js"></script>
+<script>
+    console.log('UMD global:', window.MatsSocket || window.Mats);
+</script>
+
+<h2>ESM via CDN</h2>
+<script type="module">
+    import * as Mats from 'https://esm.sh/matssocket@1.0.0-rc2-2025-10-11';
+
+    console.log('esm.sh ESM import:', Mats);
+</script>
+</body>
+</html>

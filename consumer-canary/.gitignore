@@ -1,0 +1,8 @@
+node_modules
+package-lock.json
+apps/*/package-lock.json
+apps/*/node_modules
+apps/*/.next
+apps/*/dist
+apps/*/.vite
+npm-debug.log*
