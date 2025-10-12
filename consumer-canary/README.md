@@ -31,10 +31,12 @@ npm --workspace apps/next-ts run dev
 npm run serve:nobundler
 ```
 
-Currently working:
+Working!
 * react-ts-vite
 * next-ts
 
-Missing IntelliSense:
-* vanilla-js-vite
-* no-bundler
+Working fine, but IntelliJ's IntelliSense only from NPM:
+* vanilla-js-vite: IntelliSense fine imported from registry (npm), but not when imported from local build. Good enough!
+
+Working fine, but IntelliJ's IntelliSense spotty:
+* no-bundler: Partial IntelliSense when imported from registry (npm), but not when imported from local build.
