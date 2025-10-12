@@ -12,6 +12,10 @@ cd consumer-canary
 npm run install:local
 ```
 
+## 2) IntelliJ: Turn off "TypeScript -> Recompile on changes"
+
+.. otherwise you'll get .js files from .tsx files. None of the apps expects this.
+
 ## npm tasks
 
 * `npm run install:local`: Runs `npm install` on all apps, using your local library build.
@@ -28,10 +32,8 @@ npm run serve:nobundler
 
 Currently working:
 * react-ts-vite
+* next-ts
 
 Missing IntelliSense:
 * vanilla-js-vite
 * no-bundler
-
-Not working due to MatsSocket..
-* next-ts: import("ws"): Module not found. So it thinks it's inside Node..!
