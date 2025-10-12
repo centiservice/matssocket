@@ -20,7 +20,8 @@ rootProject.name = 'matssocket'
 
 include 'matssocket-server-api', 'matssocket-server-impl',
         'matssocket-client-javascript', 'matssocket-client-javascript:client', 'matssocket-client-javascript:tests',
-        'matssocket-client-dart'
+        'matssocket-client-dart',
+        'consumer-canary'
 
 println "** Java: ${ System.getProperty('java.version') }, Groovy: $GroovySystem.version," +
         " Gradle: ${ gradle.gradleVersion }, Charset.defaultCharset(): ${Charset.defaultCharset() }" +
