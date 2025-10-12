@@ -86,9 +86,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
     if (!webSocketFactory) {
         // -> No, so try for global WebSocket
         if (typeof WebSocket === "function") {
-            webSocketFactory = function (url, protocol) {
-                return new WebSocket(url, protocol);
-            };
+            webSocketFactory = (url, protocol) => new WebSocket(url, protocol);
         } else if (_isNodeJs()) {
             _nodeJsTryingToImportWebSocketModule = true;
             // -> Seemingly Node.js environment, try to dynamically import the 'ws' library.
@@ -96,15 +94,12 @@ function MatsSocket(appName, appVersion, urls, config = null) {
             // However, we'll have to treat it as async, so a bit of handling both here and in the WebSocket creation
             // code below, by means of "stop process and restart once import resolved" logic.
 
-            // @ts-expect-error TS2307: (Cannot find module) it is up to the user to provide 'ws' when used in node, per documentation.
-            import('ws')
+            _importWsLazy()
                 .then((ws) => {
                     log("Constructor: NodeJs import('ws') went OK: Got WebSocket module");
                     const {default: WebSocket} = ws;
                     setTimeout(() => {
-                        webSocketFactory = function (url, protocol) {
-                            return new WebSocket(url, protocol);
-                        };
+                        webSocketFactory = (url, protocol) => new WebSocket(url, protocol);
                         log("Constructor: 'webSocketFactory' is now set.");
                         _nodeJsTryingToImportWebSocketModule = false;
                         if (typeof _nodeJsCallbackOnceWebSocketModuleResolved === 'function') {
@@ -1502,6 +1497,17 @@ function MatsSocket(appName, appVersion, urls, config = null) {
     };
 
     // ==== Implementation ====
+
+    // Hack to get past Next's server-side compilation error: "Module not found: Can't resolve 'ws'".
+    function _importWsLazy() {
+        // Note: Never executed in the browser
+        return import(
+            /* webpackIgnore: true */
+            /* @vite-ignore */
+            // @ts-expect-error TS2307: (Cannot find module) it is up to the user to provide 'ws' when used in node.
+            'ws'
+            );
+    }
 
     function _isNodeJs() {
         // @ts-expect-error TS2580: (Cannot find name process): This is node-only, and this is the point.
