@@ -1,0 +1,72 @@
+// JS CLIENT Consumer Canary - i.e. test that the lib works in JS and TS projects.
+
+apply from: '../matssocket-client-javascript/node.gradle'
+
+tasks.register('build', NpmTask) {
+    dependsOn installLocal
+    args = ['run', 'build:all']
+}
+
+// Installs deps, using the local built matssocket (in matssocket-client-javascript/client)
+tasks.register('installLocal', NpmTask) {
+    dependsOn ":matssocket-client-javascript:client:build"
+    args = ['run', 'install:local']
+}
+
+// Installs deps, using the latest matsocket.js RC tag from NPM
+tasks.register('installRc', NpmTask) {
+    args = ['run', 'install:rc']
+}
+
+// Installs deps, using the latest matsocket.js LATEST tag from NPM
+tasks.register('installLatest', NpmTask) {
+    args = ['run', 'install:latest']
+}
+
+tasks.register('download') {
+    dependsOn nodeBinDir
+}
+
+tasks.register('downloadAll') {
+    dependsOn download, npmInstall, installLocal
+}
+
+// :: Versions
+// Version of Node
+tasks.register('nodeVersion', NodeTask) {
+    script = file('README.md') // Dummy file, we just want to run node --version
+    options = ['--version']
+}
+
+// Version of NPM
+tasks.register('npmVersion', NpmTask) {
+    args = ['--version']
+}
+
+// Versions of Node and NPM
+tasks.register('versions') {dependsOn nodeVersion, npmVersion }
+
+// :: Clean tasks
+// Ordinary clean, delete whatever comes out of 'build' step.
+tasks.register('clean', Delete) {
+    // Note: Avoid depending on 'npm run clean', where distclean might delete node and npm!
+    delete layout.buildDirectory
+    delete "$projectDir/apps/next-ts/dist"
+    delete "$projectDir/apps/react-ts-vite/dist"
+    delete "$projectDir/apps/vanilla-js-vite/dist"
+}
+// Distclean, delete + include all downloaded deps + node/npm
+tasks.register('distclean', Delete) {
+    delete fileTree(dir: "$projectDir/apps", include: '**/package-lock.json')
+
+    delete "$projectDir/apps/buildless-js/node_modules"
+
+    delete "$projectDir/apps/next-ts/node_modules"
+    delete "$projectDir/apps/next-ts/.next"
+    delete "$projectDir/apps/next-ts/next-env.d.ts"
+
+    delete "$projectDir/apps/react-ts-vite/node_modules"
+
+    delete "$projectDir/apps/vanilla-js-vite/node_modules"
+    dependsOn clean, distcleanNode
+}
