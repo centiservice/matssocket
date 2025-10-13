@@ -1,5 +1,6 @@
-import * as chai from "chai"
-import * as mats from "matssocket"
+import * as chai from "chai";
+import * as mats from "matssocket";
+import {describe, it, beforeEach, afterEach } from "mocha";
 
 describe('MatsSocket integration tests, basics', function () {
     let matsSocket;
@@ -10,8 +11,8 @@ describe('MatsSocket integration tests, basics', function () {
         matsSocket.setCurrentAuthorization("DummyAuth:" + userId + ":" + expiry, expiry, roomForLatencyMillis);
     }
 
-    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
-        || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS ||
+        "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
     beforeEach(() => {
         matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urls.split(","));
@@ -512,7 +513,7 @@ describe('MatsSocket integration tests, basics', function () {
         }
 
         it("When the user is allowed to debug, and request all via matsSocket.debug, the debug object should be present and all filled", function (done) {
-            matsSocket.debug = mats.DebugOption.NODES | mats.DebugOption.TIMESTAMPS;
+            matsSocket.debug = mats.DebugOption.NODES + mats.DebugOption.TIMESTAMPS;
             testDebugOptionsSend(done, {}, function (debug) {
                 assertNodes(debug);
                 assertTimestamps(debug);
@@ -537,14 +538,14 @@ describe('MatsSocket integration tests, basics', function () {
 
         it("When the user is allowed to debug, and request all via message-specific config, while matsSocket.debug='undefined', the debug object should be present and all filled", function (done) {
             matsSocket.debug = undefined;
-            testDebugOptionsSend(done, {debug: mats.DebugOption.NODES | mats.DebugOption.TIMESTAMPS}, function (debug) {
+            testDebugOptionsSend(done, {debug: mats.DebugOption.NODES + mats.DebugOption.TIMESTAMPS}, function (debug) {
                 assertNodes(debug);
                 assertTimestamps(debug);
             });
         });
 
         it("When the user is NOT allowed to debug, and request all via matsSocket.debug, the debug object should just have the Client-side filled stuff", function (done) {
-            matsSocket.debug = mats.DebugOption.NODES | mats.DebugOption.TIMESTAMPS;
+            matsSocket.debug = mats.DebugOption.NODES + mats.DebugOption.TIMESTAMPS;
             testDebugOptionsSend(done, {}, function (debug) {
                 assertNodesUndefined(debug);
                 assertTimestampsFromServerAreUndefined(debug);
@@ -590,4 +591,3 @@ describe('MatsSocket integration tests, basics', function () {
         });
     });
 });
-;

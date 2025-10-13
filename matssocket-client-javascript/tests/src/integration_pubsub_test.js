@@ -1,11 +1,12 @@
-import * as mats from "matssocket"
+import * as mats from "matssocket";
+import {describe, it, beforeEach, afterEach } from "mocha";
 
 let logging = false;
 
 let matsSocket;
 
-const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
-    || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS ||
+    "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
 function createMatsSocket() {
     matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urls.split(","));
@@ -65,7 +66,7 @@ describe('MatsSocket integration tests of "pub/sub" - Publish and Subscribe', fu
                     let url = urls.split(",")[0].replace('ws', 'http');
                     fetch(url + '/sendMessageOnTestTopic?topic='+ testTopic);
                 }
-            })
+            });
 
             setAuth();
             matsSocket.subscribe(testTopic, function (messageEvent) {

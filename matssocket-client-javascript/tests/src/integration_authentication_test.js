@@ -1,11 +1,12 @@
-import * as chai from "chai"
-import * as mats from "matssocket"
+import * as chai from "chai";
+import * as mats from "matssocket";
+import {describe, it, beforeEach, afterEach } from "mocha";
 
 let logging = false;
 let matsSocket;
 
-const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
-    || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS ||
+    "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
 function createMatsSocket(urlsToUse = urls) {
     matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urlsToUse.split(","));
@@ -110,7 +111,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
             setAuth(userId, 2000, 0);
 
             let authCallbackCalledCount = 0;
-            let authCallbackCalledEventType = undefined;
+            let authCallbackCalledEventType;
             matsSocket.setAuthorizationExpiredCallback(function (event) {
                 authCallbackCalledCount++;
                 authCallbackCalledEventType = event.type;
@@ -167,7 +168,7 @@ describe('MatsSocket integration tests of Authentication & Authorization', funct
             setAuth();
             let authValue;
             let authCallbackCalledCount = 0;
-            let authCallbackCalledEvent = undefined;
+            let authCallbackCalledEvent;
             matsSocket.setAuthorizationExpiredCallback(function (event) {
                 authCallbackCalledCount++;
                 authCallbackCalledEvent = event;

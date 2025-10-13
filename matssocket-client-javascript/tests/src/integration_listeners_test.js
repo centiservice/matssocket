@@ -1,6 +1,6 @@
-import * as chai from "chai"
-import * as mats from "matssocket"
-
+import * as chai from "chai";
+import * as mats from "matssocket";
+import {describe, it, beforeEach, afterEach } from "mocha";
 
 describe('MatsSocket integration tests, listeners', function () {
     let matsSocket;
@@ -11,8 +11,8 @@ describe('MatsSocket integration tests, listeners', function () {
         matsSocket.setCurrentAuthorization("DummyAuth:" + userId + ":" + expiry, expiry, roomForLatencyMillis);
     }
 
-    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
-        || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS ||
+        "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
     beforeEach(() => {
         matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urls.split(","));

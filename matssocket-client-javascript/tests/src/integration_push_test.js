@@ -1,5 +1,6 @@
-import * as chai from "chai"
-import * as mats from "matssocket"
+import * as chai from "chai";
+import * as mats from "matssocket";
+import {describe, it, beforeEach, afterEach } from "mocha";
 
 describe('MatsSocket integration tests of Server-side send/request ("push")', function () {
     let matsSocket;
@@ -10,8 +11,8 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
         matsSocket.setCurrentAuthorization("DummyAuth:" + userId + ":" + expiry, expiry, roomForLatencyMillis);
     }
 
-    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
-        || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+    const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS ||
+        "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 
     beforeEach(() => {
         matsSocket = new mats.MatsSocket("TestApp", "1.2.3", urls.split(","));
@@ -37,11 +38,11 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             matsSocket.terminator("ClientSide.terminator", (msg) => {
                 chai.assert.strictEqual(msg.data.number, Math.E);
                 chai.assert.strictEqual(msg.traceId, traceId + ":SentFromMatsStage");
-                done()
+                done();
             });
             matsSocket.send("Test.server.send.matsStage", traceId, {
                 number: Math.E
-            })
+            });
         });
 
         it('Send a message to Server, which responds by sending a message to terminator at Client (us!), in a separate Thread', function (done) {
@@ -50,11 +51,11 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             matsSocket.terminator("ClientSide.terminator", (msg) => {
                 chai.assert.strictEqual(msg.data.number, Math.E);
                 chai.assert.strictEqual(msg.traceId, traceId + ":SentFromThread");
-                done()
+                done();
             });
             matsSocket.send("Test.server.send.thread", traceId, {
                 number: Math.E
-            })
+            });
         });
     });
 
@@ -95,7 +96,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
                 chai.assert.strictEqual(msg.data.number, Math.E + Math.PI);
                 chai.assert.strictEqual(msg.data.string, initialMessage + ":From_IntegrationEndpointA:" + (resolveReject ? "RESOLVE" : "REJECT"));
                 chai.assert.strictEqual(msg.traceId, traceId);
-                done()
+                done();
             });
 
             // Here we send the message that starts the cascade
@@ -132,6 +133,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             // It should be present in MessageEvent, since it should be in the message from the server
             chai.assert.isDefined(msg.debug);
             // These should be set
+            /* jshint -W016 */ // Disables warning for unexpected bitwise operators
             if ((debugOptions & mats.DebugOption.TIMESTAMPS) > 0) {
                 chai.assert.isNumber(msg.debug.serverMessageCreated);
                 chai.assert.isNumber(msg.debug.messageSentToClient);
@@ -146,6 +148,8 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
                 chai.assert.isUndefined(msg.debug.serverMessageCreatedNodename);
                 chai.assert.isUndefined(msg.debug.messageSentToClientNodename);
             }
+            /* jshint +W016 */ // Re-enables warning for unexpected bitwise operators
+
             // While all other should not be set
             chai.assert.isUndefined(msg.debug.clientMessageSent);
             chai.assert.isUndefined(msg.debug.clientMessageReceived);
@@ -174,16 +178,16 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
                 chai.assert.strictEqual(msg.traceId, traceId + ":SentFromThread");
 
                 extracted(msg, debugOptions);
-                done()
+                done();
             });
 
             matsSocket.send("Test.server.send.thread", traceId, {
                 number: Math.E
-            })
+            });
         }
 
         it('Server initiated send should have debug object if user asks for it - with the all server-sent stuff filled.', function (done) {
-            testServerInitiatedSend_DebugOptions(mats.DebugOption.NODES | mats.DebugOption.TIMESTAMPS, done);
+            testServerInitiatedSend_DebugOptions(mats.DebugOption.NODES + mats.DebugOption.TIMESTAMPS, done);
         });
         it('Server initiated send should have debug object if user asks for just nodes - with just the nodes filled.', function (done) {
             testServerInitiatedSend_DebugOptions(mats.DebugOption.NODES, done);
@@ -210,7 +214,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
                 return Promise.resolve({
                     string: msg.data.string + ":From_DebugOptions_test",
                     number: msg.data.number + Math.PI
-                })
+                });
             });
 
             // This terminator will get the final result from the Server
@@ -218,17 +222,17 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
                 chai.assert.strictEqual(msg.data.number, Math.E + Math.PI);
                 chai.assert.strictEqual(msg.data.string, initialMessage + ":From_DebugOptions_test:RESOLVE");
                 chai.assert.strictEqual(msg.traceId, traceId);
-                done()
+                done();
             });
 
             matsSocket.send("Test.server.request.direct", traceId, {
                 string: initialMessage,
                 number: Math.E
-            })
+            });
         }
 
         it('Server initiated request should have debug object if user asks for it - with the all server-sent stuff filled.', function (done) {
-            testServerInitiatedRequest_DebugOptions(mats.DebugOption.NODES | mats.DebugOption.TIMESTAMPS, done);
+            testServerInitiatedRequest_DebugOptions(mats.DebugOption.NODES + mats.DebugOption.TIMESTAMPS, done);
         });
         it('Server initiated request should have debug object if user asks for just nodes - with just the nodes filled.', function (done) {
             testServerInitiatedRequest_DebugOptions(mats.DebugOption.NODES, done);
@@ -254,7 +258,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
                 // :: Assert debug
                 // Since this is server-initiated, '0' will not give debug object - i.e. the server does not have difference between '0' and 'undefined'.
                 chai.assert.isUndefined(msg.debug);
-                done()
+                done();
             });
 
             // :: These will become the server's initiation requested DebugOptions upon the subsequent 'send'
@@ -270,7 +274,7 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
 
             matsSocket.send("Test.server.send.thread", traceId, {
                 number: Math.E
-            })
+            });
 
         }
 
@@ -281,5 +285,5 @@ describe('MatsSocket integration tests of Server-side send/request ("push")', fu
             serverInitiatedSend_NoDebugOptions(done, undefined);
         });
 
-    })
+    });
 });
