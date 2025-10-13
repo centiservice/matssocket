@@ -7,6 +7,7 @@
     "apps/*"
   ],
   "scripts": {
+    "install": "npm run install:local",
     "install:local": "node scripts/link-local.mjs",
     "install:rc": "node scripts/link-rc.mjs",
     "install:latest": "node scripts/link-latest.mjs",
@@ -15,8 +16,8 @@
     "preview:vanilla": "npm --workspace apps/vanilla-js-vite run preview",
     "preview:react": "npm --workspace apps/react-ts-vite run preview",
     "start:next": "npm --workspace apps/next-ts run start",
-    "serve:nobundler": "npm --workspace apps/no-bundler run serve",
-    "clean": "rimraf apps/*/node_modules apps/*/dist apps/*/.next || true"
+    "serve:buildless": "npm --workspace apps/buildless-js run serve",
+    "clean": "rimraf apps/*/node_modules apps/*/dist apps/*/.next apps/*/next-env.d.ts apps/*/package-lock.json || true"
   },
   "devDependencies": {
     "rimraf": "^6.0.1",

@@ -8,7 +8,7 @@ const apps = [
     'apps/vanilla-js-vite',
     'apps/react-ts-vite',
     'apps/next-ts',
-    'apps/no-bundler'
+    'apps/buildless-js'
 ];
 
 // Published RC tag/version:
