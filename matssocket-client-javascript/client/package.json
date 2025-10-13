@@ -1,6 +1,6 @@
 {
   "name": "matssocket",
-  "version": "1.0.0-rc3-2025-10-12",
+  "version": "1.0.0-rc4-2025-10-13",
   "description": "MatsSocket client library",
   "author": "Endre Stølsvik <endre@stolsvik.com> (https://stolsvik.net/)",
   "license": "Apache-2.0",
