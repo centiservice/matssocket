@@ -2,8 +2,8 @@ import {execSync as x} from 'node:child_process';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = resolve(__dirname, '..');
+const our_path = dirname(fileURLToPath(import.meta.url));
+const root = resolve(our_path, '..');
 const apps = [
     'apps/vanilla-js-vite',
     'apps/react-ts-vite',

@@ -81,6 +81,17 @@ tasks.register('downloadAll') {
     dependsOn download, npmInstall
 }
 
+// Sporadic failure fixing. This task comes from plugin node-gradle. I have no idea why this sometimes happen.
+//tasks.named("npmInstall") {
+//    doNotTrackState("When combined with 'distclean', sometimes this specific npmInstall task fails with \"Cannot" +
+//            " access output property 'nodeModulesDirectory' of task ':matssocket-client-javascript:tests:npmInstall'." +
+//            " Accessing unreadable inputs or outputs is not supported\" - thus we disable state tracking.")
+//}
+// NOTE 2025-10-14: MAYBE this works well enough?? Remove the stuff above if it has never failed in a long time.
+// The idea would be that this 'tests' module refers to the 'client' module in package.json, so maybe it should be
+// ensured built before linking up?! Or maybe this just ensures non-concurrency enough?
+npmInstall.mustRunAfter ":matssocket-client-javascript:client:build"
+
 // Run the integration test continuously, retriggering on change in the javascript code. This assumes there is
 // a server listening on ws://localhost:8080/matssocket
 tasks.register('javascriptTestWatch', NpmTask) {

@@ -7,7 +7,6 @@
     "apps/*"
   ],
   "scripts": {
-    "install": "npm run install:local",
     "install:local": "node scripts/link-local.mjs",
     "install:rc": "node scripts/link-rc.mjs",
     "install:latest": "node scripts/link-latest.mjs",

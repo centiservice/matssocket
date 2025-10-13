@@ -12,6 +12,13 @@ tasks.register('installLocal', NpmTask) {
     dependsOn ":matssocket-client-javascript:client:build"
     args = ['run', 'install:local']
 }
+// If all tasks (e.g. 'distclean downloadAll'): then first build client, then npmInstall, then installLocal
+// Clue: installLocal depends on built JS Client library (the "local" part)
+// .. and npmInstall should not run concurrently with npmInstall for each of the apps - they are workspace-dependent.
+// But there is a problem with npmInstall saying "removed X, added Y, audited Z packages" if running 'downloadAll'
+// multiple times - a few times until it "stabilizes".
+npmInstall.mustRunAfter ":matssocket-client-javascript:client:build"
+installLocal.mustRunAfter npmInstall
 
 // Installs deps, using the latest matsocket.js RC tag from NPM
 tasks.register('installRc', NpmTask) {
@@ -30,21 +37,6 @@ tasks.register('download') {
 tasks.register('downloadAll') {
     dependsOn download, npmInstall, installLocal
 }
-
-// :: Versions
-// Version of Node
-tasks.register('nodeVersion', NodeTask) {
-    script = file('README.md') // Dummy file, we just want to run node --version
-    options = ['--version']
-}
-
-// Version of NPM
-tasks.register('npmVersion', NpmTask) {
-    args = ['--version']
-}
-
-// Versions of Node and NPM
-tasks.register('versions') {dependsOn nodeVersion, npmVersion }
 
 // :: Clean tasks
 // Ordinary clean, delete whatever comes out of 'build' step.
