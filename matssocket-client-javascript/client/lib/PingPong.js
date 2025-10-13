@@ -1,4 +1,14 @@
 import './typedefs.js';
+// Repeating typedefs here, since 'tsc' otherwise don't create the 'export type FractionalMillis = number;' line.
+/**
+ * Fractional milliseconds for high-res timing.
+ * @typedef {number} FractionalMillis
+ */
+
+/**
+ * Timestamp, millis-since-epoch.
+ * @typedef {number} Timestamp
+ */
 
 export { PingPong }
 
@@ -8,7 +18,7 @@ export { PingPong }
  * {@link MatsSocket#pings}.
  *
  * @param {number} pingId
- * @param {number} sentTimestamp
+ * @param {Timestamp} sentTimestamp
  * @class
  */
 function PingPong(pingId, sentTimestamp) {

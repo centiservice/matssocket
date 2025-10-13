@@ -1,4 +1,14 @@
 import './typedefs.js';
+// Repeating typedefs here, since 'tsc' otherwise don't create the 'export type FractionalMillis = number;' line.
+/**
+ * Fractional milliseconds for high-res timing.
+ * @typedef {number} FractionalMillis
+ */
+
+/**
+ * Timestamp, millis-since-epoch.
+ * @typedef {number} Timestamp
+ */
 
 export { ReceivedEvent, ReceivedEventType }
 
@@ -9,9 +19,9 @@ export { ReceivedEvent, ReceivedEventType }
  *
  * @param {ReceivedEventType} type - {@link ReceivedEvent#type}
  * @param {string} traceId - {@link ReceivedEvent#traceId}
- * @param {number} sentTimestamp - {@link ReceivedEvent#sentTimestamp}
- * @param {number} receivedTimestamp - {@link ReceivedEvent#receivedTimestamp}
- * @param {number} roundTripMillis - {@link ReceivedEvent#roundTripMillis}
+ * @param {Timestamp} sentTimestamp - {@link ReceivedEvent#sentTimestamp}
+ * @param {Timestamp} receivedTimestamp - {@link ReceivedEvent#receivedTimestamp}
+ * @param {Timestamp} roundTripMillis - {@link ReceivedEvent#roundTripMillis}
  * @param {string} description - {@link ReceivedEvent#description}
  * @class
  */

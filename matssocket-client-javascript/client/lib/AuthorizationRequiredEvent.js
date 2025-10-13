@@ -1,4 +1,14 @@
 import './typedefs.js';
+// Repeating typedefs here, since 'tsc' otherwise don't create the 'export type FractionalMillis = number;' line.
+/**
+ * Fractional milliseconds for high-res timing.
+ * @typedef {number} FractionalMillis
+ */
+
+/**
+ * Timestamp, millis-since-epoch.
+ * @typedef {number} Timestamp
+ */
 
 export { AuthorizationRequiredEvent, AuthorizationRequiredEventType }
 
@@ -7,7 +17,7 @@ export { AuthorizationRequiredEvent, AuthorizationRequiredEventType }
  * revalidated authentication by the client.
  *
  * @param {AuthorizationRequiredEventType} type - {@link AuthorizationRequiredEvent#type}
- * @param {number} currentExpirationTimestamp - {@link AuthorizationRequiredEvent#currentExpirationTimestamp}
+ * @param {Timestamp} currentExpirationTimestamp - {@link AuthorizationRequiredEvent#currentExpirationTimestamp}
  * @class
  */
 function AuthorizationRequiredEvent(type, currentExpirationTimestamp) {

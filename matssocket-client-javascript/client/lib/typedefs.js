@@ -7,4 +7,3 @@
  * Timestamp, millis-since-epoch.
  * @typedef {number} Timestamp
  */
-

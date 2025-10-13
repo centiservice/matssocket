@@ -1,4 +1,14 @@
 import './typedefs.js';
+// Repeating typedefs here, since 'tsc' otherwise don't create the 'export type FractionalMillis = number;' line.
+/**
+ * Fractional milliseconds for high-res timing.
+ * @typedef {number} FractionalMillis
+ */
+
+/**
+ * Timestamp, millis-since-epoch.
+ * @typedef {number} Timestamp
+ */
 
 export { MessageEvent, MessageEventType }
 
@@ -13,7 +23,7 @@ export { MessageEvent, MessageEventType }
  * @param {object} data - {@link MessageEvent#data}
  * @param {string} traceId - {@link MessageEvent#traceId}
  * @param {string} messageId - {@link MessageEvent#messageId}
- * @param {number} receivedTimestamp - {@link MessageEvent#receivedTimestamp}
+ * @param {Timestamp} receivedTimestamp - {@link MessageEvent#receivedTimestamp}
  * @class
  */
 function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
@@ -116,14 +126,19 @@ function MessageEvent(type, data, traceId, messageId, receivedTimestamp) {
  * @readonly
  */
 const MessageEventType = {
+    /** Message sent from Server to Client as a resolve for a previous request. */
     RESOLVE: "resolve",
 
+    /** Message sent from Server to Client as a reject for a previous request. */
     REJECT: "reject",
 
+    /** Message sent from Server to a Client Terminator. */
     SEND: "send",
 
+    /** Message sent from Server to a Client Endpoint (expecting a reply). */
     REQUEST: "request",
 
+    /** Message sent from Server to a Client Topic. */
     PUB: "pub",
 
     /**

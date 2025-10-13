@@ -1,4 +1,15 @@
 import './typedefs.js';
+// Repeating typedefs here, since 'tsc' otherwise don't create the 'export type FractionalMillis = number;' line.
+/**
+ * Fractional milliseconds for high-res timing.
+ * @typedef {number} FractionalMillis
+ */
+
+/**
+ * Timestamp, millis-since-epoch.
+ * @typedef {number} Timestamp
+ */
+
 
 export { DebugInformation, DebugOption }
 
@@ -8,6 +19,10 @@ export { DebugInformation, DebugOption }
  * ideas of what the time is, which means that timestamps comparison between Server and Client must be evaluated
  * with massive interpretation.
  *
+ * @param {Timestamp} clientMessageSent
+ * @param {number} requestedDebugOptions
+ * @param {object} envelope
+ * @param {Timestamp} receivedTimestamp
  * @class
  */
 function DebugInformation(clientMessageSent, requestedDebugOptions, envelope, receivedTimestamp) {
