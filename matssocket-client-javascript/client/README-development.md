@@ -229,7 +229,8 @@ stolsvik
 
 #### Change version number and build:
 
-Change version in package.json and MatsSocket.js to relevant (RC) version!
+Change version in `package.json` and `MatsSocket.js` to relevant (RC) version! Read above on the version string
+format.
 
 Build and test the client. **Note: You should also want to run the tests in the browser.** 
 ```shell
