@@ -41,7 +41,8 @@ export {
  * @class
  */
 function MatsSocket(appName, appVersion, urls, config = null) {
-    let clientLibNameAndVersion = "MatsSocket.js,1.0.0-rc4-2025-10-13";
+    let CLIENT_LIB_VERSION = "1.0.0-rc4-2025-10-13";
+    let CLIENT_LIB_NAME_AND_VERSION = "MatsSocket.js," + CLIENT_LIB_VERSION;
 
     // :: Validate primary arguments
     if (typeof appName !== "string") {
@@ -1530,7 +1531,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
     }
 
     function _beforeunloadHandler() {
-        that.close(clientLibNameAndVersion + " window.onbeforeunload close");
+        that.close(CLIENT_LIB_NAME_AND_VERSION + " window.onbeforeunload close");
     }
 
     function _registerBeforeunload() {
@@ -1810,7 +1811,7 @@ function MatsSocket(appName, appVersion, urls, config = null) {
             // -> No, HELLO not sent, so we create it now (auth is present, check above)
             let helloMessage = {
                 t: MessageType.HELLO,
-                clv: clientLibNameAndVersion + "; User-Agent: " + userAgent,
+                clv: CLIENT_LIB_NAME_AND_VERSION + "; User-Agent: " + userAgent,
                 ts: Date.now(),
                 an: appName,
                 av: appVersion,
