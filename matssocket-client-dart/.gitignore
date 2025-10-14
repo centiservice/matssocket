@@ -11,6 +11,9 @@ dartsdk_download-temp/
 # Directory created by dartdoc
 doc/
 
+# Directory for the archiveLib task
+dist/
+
 # Node for 'dart test -p node'
 node_modules/
 node_download/

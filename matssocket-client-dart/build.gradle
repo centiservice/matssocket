@@ -171,7 +171,7 @@ tasks.register('dartDoc', DartExec) {
     // Outputs: doc/api directory
     outputs.dir("$projectDir/doc")
 
-    File _docDir_ = file("$projectDir/doc");
+    File _docDir_ = file("$projectDir/doc")
 
     // :: Clean before create
     doFirst {
@@ -233,18 +233,29 @@ tasks.register('dartPublish', DartExec) {
     }
 }
 
-// Package up the Dart library
 tasks.register('archiveLib', Zip) {
+    inputs.files('pubspec.yaml')
+    inputs.dir('lib')
+
+    def matcher = (file("$projectDir/pubspec.yaml").text =~ /version\s*:\s*["']?([^"'\s]+)["']?/)
+    if (!matcher) {
+        throw new GradleException("Could not find 'version' in pubspec.yaml")
+    }
+    def dartClientVersion = matcher[0][1]
+    def destinationDir = layout.projectDirectory.dir("dist")
+    def archiveName = "matssocket-${dartClientVersion}-dart.zip"
     from "$projectDir/lib"
-    into "mats_socket-${project.version}-dart"
-    def destinationDir = layout.buildDirectory.dir("dist").get().asFile
-    def archiveName = "matssocket-${project.version}-dart.zip"
+    into "matssocket-${dartClientVersion}-dart"
     destinationDirectory = destinationDir
     archiveFileName = archiveName
+
+    def archiveFile = file("$destinationDir/$archiveName")
+    outputs.file(archiveFile)
     doLast {
-        println("##### Dart Client zip: " + destinationDir + "/" + archiveName)
+        println("##### Dart Client zip: " + archiveFile)
     }
 }
+
 
 // ===============================
 // Comprehensive test setup!
@@ -281,7 +292,7 @@ def registerDartTestTask = { String name, String platform, String compiler ->
         Provider<String> dartLogLevel = providers.gradleProperty('dartLogLevel')
         List<GString> testFiles = file("$projectDir/test")
                 .listFiles().findAll { it.name.endsWith(".dart") }.collect { "test/${it.name}" }
-        def sharedParamsService =  rootProject.sharedParamsService;
+        def sharedParamsService =  rootProject.sharedParamsService
         String nodeBinDir = "${node.resolvedNodeDir.get()}${org.gradle.internal.os.OperatingSystem.current().isWindows() ? '\\' : '/bin'}"
 
         doLast {
@@ -362,6 +373,7 @@ rootProject.stopMatsSocketTestServer.mustRunAfter(testWebJs, testWebWasm, testVm
 tasks.register('clean', Delete) {
     delete layout.buildDirectory
     delete "$projectDir/doc"
+    delete "$projectDir/dist"
 }
 
 tasks.register('distclean', Delete) {

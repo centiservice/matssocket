@@ -16,7 +16,7 @@ Dart and JavaScript clients. `matsSocketTestServer` is a root project task that 
 are unique to the Dart client, and it thus doesn't matter with qualifier._
 
 * `build`: runs `archiveLib`, `dartDoc` and `test` (target from DI server; GitHub Actions).
-* `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
+* `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `dist/` directory.
 * `dartDoc`: generates Dart documentation, open `doc/api/index.html`
 * `test`: runs all VM and Node tests on all compilers _(not Web targets, due to dependency on Chrome/Chromium)_
 * `testDart`: runs all tests in all platform/compiler combinations, including the Web targets. _(Path to Chrome/Chromium
@@ -37,12 +37,6 @@ are unique to the Dart client, and it thus doesn't matter with qualifier._
 * `dartUpgradeUpdate`: Runs `dart pub upgrade --major-versions` to upgrade dependencies.
 * `dartPana`: Runs `dart pub global run pana` to get the pub.dev score the lib will get.
 
-### Publishing
-* `dartPublishDryRun`: Runs `pub publish --dry-run` to get a preview of what will be published, with scoring/warnings.
-    Depends on `dartDoc` and only `testVmKernel` for test, for fast iteration. **Make sure `testDart` passes before
-    publishing!**
-* `dartPublish`: Runs `pub publish` to publish the lib to pub.dev. **Make sure `testDart` passes before publishing!**
-
 # Build
 
 "Building" on Dart only refers to testing and generating documentation, as there is no compile or bundling step. Dart
@@ -50,8 +44,8 @@ libraries are delivered as raw source code, the target compilation is done by th
 shaking to minimize the final application before compile. Compared to JavaScript, minimized source files thus don't make
 sense.
 
-The deliverables are thus the `/lib` folder (with its child `/lib/src/`), and the generated `/doc/api` folder, as well
-as most of the rest in `matssocket-client-dart/`.
+The deliverables are thus the `/lib` folder (with its child `/lib/src/`), and the generated `/doc/api` folder, the
+zipped archive in `/dist`, as well as most of the rest in `matssocket-client-dart/`.
 
 Run `./gradlew dartPublishDryRun` to see what will be published.
 
@@ -158,3 +152,93 @@ Tests' This by default runs on the VM/Kernel target, and is very fast.
 You need a Dart SDK that IntelliJ can use, and the one downloaded by Gradle works fine, and you'll get the correct
 version. Find the installation path as described above (run `download` task). Just note that you might have to restart
 the Dart analyzer after the Gradle download task runs, since the SDK will be overwritten and the analyzer thus crashes!
+
+
+## Publishing
+
+**NOTE: First update the version in `pubspec.yaml` and `MatsSocket.dart`, read below for format per tag/release type!**
+
+**Remember to git commit and tag the version bump before publishing, read below for tag and message format!**
+
+Gradle publish tasks:
+* `dartPublishDryRun`: Runs `pub publish --dry-run` to get a preview of what will be published, with scoring/warnings.
+  Depends on `dartDoc` and only `testVmKernel` for test, for fast iteration. **Make sure `testDart` passes before
+  publishing!**
+* `dartPublish`: Runs `pub publish` to publish the lib to pub.dev. **Make sure `testDart` passes before publishing!**
+
+To run testDart (set `chromePath` to your Chrome path):  
+`./gradlew -PchromePath=/snap/bin/chromium testDart` 
+
+Might want to run `dartPana` before publishing.
+
+Release types / SemVer tags:
+* Experimental (testing a new feature / fix):
+    * Add `-experimental.X+<iso date>` to the version, X being a counter from 0.
+* Release Candidate (before a new version, testing that it works, preferably in production!):
+    * Add `-rc.X+<iso date>` to the version, X being a counter from 0.
+* Release
+    * Add `+<iso date>` to the version.
+
+Standard for new versions would be to first publish a 'rc' version, and then publish a 'latest' release version.
+
+### Versioning between the different parts of this project:
+
+There are effectively three projects in MatsSocket: Backend, and the two clients. However, versions do not necessarily
+need to be bumped for all three: The clients only depend on the _wire protocol_ of the server. If there are no logical
+changes to the wire protocol, then the client versions and server versions can be bumped independently. Also, a bugfix
+or minor improvement to one of the clients does not necessarily require a bump in the other client. A wire-protocol
+change must be very carefully handled, since clients might be extremely sticky: Installed phone apps might not be
+updated timely by the users. _(This is technically not as important for the JS client on a web page, since it will
+typically be downloaded each time the user opens the web page.)_
+
+The project version in root's build.gradle is mainly referring to the version of the server API and implementation.
+
+### Transcript of a successful RC publish:
+
+#### First add Dart to path, using `./gradlew dartBinPath`:
+```shell
+$ ./gradlew dartBinPath   # to get the command.
+
+> Task :matssocket-client-dart:dartBinPath
+=== Dart executable: /home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/dart
+=== Dart bin dir   : /home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/
+    Unix:     export PATH=/home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/:$PATH
+    Windows:  set PATH=/home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/;%PATH%
+$ # Use the relevant PATH command for your shell.
+
+$ dart --version
+Dart SDK version: 3.9.4 (stable) (Tue Sep 30 12:08:50 2025 -0700) on "linux_x64"
+```
+
+#### Change version number and build:
+
+Change version in `pubspec.yaml` and `MatsSocket.dart` to relevant (RC) version! Read above on the version string
+format.
+
+Build and test the client.
+```shell
+$ ./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:build testDart
+```
+
+#### Check over what will be published:
+
+```shell
+$ ./gradlew dartPublishDryRun
+```
+
+#### Commit and tag git:
+
+Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
+`Bumping Dart Client version, RC: 1.0.0-rc.1+2025-10-14  (from 0.19.0+2022-11-11)`
+
+Tag git:
+```shell
+$ git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
+$ git push && git push --tags
+```
+
+#### Publish to pub.dev:
+
+```shell
+$ ./gradlew dartPublish
+```
