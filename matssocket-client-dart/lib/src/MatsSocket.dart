@@ -6,11 +6,8 @@ import 'package:matssocket/matssocket.dart';
 
 final Logger _logger = Logger('mats.MatsSocket');
 
-// alphabet length: 10 + 26 x 2 = 62 chars.
-const String ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-// JSON-non-quoted and visible Alphabet: 92 chars.
-const String JSON_ALPHABET = '!#\$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
-const String CLIENT_LIB_NAME_AND_VERSION = 'MatsSocket.dart,0.19.0+2022-11-11';
+const String CLIENT_LIB_VERSION = '1.0.0-rc.1+2025-10-14';
+const String CLIENT_LIB_NAME_AND_VERSION = 'MatsSocket.dart,$CLIENT_LIB_VERSION';
 
 typedef SessionClosedEventListener = Function(MatsSocketCloseEvent);
 typedef PingPongListener = Function(PingPong);
@@ -194,13 +191,18 @@ class MatsSocket {
   /// [ReceivedEventType.TIMEOUT] - this happens *before* the Future rejects)
   Duration requestTimeout = Duration(seconds: 45);
 
-  /// An random three-char id, useful for uniquely identifying this MatsSocket among others in one app instance, or in
+  /// A random three-char id, useful for uniquely identifying this MatsSocket among others in one app instance, or in
   /// one test run. Not a globally unique id.
   late final matsSocketInstanceId = randomId(3);
 
   // ==============================================================================================
   // PRIVATE fields
   // ==============================================================================================
+
+  // alphabet length: 10 + 26 x 2 = 62 chars.
+  static final String _randomAlphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  // JSON-non-quoted and visible Alphabet: 92 chars.
+  static final String _randomJsonAlphabet = '!#\$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
 
   // Random used throughout, for ids, and shuffle, and random delays.
   final _rnd = math.Random();
@@ -1105,7 +1107,7 @@ class MatsSocket {
   String randomId([int length = 6]) {
     var result = '';
     for (var i = 0; i < length; i++) {
-      result += ALPHABET[_rnd.nextInt(ALPHABET.length)];
+      result += _randomAlphabet[_rnd.nextInt(_randomAlphabet.length)];
     }
     return result;
   }
@@ -1119,7 +1121,7 @@ class MatsSocket {
   String randomCId([int length = 10]) {
     var result = '';
     for (var i = 0; i < length; i++) {
-      result += JSON_ALPHABET[_rnd.nextInt(JSON_ALPHABET.length)];
+      result += _randomJsonAlphabet[_rnd.nextInt(_randomJsonAlphabet.length)];
     }
     return result;
   }
