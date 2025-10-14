@@ -233,7 +233,7 @@ Commit the version bump (both package.json and MatsSocket.js), message shall rea
 
 Tag git:
 ```shell
-$ git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
+$ git tag -a vDart_client_1.0.0-rc.1+2025-10-14 -m "Dart Client Release Candidate v1.0.0-rc.1+2025-10-14"
 $ git push && git push --tags
 ```
 
