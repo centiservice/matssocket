@@ -216,20 +216,11 @@ tasks.register('dartPana', DartExec) {
     }
 }
 
-// 'dart publish --dry-run' // == NOTE! DO A './gradlew -PchromePath=<path> testDart' first!
+// 'dart pub publish --dry-run' // == NOTE! DO A './gradlew -PchromePath=<path> testDart' first!
 tasks.register('dartPublishDryRun', DartExec) {
     dependsOn dartPubGet, testVmKernel, dartDoc
     doLast {
         dartExec 'pub', 'publish', '--dry-run'
-    }
-}
-
-// 'dart publish' // == NOTE! DO A './gradlew -PchromePath=<path> testDart' first!
-// Check versions in pubspec.yaml and MatsSocket.dart
-tasks.register('dartPublish', DartExec) {
-    dependsOn dartPubGet, testVmKernel, dartDoc
-    doLast {
-        dartExec 'pub', 'publish'
     }
 }
 

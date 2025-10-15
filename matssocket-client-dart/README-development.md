@@ -222,6 +222,8 @@ $ ./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:build testDar
 
 #### Check over what will be published:
 
+This will give an error wrt. git not being clean.
+
 ```shell
 $ ./gradlew dartPublishDryRun
 ```
@@ -231,7 +233,7 @@ $ ./gradlew dartPublishDryRun
 Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
 `Bumping Dart Client version, RC: 1.0.0-rc.1+2025-10-14  (from 0.19.0+2022-11-11)`
 
-Tag git:
+Tag git, and push, and push tags.
 ```shell
 $ git tag -a vDart_client_1.0.0-rc.1+2025-10-14 -m "Dart Client Release Candidate v1.0.0-rc.1+2025-10-14"
 $ git push && git push --tags
@@ -239,6 +241,13 @@ $ git push && git push --tags
 
 #### Publish to pub.dev:
 
+**Notice! Standing in the JavaScript Client directory!**
+
+git must be clean for this to work.
+
+The command will first ask you yes/no to publish ("publish is forever"). It will then ask you to go to a link and log in
+using your Google account. It will wait for you to authorize the application, and then it will publish.
+
 ```shell
-$ ./gradlew dartPublish
+~/git/matssocket/matssocket-client-dart$ dart pub publish
 ```
