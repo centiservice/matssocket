@@ -158,7 +158,7 @@ the Dart analyzer after the Gradle download task runs, since the SDK will be ove
 
 ## Publishing
 
-**NOTE: First update the version in `pubspec.yaml` and `MatsSocket.dart`, read below for format per tag/release type!**
+**NOTE: First update the version in `pubspec.yaml` and `MatsSocket.dart`, read below for format per release type!**
 
 **Remember to git commit and tag the version bump before publishing, read below for tag and message format!**
 

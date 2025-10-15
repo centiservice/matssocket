@@ -17,7 +17,8 @@ testing relies on. The other tasks are unique to the JavaScript client, and it t
 
 * `build`: (for 'client') Builds the modules, including `tsc` to make TypeScript defs + tasks `archiveLib` and `jsDoc`.
 * `build`: (for 'tests') Builds the modules for tests + task `testJs`.
-* `buildJs`: Convenient "synonym" for build for both `matssocket-client-javascript:client` and
+* `buildJs`: Convenient "synonym" for both building `matssocket-client-javascript:client` and build and run tests in
+  `matssocket-client-javascript:client`.
   `matssocket-client-javascript:tests`, which means that you can run them both from root with `./gradlew buildJs`
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
 * `jsDoc`: runs `npm run jsdoc` to generate JSDoc documentation, and shows the path to the result.
