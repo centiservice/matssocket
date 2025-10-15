@@ -45,6 +45,9 @@ tasks.register('build') {
     dependsOn archiveLib, test, dartDoc
 }
 
+// Register a convenient synonym 'buildDart', to be able to run just the dart build via simple `./gradlew buildDart`
+tasks.register('buildDart') { dependsOn build }
+
 tasks.register('download') {
     dependsOn nodeBinDir, dartBinPath
 }

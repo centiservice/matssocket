@@ -16,12 +16,14 @@ Dart and JavaScript clients. `matsSocketTestServer` is a root project task that 
 are unique to the Dart client, and it thus doesn't matter with qualifier._
 
 * `build`: runs `archiveLib`, `dartDoc` and `test` (target from DI server; GitHub Actions).
+* `buildDart`: Convenient "synonym" for build for this Dart module, so that you can run `./gradlew buildDart` from the
+  root directory and only run the Dart build.
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `dist/` directory.
 * `dartDoc`: generates Dart documentation, open `doc/api/index.html`
-* `test`: runs all VM and Node tests on all compilers _(not Web targets, due to dependency on Chrome/Chromium)_
+* `test`: runs all VM and Node tests on all compilers _(but not Web targets, due to dependency on Chrome/Chromium)_
 * `testDart`: runs all tests in all platform/compiler combinations, including the Web targets. _(Path to Chrome/Chromium
   can be set using `-PchromePath=...`)._
-* Other test tasks, see _'Running Dart tests'_ chapter below.
+* `testVmKernel`: Quickest test config. For other test tasks, see _'Running Dart tests'_ chapter below.
 * `dartBinPath`: Downloads Dart, then prints out the path to the Dart binary, and PATH variables for Unix and Windows.
 * `nodeBinDir`: Downloads Node, then prints out the path to the Node bin dir, and PATH variables for Unix and Windows.
 * `download`: depends on both `dartBinPath` and `nodeBinDir` - i.e. downloads Dart and Node, and prints out the paths. 
