@@ -22,12 +22,20 @@ allprojects {
     group = 'io.mats3.matssocket'
     version = '0.19.1-2025-09-30'
     // NOTE!! Versions are spread around 6 places:
+
+    // For Java Server:
     // * Here, in root build.gradle
     // * matssocket-server-impl/src/main/java/io/mats3/matssocket/impl/DefaultMatsSocketServer.java
+
+    // For JavaScript Client:
     // * matssocket-client-javascript/client/package.json
     // * matssocket-client-javascript/client/lib/MatsSocket.js
+
+    // For Dart Client:
     // * matssocket-client-dart/pubspec.yaml
     // * matssocket-client-dart/lib/src/MatsSocket.dart
+
+    // Read the respective README-development.md of how version strings should look, and how to publish.
 
     layout.buildDirectory.set(file('build-gradle'))
 }

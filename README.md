@@ -23,7 +23,10 @@ the JS Client integration tests in the browser (which connects to the same serve
 **A few Gradle tasks:**
 * `./gradlew matsSocketTestServer` - starts a test server, with a test/examples webapp on localhost:8080.
 * `./gradlew build` - builds the Java code, JS ESM and UMD bundles, and all respective docs, and runs all 'test' tasks.
-* `./gradlew build -x test` - build, not running tests.
+* `./gradlew build -x test` - build, skipping tests.
+* `./gradlew buildJava` - only builds the Java server projects.
+* `./gradlew buildJs` - only builds the JavaScript client projects.
+* `./gradlew buildDart` - only builds the Dart client projects.
 * `./gradlew test` - runs tests, both JavaScript client in Node with ESM and UMD builds, and Dart client in
   VM(Kernel,Src,Exe) and Node(JS,Wasm) modes.
 * `./gradlew testDart` - runs the Dart client tests for all platforms and compilers, including in chrome (headless),

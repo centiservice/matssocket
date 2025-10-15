@@ -14,3 +14,6 @@ mavenPublishing {
                 ' asynchronous, bidirectional interaction with Mats^3 from end-user clients.'
     }
 }
+
+// Register a convenient synonym 'buildJava', to be able to run both API and Impl Java build from root with single task.
+tasks.register('buildJava') { dependsOn build }

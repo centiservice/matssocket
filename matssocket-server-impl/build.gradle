@@ -58,3 +58,6 @@ mavenPublishing {
                 ' JSR 356 Java API for WebSockets.'
     }
 }
+
+// Register a convenient synonym 'buildJava', to be able to run both API and Impl Java build from root with single task.
+tasks.register('buildJava') { dependsOn build }

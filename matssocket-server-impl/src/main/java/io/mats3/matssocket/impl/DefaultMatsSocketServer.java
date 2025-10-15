@@ -476,10 +476,10 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         }
         // Note: Cannot check for the situation where user says he won't forward to Mats, but do it anyway..
 
-        // :: Not allowed to make MatsSocket endpoints which starts with "MatsSocket" or "ms.".
+        // :: Not allowed to make MatsSocket endpoints that start with "ms." or "mats" (thus including "matssocket")
         if (matsSocketEndpointId.toLowerCase().startsWith("ms.")
-                || matsSocketEndpointId.toLowerCase().startsWith("matssocket")) {
-            throw new IllegalStateException("EndpointIds starting with 'MatsSocket' or 'ms.' are reserved."
+                || matsSocketEndpointId.toLowerCase().startsWith("mats")) {
+            throw new IllegalStateException("MatsSocket EndpointIds starting with 'mats' or 'ms.' are reserved."
                     + " EndpointId:[" + matsSocketEndpointId + "].");
         }
 
