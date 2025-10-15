@@ -21,6 +21,9 @@ tasks.register('build', NpmTask) {
     outputs.dir('dist')
 }
 
+// Register a convenient synonym 'buildJs', to be able to run both client and tests from root with single task.
+tasks.register('buildJs') { dependsOn build }
+
 tasks.register('download') {
     dependsOn nodeBinDir
 }

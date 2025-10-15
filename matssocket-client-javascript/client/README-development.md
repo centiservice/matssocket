@@ -17,6 +17,8 @@ testing relies on. The other tasks are unique to the JavaScript client, and it t
 
 * `build`: (for 'client') Builds the modules, including `tsc` to make TypeScript defs + tasks `archiveLib` and `jsDoc`.
 * `build`: (for 'tests') Builds the modules for tests + task `testJs`.
+* `buildJs`: Convenient "synonym" for build for both `matssocket-client-javascript:client` and
+  `matssocket-client-javascript:tests`, which means that you can run them both from root with `./gradlew buildJs`
 * `archiveLib`: zips up the `lib/` directory, and puts the zip it in the `build-gradle/dist/` directory.
 * `jsDoc`: runs `npm run jsdoc` to generate JSDoc documentation, and shows the path to the result.
 * `test`: synonym for `testJs`.
@@ -248,7 +250,7 @@ $ ./gradlew jsPublishDryRun
 Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
 `Bumping JavaScript Client version, RC: 1.0.0-rc0-2025-10-04  (from 0.19.0-2022-11-11)`
 
-Tag git:
+Tag git, and push, and push tags.
 ```shell
 $ git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
 $ git push && git push --tags

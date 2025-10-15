@@ -13,6 +13,9 @@ tasks.register('build_internal', NpmTask) {
     outputs.dir('bundle')
 }
 
+// Register a convenient synonym 'buildJs', to be able to run both client and tests from root with single task.
+tasks.register('buildJs') { dependsOn build }
+
 // Execute all tests
 tasks.register('testJs') {
     dependsOn testRaw, testEsm, testUmd
