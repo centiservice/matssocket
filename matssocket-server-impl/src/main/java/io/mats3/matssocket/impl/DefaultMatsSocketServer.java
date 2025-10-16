@@ -297,7 +297,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         _serverId = instanceName + '@' + getMyNodename() + '@' + Integer.toHexString(System.identityHashCode(this));
 
         _clusterStoreAndForward = clusterStoreAndForward;
-        _jackson = jacksonMapper();
+        _jackson = createNewJacksonMapper();
         _authenticationPlugin = authenticationPlugin;
         _envelopeObjectReader = _jackson.readerFor(MatsSocketEnvelopeWithMetaDto.class);
         _envelopeObjectWriter = _jackson.writerFor(MatsSocketEnvelopeDto.class);
@@ -943,6 +943,8 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
     void invokeMessageEventListeners(LiveMatsSocketSession liveMatsSocketSession,
             List<MatsSocketEnvelopeWithMetaDto> envelopes) {
         if (!_messageEventListeners.isEmpty()) {
+            // Fix envelopes' msg field.
+            ensureMsgFieldIsJsonString_ForIntrospection(envelopes, log, getJackson());
             MessageEventImpl messageEvent = new MessageEventImpl(liveMatsSocketSession, envelopes);
             _messageEventListeners.forEach(listener -> {
                 try {

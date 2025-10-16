@@ -8,8 +8,8 @@ let logging = false;
 
 let matsSocket;
 
-const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS
-    || "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
+const urls = (typeof process !== 'undefined') && process.env.MATS_SOCKET_URLS ||
+    "ws://localhost:8080/matssocket,ws://localhost:8081/matssocket";
 const availableUrls = urls.split(",");
 
 function createMatsSocket() {
@@ -33,6 +33,9 @@ function setAuth(userId = "standard", duration = 20000, roomForLatencyMillis = 1
 }
 
 describe('MatsSocket integration tests of connect, reconnect and close', function () {
+    // Using long timeouts in these tests, since they're "very async" in that they test reconnect and
+    // work with the server - which might lag a bit in resource-constrained environments like GHA.
+    this.timeout(20000);
     /*
      * NOTE!!! This test runs a scenario where two MatsSockets connect using the same MatsSocketSessionId. This is
      * NOT a situation that shall occur in actual use - you are NOT supposed to use the sessionId outside of the
@@ -69,7 +72,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
                 matsSocket_A_SessionClosed++;
             });
 
-            let matsSocket_A_LostConnection = undefined;
+            let matsSocket_A_LostConnection;
             let matsSocket_A_LostConnection_Count = 0;
             matsSocket_A.addConnectionEventListener(function (connectionEvent) {
                 if (connectionEvent.type === mats.ConnectionEventType.LOST_CONNECTION) {
@@ -247,6 +250,7 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
                     chai.assert.strictEqual(data.sleepTime, req.sleepTime);
                     done();
                 });
+            matsSocket.flush();
         }
 
         it('request to "slow endpoint", then immediate reconnect() upon SESSION_ESTABLISHED. Tests that we get the RESOLVE when we reconnect.', function (done) {
@@ -259,7 +263,6 @@ describe('MatsSocket integration tests of connect, reconnect and close', functio
 
         it('Connect the MatsSocket, then DISCONNECT it (i.e. not starting reconnect), then send message to force reconnect anyway, then done.', function (done) {
             setAuth();
-            this.timeout(20000);
 
             /**
              * Note: This test was created to test the introspection of matsSocketServer.getMatsSocketSessions():

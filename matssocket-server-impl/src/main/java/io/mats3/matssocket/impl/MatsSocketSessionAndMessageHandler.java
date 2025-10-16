@@ -65,6 +65,7 @@ import io.mats3.matssocket.impl.AuthenticationContextImpl.AuthenticationResult_I
 import io.mats3.matssocket.impl.AuthenticationContextImpl.AuthenticationResult_StillValid;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.SessionEstablishedEventImpl;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.SessionRemovedEventImpl;
+import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
 
 /**
  * Effectively the MatsSocketSession, this is the MatsSocket "onMessage" handler.
@@ -267,6 +268,9 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
     @Override
     public List<MatsSocketEnvelopeWithMetaDto> getLastEnvelopes() {
         synchronized (_matsSocketEnvelopeWithMetaDtos) {
+            // Must ensure that the envelope.msg fields are JSON strings, not DirectJson or TokenBuffers.
+            ensureMsgFieldIsJsonString_ForIntrospection(_matsSocketEnvelopeWithMetaDtos, log, _matsSocketServer.getJackson());
+            // Return a copy of the list to avoid any modifications by the caller.
             return new ArrayList<>(_matsSocketEnvelopeWithMetaDtos);
         }
     }
@@ -399,16 +403,9 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
             envelope.ts = timestamp;
             envelope.nn = _matsSocketServer.getMyNodename();
 
-            // "Copy out" the JSON directly as a String if this is an outgoing message.
-            if (envelope.msg instanceof DirectJson) {
-                envelope.msg = ((DirectJson) envelope.msg).getJson();
-            }
-            // Assert my code: Incoming messages should have envelope.msg == String, outgoing == DirectJson.
-            else if ((envelope.msg != null) && !(envelope.msg instanceof String)) {
-                log.error("THIS IS AN ERROR! If the envelope.msg field is set, it should be a String or DirectJson,"
-                        + " not [" + envelope.msg.getClass().getName() + "].",
-                        new RuntimeException("Debug Stacktrace!"));
-            }
+            // NOTICE!! We do NOT do anything with the msg field at this point - instead we only do it when there
+            // is a need from the users of the servers, i.e. if anyone gets out the messages, or if there are listeners.
+
         });
         // Store the envelopes in the "last few" list.
         synchronized (_matsSocketEnvelopeWithMetaDtos) {
@@ -469,7 +466,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
             for (MatsSocketEnvelopeWithMetaDto envelope : envelopes) {
                 // ?: Pick out any "Request Debug" flags
                 if (envelope.rd != null) {
-                    // -> Yes, there was an "Request Debug" sent along with this message
+                    // -> Yes, there was a "Request Debug" sent along with this message
                     EnumSet<DebugOption> requestedDebugOptions = DebugOption.enumSetOf(envelope.rd);
                     // Intersect this with allowed DebugOptions
                     requestedDebugOptions.retainAll(_authAllowedDebugOptions);
@@ -1688,9 +1685,6 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
     }
 
     void publishToTopic(String topicId, String envelopeJson, String msg) {
-
-        // TODO: This must be moved over to async
-
         try { // try-finally: MDC clean
 
             MDC.put(MDC_SESSION_ID, _matsSocketSessionId);

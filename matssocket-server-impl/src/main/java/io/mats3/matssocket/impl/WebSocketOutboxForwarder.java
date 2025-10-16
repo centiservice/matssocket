@@ -27,6 +27,7 @@ import io.mats3.matssocket.MatsSocketServer.ActiveMatsSocketSession.MatsSocketSe
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto.Direction;
 import io.mats3.matssocket.MatsSocketServer.MessageType;
+import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
 
 /**
  * Gets a ping from the node-specific Topic with information about new messages, and also if the client reconnects, and

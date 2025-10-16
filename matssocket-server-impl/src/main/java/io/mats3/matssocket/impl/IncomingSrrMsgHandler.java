@@ -8,12 +8,15 @@ import static io.mats3.matssocket.MatsSocketServer.MessageType.RESOLVE;
 import static io.mats3.matssocket.MatsSocketServer.MessageType.RETRY;
 import static io.mats3.matssocket.MatsSocketServer.MessageType.SEND;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -43,6 +46,7 @@ import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto.Incomi
 import io.mats3.matssocket.MatsSocketServer.MessageType;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.MatsSocketEndpointRegistration;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.ReplyHandleStateDto;
+import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
 
 /**
  * Incoming (Client-to-Server) Send, Request and Replies (Resolve and Reject) handler.
@@ -212,10 +216,16 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
                                 throw new AssertionError("Could not deserialize."
                                         + " This should seriously not happen.", ex);
                             }
+                            // We have "doctored" the deserialization of Envelopes to end up with the msg-field as a
+                            // TokenBuffer. This is due to the incoming C2S Envelopes having "random" JSON in the
+                            // msg-field. We do not know what class the msg-field is supposed to be, so we cannot
+                            // directly deserialize the Envelope with the correct class for msg. Therefore, we must
+                            // have some intermediate representation. This used to be a String, but this is inefficient.
+                            // We now just "keep the JSON tokens" via a TokenBuffer when deserializing the Envelope.
+                            // By special-handling TokenBuffer in the DirectJsonMessageHandlingDeserializer, we can
+                            // now just let the 'msg' field remain a TokenBuffer, and it will be serialized out
+                            // correctly.
 
-                            // Doctor the deserialized envelope: The 'msg' field is currently a proper JSON String,
-                            // we want it re-serialized directly as-is, thus use "magic" DirectJson class.
-                            previousReplyEnvelope.msg = DirectJson.of((String) previousReplyEnvelope.msg);
                             // Now just REPLACE the existing handledEnvelope with the old one.
                             handledEnvelope[0] = previousReplyEnvelope;
                             // Note that it was a dupe in desc-field
@@ -304,7 +314,7 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
                 }
 
                 // Deserialize the message with the info from the registration
-                Object msg = deserializeIncomingMessage((String) incomingEnvelope.msg, registration.getIncomingClass());
+                Object msg = deserializeIncomingMessage((TokenBuffer) incomingEnvelope.msg, registration.getIncomingClass());
 
                 // ===== Actually invoke the IncomingAuthorizationAndAdapter.handleIncoming(..)
 
@@ -665,13 +675,17 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
         }
     }
 
-    private <T> T deserializeIncomingMessage(String serialized, Class<T> clazz) {
-        try {
-            return _matsSocketServer.getJackson().readValue(serialized, clazz);
+    private <T> T deserializeIncomingMessage(TokenBuffer tokenBuffer, Class<T> clazz) {
+        try (JsonParser jstb = tokenBuffer.asParserOnFirstToken()) {
+            return _matsSocketServer.getJackson().readValue(jstb, clazz);
         }
         catch (JsonProcessingException e) {
             // TODO: Handle parse exceptions.
-            throw new AssertionError("Damn", e);
+            throw new AssertionError("Couldn't deserialize incoming message as " + clazz.getSimpleName(), e);
+        }
+        catch (IOException e) {
+            throw new AssertionError("Should really not happen, since we're reading from a copied" +
+                    " TokenBuffer.", e);
         }
     }
 

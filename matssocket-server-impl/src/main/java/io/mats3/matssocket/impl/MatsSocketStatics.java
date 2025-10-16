@@ -2,6 +2,7 @@ package io.mats3.matssocket.impl;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -23,8 +24,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeDto;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto;
+import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
+
+import org.slf4j.Logger;
 
 /**
  * @author Endre Stølsvik 2020-01-15 08:38 - http://stolsvik.com/, endre@stolsvik.com
@@ -90,7 +95,46 @@ public interface MatsSocketStatics {
         }
     }
 
-    default ObjectMapper jacksonMapper() {
+    /**
+     * If the msg field is a DirectJson or a TokenBuffer, it will be converted to a String.
+     *
+     * @param envelopes
+     *            a list of envelopes, where the message field can be a String, DirectJson, or a TokenBuffer.
+     * @param log
+     *            a logger, for logging the error.
+     * @return the same list, but with the msg field set to a String if it is a String JSON.
+     */
+    default void ensureMsgFieldIsJsonString_ForIntrospection(
+            List<MatsSocketEnvelopeWithMetaDto> envelopes, Logger log, ObjectMapper jackson) {
+        for (MatsSocketEnvelopeWithMetaDto envelope : envelopes) {
+            // Convert the msg field to a String if it is a DirectJson or a TokenBuffer.
+            if (envelope.msg instanceof String) {
+                // do nothing.
+            }
+            else if (envelope.msg instanceof DirectJson) {
+                envelope.msg = ((DirectJson) envelope.msg).getJson();
+            }
+            else if (envelope.msg instanceof TokenBuffer) {
+                StringWriter writer = new StringWriter(128);
+                try (JsonParser bufferParser = ((TokenBuffer) envelope.msg).asParserOnFirstToken();
+                        JsonGenerator gen = jackson.getFactory().createGenerator(writer)) {
+                    gen.copyCurrentStructure(bufferParser);
+                }
+                catch (IOException e) {
+                    log.error("Got IOException when trying to copy TokenBuffer to StringWriter - ignoring by setting" +
+                            "to null, since this is only for introspection.", e);
+                }
+                envelope.msg = writer.toString();
+            }
+            else if (envelope.msg != null) {
+                log.error("THIS IS AN ERROR! If the envelope.msg field is set, it should be a String, DirectJson or" +
+                        " TokenBuffer, but it is [" + envelope.msg.getClass().getName() + "]",
+                        new RuntimeException("Debug Stacktrace! Wrong type of msg field in envelope: " + envelope.msg));
+            }
+        }
+    }
+
+    default ObjectMapper createNewJacksonMapper() {
         /*
          * NOTE: This following is stolen directly from util.FieldBasedJacksonMapper - uses same serialization setup,
          * EXCEPT also adding the mixin for MatsSocketEnvelopeDto!
@@ -137,86 +181,85 @@ public interface MatsSocketStatics {
 
     @JsonPropertyOrder({ "t", "smid", "cmid", "x", "ids", "tid", "auth" })
     class MatsSocketEnvelopeDto_Mixin extends MatsSocketEnvelopeWithMetaDto {
-        @JsonDeserialize(using = MessageToStringDeserializer.class)
+        @JsonDeserialize(using = MessageToTokenBufferDeserializer.class)
         @JsonSerialize(using = DirectJsonMessageHandlingDeserializer.class)
         public Object msg; // Message, JSON
-    }
 
-    /**
-     * A {@link MatsSocketEnvelopeWithMetaDto} will be <i>Deserialized</i> (made into object) with the "msg" field
-     * directly to the JSON that is present there (i.e. a String, containing JSON), using this class. However, upon
-     * <i>serialization</i>, any object there will be serialized to a JSON String (UNLESS it is a {@link DirectJson}, in
-     * which case its value is copied in verbatim). The rationale is that upon reception, we do not (yet) know which
-     * type (DTO class) this message has, which will be resolved later - and then this JSON String will be deserialized
-     * into that specific DTO class.
-     */
-    class MessageToStringDeserializer extends JsonDeserializer<Object> {
-        @Override
-        public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            // TODO / OPTIMIZE: Maybe just store the buffer of tokens, to be retrieved when knowing the object type?
-            // Ref: https://chatgpt.com/share/68f12369-a860-8009-9540-a577e6b10349
-            // Previous solution was as such:
-            // return p.readValueAsTree().toString();
+        /**
+         * A {@link MatsSocketEnvelopeWithMetaDto} will be <i>Deserialized</i> (made into object) with the "msg" field
+         * directly to the JSON that is present there, represented via a {@link TokenBuffer}, using this class.
+         */
+        static class MessageToTokenBufferDeserializer extends JsonDeserializer<Object> {
+            @Override
+            public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                // Been through three solutions now, trying to avoid creating intermediate JsonNode and String objects.
+                // Ref: https://chatgpt.com/share/68f12369-a860-8009-9540-a577e6b10349
+                // First solution was as such:
+                // return p.readValueAsTree().toString();
+                //
+                // Second solution as such:
+                //  TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
+                //  StringWriter writer = new StringWriter(128);
+                //  try (JsonParser bufferParser = buffer.asParserOnFirstToken();
+                //          JsonGenerator gen = p.getCodec().getFactory().createGenerator(writer)){
+                //      gen.copyCurrentStructure(bufferParser);
+                //  }
+                //  return writer.toString();
 
-            if (p.currentToken() == JsonToken.VALUE_NULL) {
-                return null;
-            }
+                if (p.currentToken() == JsonToken.VALUE_NULL) {
+                    return null;
+                }
 
-            // Convert the buffered tokens to a JSON string
-            // This approach:
-            // 1. Copies the tokens directly without creating intermediate JsonNode objects
-            // 2. Then serializes those tokens back to a String
-            TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
-            StringWriter writer = new StringWriter(128);
-            try (JsonParser bufferParser = buffer.asParserOnFirstToken();
-                    JsonGenerator gen = p.getCodec().getFactory().createGenerator(writer)){
-                gen.copyCurrentStructure(bufferParser);
-            }
-
-            return writer.toString();
-        }
-    }
-
-    /**
-     * A {@link MatsSocketEnvelopeWithMetaDto} will be <i>Serialized</i> (made into object) with the "msg" field handled
-     * specially: If it is any other class than {@link DirectJson}, default handling ensues (JSON object serialization)
-     * - but if it this particular class, it will output the (JSON) String it contains directly.
-     */
-    class DirectJsonMessageHandlingDeserializer extends JsonSerializer<Object> {
-        @Override
-        public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            // ?: Is it our special magic String-wrapper that will contain direct JSON?
-            if (value instanceof DirectJson) {
-                // -> Yes, special magic String-wrapper, so dump it directly.
-                gen.writeRawValue(((DirectJson) value).getJson());
-            }
-            else {
-                // -> No, not magic, so serialize it normally.
-                gen.writeObject(value);
+                // Store the incoming JSON as the "raw tokens" TokenBuffer, for conversion to incoming DTO when needed.
+                return ctxt.bufferAsCopyOfValue(p);
             }
         }
-    }
 
-    /**
-     * If the {@link MatsSocketEnvelopeWithMetaDto#msg}-field is of this magic type, the String it contains - which then
-     * needs to be proper JSON - will be output directly. Otherwise, it will be JSON serialized.
-     */
-    class DirectJson {
-        private final String _json;
-
-        public static DirectJson of(String msg) {
-            if (msg == null) {
-                return null;
+        /**
+         * A {@link MatsSocketEnvelopeWithMetaDto} will be <i>Serialized</i> (made into a JSON String) with the "msg" field
+         * handled specially: If it is any other class than {@link DirectJson} or {@link TokenBuffer}, default handling ensues (JSON object
+         * serialization). If it is DirectJson, it will output the (JSON) String it contains directly. If it is a
+         * TokenBuffer, which happens when deserializing a message from the CSAF (see above for deserializing), and we just
+         * want to serialize it again, then we just output the tokens directly.
+         */
+        static class DirectJsonMessageHandlingDeserializer extends JsonSerializer<Object> {
+            @Override
+            public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+                // ?: Is it our special magic String-wrapper that will contain direct JSON?
+                if (value instanceof DirectJson) {
+                    // -> Yes, special magic String-wrapper, so dump it directly.
+                    gen.writeRawValue(((DirectJson) value).getJson());
+                } else if (value instanceof TokenBuffer) {
+                    // -> Yes, TokenBuffer, so just output the tokens.
+                    ((TokenBuffer) value).serialize(gen);
+                } else {
+                    // -> No, not magic, so serialize it normally.
+                    gen.writeObject(value);
+                }
             }
-            return new DirectJson(msg);
         }
 
-        private DirectJson(String json) {
-            _json = json;
-        }
+        /**
+         * If the {@link MatsSocketEnvelopeWithMetaDto#msg}-field is of this magic type, the String it contains - which then
+         * needs to be proper JSON - will be output directly. Otherwise, it will be JSON serialized.
+         */
+        static class DirectJson {
+            private final String _json;
 
-        public String getJson() {
-            return _json;
+            public static DirectJson of(String msg) {
+                if (msg == null) {
+                    return null;
+                }
+                return new DirectJson(msg);
+            }
+
+            private DirectJson(String json) {
+                _json = json;
+            }
+
+            public String getJson() {
+                return _json;
+            }
         }
     }
 
