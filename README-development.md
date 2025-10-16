@@ -70,11 +70,11 @@ To see what will be published, we rely on the Central Portal's "review" function
 
 Release types / SemVer tags:
 * Experimental (testing a new feature / fix):
-    * Prefix `EXP-`, suffix: `-EXPX+<iso date>` to the version, X being a counter from 0.  
-    example: `EXP-1.0.0-EXP0+2025-10-16`
+    * Prefix `EXP-`, suffix: `.EXPX+<iso date>` to the version, X being a counter from 0.  
+    example: `EXP-1.0.0.EXP0+2025-10-16`
 * Release Candidate (before a new version, testing that it works, preferably in production!):
-    * Prefix `RC-`, suffix `-RCX+<iso date>` to the version, X being a counter from 0  
-    example: `RC-1.0.0-RC0+2025-10-16`
+    * Prefix `RC-`, suffix `.RCX+<iso date>` to the version, X being a counter from 0  
+    example: `RC-1.0.0.RC0+2025-10-16`
 * Release
     * Suffix `+<iso date>` to the version.  
     example: `1.0.0+2025-10-16`
@@ -94,11 +94,11 @@ Build and test the entire project (server and clients)
 #### Commit and tag git:
 
 Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
-`Bumping Java Server version: RC-1.0.0-RC0+2025-10-16  (from 0.19.0+2022-11-11)`
+`Bumping Java Server version: RC-1.0.0.RC0+2025-10-16  (from 0.19.0+2022-11-11)`
 
 Tag git, and push, and push tags.
 ```shell
-$ git tag -a vJava_server_RC-1.0.0-RC0+2025-10-16 -m "Java Server Release Candidate vRC-1.0.0-RC0+2025-10-16"
+$ git tag -a vJava_server_RC-1.0.0.RC0+2025-10-16 -m "Java Server Release Candidate vRC-1.0.0.RC0+2025-10-16"
 $ git push && git push --tags
 ```
 
