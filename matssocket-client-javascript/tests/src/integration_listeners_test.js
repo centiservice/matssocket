@@ -1,6 +1,8 @@
+// @ts-check
+/// <reference types="mocha" />
+/* global describe, it, beforeEach, afterEach */
 import * as chai from "chai";
 import * as mats from "matssocket";
-import {describe, it, beforeEach, afterEach } from "mocha";
 
 describe('MatsSocket integration tests, listeners', function () {
     let matsSocket;

@@ -1,5 +1,7 @@
+// @ts-check
+/// <reference types="mocha" />
+/* global describe, it, beforeEach, afterEach */
 import * as mats from "matssocket";
-import {describe, it, beforeEach, afterEach } from "mocha";
 
 let logging = false;
 
