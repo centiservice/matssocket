@@ -37,10 +37,10 @@ import javax.websocket.server.ServerContainer;
 
 import io.mats3.matssocket.SetupTestMatsAndMatsSocketEndpoints.MatsDataTO;
 import io.mats3.test.MatsTestHelp;
+import io.mats3.util.FieldBasedJacksonMapper;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
@@ -51,11 +51,9 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -247,6 +245,7 @@ public class MatsSocketTestServer {
         }
     }
 
+
     @WebServlet("/MatsSocketSessions.json")
     public static class MatsSocketSessions_Json_Servlet extends HttpServlet {
         @Override
@@ -257,20 +256,13 @@ public class MatsSocketTestServer {
             MatsSocketServer matsSocketServer = (MatsSocketServer) req.getServletContext()
                     .getAttribute(MatsSocketServer.class.getName());
 
-            // Create the Jackson ObjectMapper - using fields, not methods (like Mats and MatsSocket does).
-            ObjectMapper mapper = new ObjectMapper();
-            // Read and write any access modifier fields (e.g. private)
-            mapper.setVisibility(PropertyAccessor.ALL, Visibility.NONE);
-            mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-            // Drop nulls and Optional.empty()
-            mapper.setSerializationInclusion(Include.NON_ABSENT);
-
             List<MatsSocketSessionDto> sessions = matsSocketServer
                     .getMatsSocketSessions(false, null, null, null);
 
             resp.setHeader("X-Session-Count", "" + matsSocketServer.getMatsSocketSessionsCount(false, null, null,
                     null));
 
+            ObjectMapper mapper = FieldBasedJacksonMapper.getMats3DefaultJacksonObjectMapper();
             mapper.writeValue(resp.getWriter(), sessions);
         }
     }
@@ -285,17 +277,10 @@ public class MatsSocketTestServer {
             MatsSocketServer matsSocketServer = (MatsSocketServer) req.getServletContext()
                     .getAttribute(MatsSocketServer.class.getName());
 
-            // Create the Jackson ObjectMapper - using fields, not methods (like Mats and MatsSocket does).
-            ObjectMapper mapper = new ObjectMapper();
-            // Read and write any access modifier fields (e.g. private)
-            mapper.setVisibility(PropertyAccessor.ALL, Visibility.NONE);
-            mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-            // Drop nulls and Optional.empty()
-            mapper.setSerializationInclusion(Include.NON_ABSENT);
-
             List<ActiveMatsSocketSessionDto> sessions = new ArrayList<>(matsSocketServer
                     .getActiveMatsSocketSessions().values());
 
+            ObjectMapper mapper = FieldBasedJacksonMapper.getMats3DefaultJacksonObjectMapper();
             mapper.writeValue(resp.getWriter(), sessions);
         }
     }
@@ -496,8 +481,8 @@ public class MatsSocketTestServer {
     /**
      * For the unit tests, this instructs us to send a message on a topic. This is needed for a bug that showed up
      * whereby if only a subscribe was done, and no other message sending operations (send, request), then the
-     * subscribe-message would not be sent over. This Servlet allows for testing this, as the test only performs a subscribe
-     * and then uses this "side channel" to publsh a message on the test topic. 2022-11-11.
+     * subscribe-message would not be sent over. This Servlet allows for testing this, as the test only performs a
+     * subscribe and then uses this "side channel" to publsh a message on the test topic. 2022-11-11.
      */
     @WebServlet(WEBSOCKET_PATH + "/sendMessageOnTestTopic")
     public static class SendMessageOnTestTopic extends CorsServlet {
@@ -508,10 +493,10 @@ public class MatsSocketTestServer {
 
             String topic = req.getParameter("topic");
 
-            log.info("Requested to publish a message to Topic ["+topic+"], so that we do.");
+            log.info("Requested to publish a message to Topic [" + topic + "], so that we do.");
             MatsSocketServer matsSocketServer = (MatsSocketServer) req.getServletContext()
                     .getAttribute(MatsSocketServer.class.getName());
-            matsSocketServer.publish(MatsTestHelp.traceId(), topic, new MatsDataTO(Math.PI, "Publish to "+topic));
+            matsSocketServer.publish(MatsTestHelp.traceId(), topic, new MatsDataTO(Math.PI, "Publish to " + topic));
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
         }
     }
@@ -632,17 +617,14 @@ public class MatsSocketTestServer {
         stats.setHandler(webAppContext);
         server.setHandler(stats);
 
-        // Add a Jetty Lifecycle Listener to cleanly shut down the MatsSocketServer.
+        // Add a Jetty Lifecycle Listener just for logging
+        // (MatsFactory and MatsSocketServer are stopped in ServletContextListener)
         server.addLifeCycleListener(new LifeCycle.Listener() {
             @Override
             public void lifeCycleStopping(LifeCycle event) {
                 log.info("===== STOP! ===========================================");
                 log.info("server.lifeCycleStopping for " + port + ", event:" + event + ", WebAppContext:"
                         + webAppContext + ", servletContext:" + webAppContext.getServletContext());
-                MatsSocketServer matsSocketServer = (MatsSocketServer) webAppContext.getServletContext().getAttribute(
-                        MatsSocketServer.class.getName());
-                log.info("MatsSocketServer instance:" + matsSocketServer);
-                matsSocketServer.stop(5000);
             }
         });
 
