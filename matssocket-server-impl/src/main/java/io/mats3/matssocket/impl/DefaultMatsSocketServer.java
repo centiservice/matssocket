@@ -74,7 +74,8 @@ import io.mats3.matssocket.MatsSocketServer.SessionRemovedEvent.SessionRemovedEv
 public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStatics {
     private static final Logger log = LoggerFactory.getLogger(DefaultMatsSocketServer.class);
 
-    private static final String SERVER_NAME_AND_VERSION = "Mats3 DefaultMatsSocketServer,0.19.0-2022-11-11";
+    private static final String SERVER_VERSION = "RC-1.0.0.RC0+2025-10-17";
+    private static final String SERVER_NAME_AND_VERSION = "Mats3 DefaultMatsSocketServer," + SERVER_VERSION;
 
     private static final String MATS_EP_PREFIX = "MatsSocket";
 
