@@ -61,12 +61,14 @@ and [matssocket-client-dart](matssocket-client-dart) folders.
 **NOTE: First update the version in root `build.gradle` and `DefaultMatsSocketServer.java`, read below for format per
 release type!**
 
-**Remember to git commit and tag the version bump before publishing, read below for tag and message format!**
+**Remember to git commit and tag the version bump before publishing, read below for git tag and message format!**
 
-For Java publishing, we use Gradle and the Vannitech plugin, which uploads via the Portal Publisher API.
+For Java publishing, we use Gradle and the
+[Vanniktech maven.publish plugin](https://vanniktech.github.io/gradle-maven-publish-plugin/central/), which uploads via
+the Portal Publisher API.  
+Credentials and GPG key are stored in the `~/.gradle/gradle.properties` file.
 
 To see what will be published, we rely on the Central Portal's "review" functionality.
-
 
 Release types / SemVer tags:
 * Experimental (testing a new feature / fix):
@@ -78,6 +80,18 @@ Release types / SemVer tags:
 * Release
     * Suffix `+<iso date>` to the version.  
     example: `1.0.0+2025-10-16`
+
+### Versioning between the different parts of this project:
+
+There are effectively three projects in MatsSocket: Backend, and the two clients. However, versions do not necessarily
+need to be bumped for all three: The clients only depend on the _wire protocol_ of the server. If there are no logical
+changes to the wire protocol, then the client versions and server versions can be bumped independently. Also, a bugfix
+or minor improvement to one of the clients does not necessarily require a bump in the other client. A wire-protocol
+change must be very carefully handled, since clients might be extremely sticky: Installed phone apps might not be
+updated timely by the users. _(This is technically not as important for the JS client on a web page, since it will
+typically be downloaded each time the user opens the web page.)_
+
+The project version in root's build.gradle is only referring to the version of the server API and implementation.
 
 ### Transcript of a successful RC publish:
 
@@ -98,19 +112,17 @@ Commit the version bump (both package.json and MatsSocket.js), message shall rea
 
 Tag git, and push, and push tags.
 ```shell
-$ git tag -a vJava_server_RC-1.0.0.RC0+2025-10-16 -m "Java Server Release Candidate vRC-1.0.0.RC0+2025-10-16"
+$ git tag -a Java_server_vRC-1.0.0.RC0+2025-10-16 -m "Java Server Release Candidate vRC-1.0.0.RC0+2025-10-16"
 $ git push && git push --tags
 ```
 
-#### Publish to pub.dev:
-
-**Notice! Standing in the JavaScript Client directory!**
-
-git must be clean for this to work.
-
-The command will first ask you yes/no to publish ("publish is forever"). It will then ask you to go to a link and log in
-using your Google account. It will wait for you to authorize the application, and then it will publish.
+#### Publish to Maven Central Repository:
 
 ```shell
-~/git/matssocket/matssocket-client-dart$ dart pub publish
+./gradlew publishToMavenCentral
 ```
+
+Afterwards, log in to [Maven Central Repository Portal](https://central.sonatype.com/publishing/deployments), find the
+newly published version.
+
+Check over it, and if everything looks good, ship it!

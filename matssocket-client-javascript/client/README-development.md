@@ -195,7 +195,7 @@ change must be very carefully handled, since clients might be extremely sticky: 
 updated timely by the users. _(This is technically not as important for the JS client on a web page, since it will
 typically be downloaded each time the user opens the web page.)_
 
-The project version in root's build.gradle is mainly referring to the version of the server API and implementation.
+The project version in root's build.gradle is only referring to the version of the server API and implementation.
 
 ### Transcript of a successful RC publish:
 
@@ -253,7 +253,7 @@ Commit the version bump (both package.json and MatsSocket.js), message shall rea
 
 Tag git, and push, and push tags.
 ```shell
-$ git tag -a vJavaScript_client_1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
+$ git tag -a JavaScript_client_v1.0.0-rc0-2025-10-04 -m "JavaScript Client Release Candidate v1.0.0-rc0-2025-10-04"
 $ git push && git push --tags
 ```
 
