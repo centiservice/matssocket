@@ -171,8 +171,8 @@ public class MatsSocketTestServer {
             _matsSocketServer = DefaultMatsSocketServer.createMatsSocketServer(
                     wsServerContainer, _matsFactory, clusterStoreAndForward, authenticationPlugin, WEBSOCKET_PATH);
 
-            // Set back the MatsSocketServer into ServletContext, to be able to shut it down properly.
-            // (Hack for Jetty's specific shutdown procedure)
+            // Set back the MatsFactory and MatsSocketServer into ServletContext, for getting in Servlets.
+            sc.setAttribute(MatsFactory.class.getName(), _matsFactory);
             sc.setAttribute(MatsSocketServer.class.getName(), _matsSocketServer);
 
             // Set up all the Mats and MatsSocket Test Endpoints (used for integration tests, and the HTML test pages)
@@ -245,6 +245,35 @@ public class MatsSocketTestServer {
         }
     }
 
+    @WebServlet("/versions")
+    public static class Versions_Servlet extends HttpServlet {
+        private static class Versions {
+            String javaNameAndVersion;
+            String matsNameAndVersion;
+            String matsSocketServerNameAndVersion;
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+
+            MatsSocketServer matsSocketServer = (MatsSocketServer) req.getServletContext()
+                    .getAttribute(MatsSocketServer.class.getName());
+
+            MatsFactory matsFactory = (MatsFactory) req.getServletContext()
+                    .getAttribute(MatsFactory.class.getName());
+
+            Versions versions = new Versions();
+            versions.javaNameAndVersion = System.getProperty("java.vm.name") + "," + System.getProperty("java.version");
+            versions.matsNameAndVersion = matsFactory.getFactoryConfig().getMatsImplementationName()
+                    + "," + matsFactory.getFactoryConfig().getMatsImplementationVersion();
+            versions.matsSocketServerNameAndVersion = matsSocketServer.getImplementationNameAndVersion();
+
+            ObjectMapper mapper = FieldBasedJacksonMapper.getMats3DefaultJacksonObjectMapper();
+            mapper.writeValue(resp.getWriter(), versions);
+        }
+    }
 
     @WebServlet("/MatsSocketSessions.json")
     public static class MatsSocketSessions_Json_Servlet extends HttpServlet {
