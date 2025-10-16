@@ -1,63 +1,64 @@
-<htlm>
-    <meta charset="UTF-8"/>
-    <body>
-    <h1>MatsSockets test pages</h1>
-    <h2>A couple of pages that performs some different MatsSockets operations</h2>
-    These pages assumes that you have the two instances of the test-app running on port 8080 and 8081, i.e. running
-    the <code>MatsSocketTestServer.java</code>, which boots one ActiveMQ and two Jetty instances on these ports. Note
-    that this is not a "model" of how to code with MatsSockets, as it has several features aimed at testing the actual
-    JavaScript/Java/WebSockets interactions: It has a "no-op" authentication plugin. It is specially instrumented to be
-    able to control "booting" of the two server instances. And some other stuff for testing - read the code!
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8"/>
+<body>
+<h1>MatsSockets test pages</h1>
+<h2>A couple of pages that performs some different MatsSockets operations</h2>
+These pages assumes that you have the two instances of the test-app running on port 8080 and 8081, i.e. running
+the <code>MatsSocketTestServer.java</code>, which boots one ActiveMQ and two Jetty instances on these ports. Note
+that this is not a "model" of how to code with MatsSockets, as it has several features aimed at testing the actual
+JavaScript/Java/WebSockets interactions: It has a "no-op" authentication plugin. It is specially instrumented to be
+able to control "booting" of the two server instances. And some other stuff for testing - read the code!
 
-    <p><pre id="versions"></pre></p>
+<p><pre id="versions"></pre></p>
 
-    <h3>Introspection</h3>
-    <ul>
-        <li><a href="introspection">introspection</a> - shows current users in a HTML table.</li>
-        <li><a href="MatsSocketSessions.json">MatsSocketSessions.json</a> - shows current MatsSocketSessions (from CSAF) as JSON.</li>
-        <li><a href="ActiveMatsSocketSessions.json">ActiveMatsSocketSessions.json</a> - shows current ActiveMatsSocketSessions as JSON.</li>
-        <li><a href="LiveMatsSocketSessions.json">LiveMatsSocketSessions.json</a> - shows current LiveMatsSocketSessions as JSON.</li>
-    </ul>
+<h3>Introspection</h3>
+<ul>
+    <li><a href="introspection">introspection</a> - shows current users in a HTML table.</li>
+    <li><a href="MatsSocketSessions.json">MatsSocketSessions.json</a> - shows current MatsSocketSessions (from CSAF) as JSON.</li>
+    <li><a href="ActiveMatsSocketSessions.json">ActiveMatsSocketSessions.json</a> - shows current ActiveMatsSocketSessions as JSON.</li>
+    <li><a href="LiveMatsSocketSessions.json">LiveMatsSocketSessions.json</a> - shows current LiveMatsSocketSessions as JSON.</li>
+</ul>
 
-    <h3>Unit and Integration tests, run in browser</h3>
-    <i><b>NOTE! You should click these in the active tab!</b> Opening all three concurrently in separate tabs will typically not work
-        due to the browser slowing down JavaScript for the non-active tab! (The default test-timeout of 2 seconds kicks in)</i>
-    <ul>
-        <li><a href="unit_and_integration_tests_raw.html">"Raw" ESM Unit and Integration tests</a> - runs source ES Module files directly, both tests and <code>MatsSocket.js</code>, as <code>type="module"</code>.</li>
-        <li><a href="unit_and_integration_tests_esm.html">ESM module Unit and Integration tests</a> - runs ESM modules tests and <code>MatsSocket.esm.js</code>, as <code>type="module"</code>
-            - <b>(The project must be built first: '<code>./gradlew build</code>' so that the bundles are present!)</b></li>
-        <li><a href="unit_and_integration_tests_umd.html">UMD module Unit and Integration tests</a> - runs UMDified tests and <code>MatsSocket.umd.cjs</code> - <b>(The project must be built first!)</b> </li>
-    </ul>
+<h3>Unit and Integration tests, run in browser</h3>
+<i><b>NOTE! You should click these in the active tab!</b> Opening all three concurrently in separate tabs will typically not work
+    due to the browser slowing down JavaScript for the non-active tab! (The default test-timeout of 2 seconds kicks in)</i>
+<ul>
+    <li><a href="unit_and_integration_tests_raw.html">"Raw" ESM Unit and Integration tests</a> - runs source ES Module files directly, both tests and <code>MatsSocket.js</code>, as <code>type="module"</code>.</li>
+    <li><a href="unit_and_integration_tests_esm.html">ESM module Unit and Integration tests</a> - runs ESM modules tests and <code>MatsSocket.esm.js</code>, as <code>type="module"</code>
+        - <b>(The project must be built first: '<code>./gradlew build</code>' so that the bundles are present!)</b></li>
+    <li><a href="unit_and_integration_tests_umd.html">UMD module Unit and Integration tests</a> - runs UMDified tests and <code>MatsSocket.umd.cjs</code> - <b>(The project must be built first!)</b> </li>
+</ul>
 
-    <h3>Some pure HTML+JavaScript tests:</h3>
-    Note: All these directly load from the source <code>MatsSocket.js</code> as EcmaScript Modules (ESM).
-    <ul>
-        <li><a href="simple_tests.html">Simple tests</a> - send, request, requestReplyTo. You should have JavaScript Console open.</li>
-        <li><a href="many_requests.html">4000 requests</a> - a table-full of request-replies, timings.</li>
-        <li><a href="continuous_sequential_requests.html">Continuous, sequential requests</a> - runs sequential requests all the time, timings.</li>
-    </ul>
+<h3>Some pure HTML+JavaScript tests:</h3>
+Note: All these directly load from the source <code>MatsSocket.js</code> as EcmaScript Modules (ESM).
+<ul>
+    <li><a href="simple_tests.html">Simple tests</a> - send, request, requestReplyTo. You should have JavaScript Console open.</li>
+    <li><a href="many_requests.html">4000 requests</a> - a table-full of request-replies, timings.</li>
+    <li><a href="continuous_sequential_requests.html">Continuous, sequential requests</a> - runs sequential requests all the time, timings.</li>
+</ul>
 
-    <h3>CDN example - using static CDNs:</h3>
-    These use a specific version provided by jsDelivr (could also use UNPKG):
-    <ul>
-        <li><a href="using_cdn_umd.html">CDN UMD bundle (old-skool script-src)</a></li>
-        <li><a href="using_cdn_esm.html">CDN ESM bundle (newer-skool script-module) direct import</a></li>
-        <li><a href="using_cdn_importmap.html">CDN ESM bundle over importmap</a></li>
-    </ul>
+<h3>CDN example - using static CDNs:</h3>
+These use a specific version provided by jsDelivr (could also use UNPKG):
+<ul>
+    <li><a href="using_cdn_umd.html">CDN UMD bundle (old-skool script-src)</a></li>
+    <li><a href="using_cdn_esm.html">CDN ESM bundle (newer-skool script-module) direct import</a></li>
+    <li><a href="using_cdn_importmap.html">CDN ESM bundle over importmap</a></li>
+</ul>
 
-    <h3>Scratchpad:</h3>
-    <a href="scratchpad.html">Scratchpad</a>
+<h3>Scratchpad:</h3>
+<a href="scratchpad.html">Scratchpad</a>
 
-    <script>
-        fetch('./versions')
-            .then(response => response.json())
-            .then(json => {
-                document.getElementById('versions').textContent = JSON.stringify(json, null, 2);
-            })
-            .catch(error => {
-                document.getElementById('versions').textContent = 'Error fetching versions: ' + error;
-            });
-    </script>
+<script>
+    fetch('./versions')
+        .then(response => response.json())
+        .then(json => {
+            document.getElementById('versions').textContent = JSON.stringify(json, null, 2);
+        })
+        .catch(error => {
+            document.getElementById('versions').textContent = 'Error fetching versions: ' + error;
+        });
+</script>
 
-    </body>
-</htlm>
+</body>
+</html>

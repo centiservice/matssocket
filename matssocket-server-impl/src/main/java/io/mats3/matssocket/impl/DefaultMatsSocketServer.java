@@ -355,19 +355,32 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
                 Void.TYPE, PublishedMessageDto.class, this::mats_publish);
 
         // MATS: Register handler for MatsSocketEndpoint "MatsSocket.matsPing"
-        matsFactory.single(_endpointId_MatsPing, MatsPingPongDto.class, MatsPingPongDto.class, (ctx, ping) -> {
-            // Directly return the Pong
-            return new MatsPingPongDto(ping.payload, ping.number != null ? ping.number * Math.PI : null);
-        });
+        matsFactory.single(_endpointId_MatsPing, MatsPingPongDto.class, MatsPingPongDto.class,
+                endpointConfig -> {
+                    endpointConfig.setConcurrency(20);
+                }, MatsFactory.NO_CONFIG,
+                (ctx, ping) -> {
+                    // Directly return the Pong
+                    return new MatsPingPongDto(ping.payload, ping.number != null ? ping.number * Math.PI : null);
+                });
 
         // MatsSocket: "MatsSocket.matsPing". Need to register directly, since API method won't allow this prefix.
         // .. create it
-        MatsSocketEndpointRegistration<MatsPingPongDto, MatsPingPongDto, MatsPingPongDto> pingReg = new MatsSocketEndpointRegistration<>(
+        MatsSocketEndpointRegistration<MatsPingPongDto, MatsPingPongDto, MatsPingPongDto> matsPingReg = new MatsSocketEndpointRegistration<>(
                 "MatsSocket.matsPing", MatsPingPongDto.class, MatsPingPongDto.class, MatsPingPongDto.class,
-                (ctx, principal, ping) -> ctx.forwardEssential(_endpointId_MatsPing, ping),
-                null);
+                (ctx, principal, ping) ->
+                        ctx.forwardEssential(_endpointId_MatsPing, ping), null);
         // .. register it.
-        _matsSocketEndpointsByMatsSocketEndpointId.putIfAbsent(pingReg.getMatsSocketEndpointId(), pingReg);
+        _matsSocketEndpointsByMatsSocketEndpointId.putIfAbsent(matsPingReg.getMatsSocketEndpointId(), matsPingReg);
+
+        // MatsSocket: "MatsSocket.matsSocketPing". Need to register directly, since API method won't allow this prefix.
+        // .. create it
+        MatsSocketEndpointRegistration<MatsPingPongDto, Void, MatsPingPongDto> matsSocketPingReg = new MatsSocketEndpointRegistration<>(
+                "MatsSocket.matsSocketPing", MatsPingPongDto.class, Void.TYPE, MatsPingPongDto.class,
+                (ctx, principal, ping) ->
+                        ctx.resolve(new MatsPingPongDto(ping.payload, ping.number != null ? ping.number * Math.E : null)), null);
+        // .. register it.
+        _matsSocketEndpointsByMatsSocketEndpointId.putIfAbsent(matsSocketPingReg.getMatsSocketEndpointId(), matsSocketPingReg);
     }
 
     /**

@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <meta charset="UTF-8"/>
 <head>
     <style>
@@ -19,12 +20,17 @@
 </head>
 <body>
 <h1 id="title_heading">Many requests</h1>
-Sends off a couple of thousand requests, each being fired off in its own "event" using <code>setTimeout(..., 0)</code>.
-This gives a semi-parallel execution, which is visualised below.<br>
-Each Request is passed onto the MatsSocket directly, no pipelining. Each Request uses
-its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the round-trip by updating
+Sends off a couple of thousand requests in a for-loop, which then updates the respective cell when the Promise resolves.<br>
+The result is a (semi-)parallel execution of all these calls, which is visualized in the table below.<br>
+Each Request uses its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the round-trip by updating
 the specific cell with its timing information.<br>
-<b>If you just started the <code>MatsSocketTestServer</code>, then run this a few times to let it warm up!</b><br/>
+
+<p><b>If you just started the <code>MatsSocketTestServer</code>, then run this a few times to let it warm up!</b><br/></p>
+
+<p>MatsSocket Ping Endpoint: <code><b><span id="endpoint"></span></b></code>
+- <i>(change with ?mode=[<a href="?mode=mats">mats</a>|<b><a href="?mode=matsSocket">matsSocket</a></b>]
+- matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i></p>
+
 <i id="statistics">Here will be statistics...</i>
 
 <script type="module">
@@ -51,9 +57,16 @@ the specific cell with its timing information.<br>
     let columns = 50;
 
     tableCreate(rows, columns);
-    let total = rows * columns;
+    let totalNumMessages = rows * columns;
 
-    document.getElementById("title_heading").innerText = total + " requests";
+    document.getElementById("title_heading").innerText = totalNumMessages + " requests";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode') || 'matsSocket';
+    const useMatsPing = mode === 'mats'; // Default to matsSocketPing
+    const endpoint = useMatsPing ? 'MatsSocket.matsPing' : 'MatsSocket.matsSocketPing';
+    const expectedFactor = useMatsPing ? Math.PI : Math.E;
+    document.getElementById("endpoint").innerText = endpoint;
 
     let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
         ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
@@ -65,48 +78,45 @@ the specific cell with its timing information.<br>
     let startMillis = Date.now();
 
     // Fire off a request for each of the Table's cells.
-    for (let i = 0; i < total; i++) {
-        // Rant: Goddamn scopes of JS. Cool, but a bit too magic. (Problem: the "i" is closed-over in the setTimeout function closure)
-        setTimeout((function (innerI) {
-            // .. this "return function" here is to get a separately-scoped "i", called "innerI".
-            return function () {
-                let requestId = "request_" + innerI;
-                let requestCell = document.getElementById(requestId);
-                requestCell.innerHTML = "Req " + innerI;
+    for (let cellNum = 0; cellNum < totalNumMessages; cellNum++) {
+        let requestId = "request_" + cellNum;
+        let requestCell = document.getElementById(requestId);
+        requestCell.innerHTML = "Req " + cellNum;
 
-                // Fire off the MatsSocket request
-                matsSocket.request("Test.single", requestId + ":" + matsSocket.randomId(3),
-                    // The Request DTO
-                    {
-                        string: "Request String:" + requestId,
-                        number: Math.E * innerI
-                    })
-                    .then(function (event) {
-                        // Setting data in Table's cell
-                        let timeTakenMs = event.roundTripMillis;
-                        sumTimeMillis += timeTakenMs;
-                        let displayMs = Math.round(timeTakenMs * 100) / 100;
-                        requestCell.innerHTML = "<b>" + displayMs + "</b>";
-                        receivedCount++;
-
-                        // ?: Is this the last reply coming in?
-                        if (receivedCount === total) {
-                            // -> Yes, last reply - so update the stats message at top.
-                            let totalMillis = Date.now() - startMillis;
-                            let averagePerMessage = sumTimeMillis / total;
-                            let throughputPerSecond = (total / totalMillis) * 1000;
-                            document.getElementById("statistics").innerHTML =
-                                "Total time for " + total + " requests: " + totalMillis
-                                + " ms, average per message: " + averagePerMessage
-                                + " ms, throughput: " + throughputPerSecond + " msg/sec";
-                        }
-                    });
-                if (i % 200 === 0) {
-                    matsSocket.flush();
+        // Fire off the MatsSocket request
+        matsSocket.request(endpoint, requestId + ":" + matsSocket.randomId(3),
+            // The Request DTO
+            {
+                string: "Request String:" + requestId,
+                number: Math.E * cellNum
+            })
+            .then(function (event) {
+                // Assert that it has been through either both MatsSocket and Mats, or just MatsSocket.
+                if (event.data.number !== Math.E * cellNum * expectedFactor) {
+                    throw new Error("Wrong 'number' for TraceId ["+traceId+"].");
                 }
+                // Setting data in Table's cell
+                let timeTakenMs = event.roundTripMillis;
+                sumTimeMillis += timeTakenMs;
+                let displayMs = Math.round(timeTakenMs * 100) / 100;
+                requestCell.innerHTML = "<b>" + displayMs + "</b>";
+                receivedCount++;
 
-            }
-        })(i), 0);
+                // ?: Is this the last reply coming in?
+                if (receivedCount === totalNumMessages) {
+                    // -> Yes, last reply - so update the stats message at top.
+                    let totalMillis = Date.now() - startMillis;
+                    let averagePerMessage = sumTimeMillis / totalNumMessages;
+                    let throughputPerSecond = (totalNumMessages / totalMillis) * 1000;
+                    document.getElementById("statistics").innerHTML =
+                        "Total time for " + totalNumMessages + " requests: " + totalMillis
+                        + " ms, average per message: " + averagePerMessage
+                        + " ms, throughput: " + throughputPerSecond + " msg/sec";
+                }
+            });
+        if (cellNum % 200 === 0) {
+            matsSocket.flush();
+        }
     }
 </script>
 

@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <meta charset="UTF-8"/>
 <head>
     <style>
@@ -23,7 +24,13 @@ Sends off requests one by one, immediately sending off the next when the last re
 After one "screenful", timings are calculated, and we start over. The memory situation can be viewed over time in Dev
 Tools.<br>
 <i>For fun, you can open a few browsers (Chrome + Firefox) and have a few private windows of each with this same page!</i><br>
-<b>If you just started the <code>MatsSocketTestServer</code>, you should let it run for a while to let it warm up!</b><br>
+
+<p><b>If you just started the <code>MatsSocketTestServer</code>, you should let it run for a while to let it warm up!</b><br></p>
+
+<p>MatsSocket Ping Endpoint: <code><b><span id="endpoint"></span></b></code>
+- <i>(change with ?mode=[<a href="?mode=mats">mats</a>|<b><a href="?mode=matsSocket">matsSocket</a></b>]
+- matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i></p>
+
 <i id="statistics">Here will be statistics...</i>
 
 <script type="module">
@@ -54,6 +61,13 @@ Tools.<br>
 
     document.getElementById("title_heading").innerText = "Continuous, sequential requests, " + total + " per round.";
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode') || 'matsSocket';
+    const useMatsPing = mode === 'mats';
+    const endpoint = useMatsPing ? 'MatsSocket.matsPing' : 'MatsSocket.matsSocketPing';
+    const expectedFactor = useMatsPing ? Math.PI : Math.E;
+    document.getElementById("endpoint").innerText = endpoint;
+
     let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
         ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
     matsSocket.setCurrentAuthorization("DummyAuth:standard:-1", -1);
@@ -73,15 +87,15 @@ Tools.<br>
         let traceId = cellNum + ":" + matsSocket.randomId(3);
 
         // Fire off the MatsSocket request
-        matsSocket.request("MatsSocket.matsPing", traceId,
+        matsSocket.request(endpoint, traceId,
             // The Request DTO
             {
                 payload: "Payload:" + cellNum + ":" + matsSocket.randomCId(3),
                 number: Math.E * cellNum
             })
             .then(function (event) {
-                // Assert that it has been through Mats
-                if (event.data.number !== Math.E * cellNum * Math.PI) {
+                // Assert that it has been through either both MatsSocket and Mats, or just MatsSocket.
+                if (event.data.number !== Math.E * cellNum * expectedFactor) {
                     throw new Error("Wrong 'number' for TraceId ["+traceId+"].");
                 }
                 // Setting data in Table's cell
