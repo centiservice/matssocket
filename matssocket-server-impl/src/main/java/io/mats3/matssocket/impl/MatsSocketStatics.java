@@ -1,6 +1,7 @@
 package io.mats3.matssocket.impl;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeDto;
@@ -89,7 +92,11 @@ public interface MatsSocketStatics {
 
     default ObjectMapper jacksonMapper() {
         /*
-         * NOTE: This following is stolen directly from MatsSerializer_DefaultJson - uses same serialization setup
+         * NOTE: This following is stolen directly from util.FieldBasedJacksonMapper - uses same serialization setup,
+         * EXCEPT also adding the mixin for MatsSocketEnvelopeDto!
+         *
+         * NOTE: We DO NOT (currently) use the FieldBasedJacksonMapper, to avoid dependency on Mats3's util lib, so
+         * we instead use the same-ish setup.
          */
         ObjectMapper mapper = new ObjectMapper();
 
@@ -98,6 +105,7 @@ public interface MatsSocketStatics {
         mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
 
         // Drop nulls
+        // TODO: Use NON_ABSENT:  // Drop nulls and Optional.empty()
         mapper.setSerializationInclusion(Include.NON_NULL);
 
         // If props are in JSON that aren't in Java DTO, do not fail.
@@ -145,9 +153,27 @@ public interface MatsSocketStatics {
     class MessageToStringDeserializer extends JsonDeserializer<Object> {
         @Override
         public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            // TODO / OPTIMIZE: Find faster way to get as String, avoiding tons of JsonNode objects.
-            // TODO: Trick must be to just consume from the START_OBJECT to the /corresponding/ END_OBJECT.
-            return p.readValueAsTree().toString();
+            // TODO / OPTIMIZE: Maybe just store the buffer of tokens, to be retrieved when knowing the object type?
+            // Ref: https://chatgpt.com/share/68f12369-a860-8009-9540-a577e6b10349
+            // Previous solution was as such:
+            // return p.readValueAsTree().toString();
+
+            if (p.currentToken() == JsonToken.VALUE_NULL) {
+                return null;
+            }
+
+            // Convert the buffered tokens to a JSON string
+            // This approach:
+            // 1. Copies the tokens directly without creating intermediate JsonNode objects
+            // 2. Then serializes those tokens back to a String
+            TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
+            StringWriter writer = new StringWriter(128);
+            try (JsonParser bufferParser = buffer.asParserOnFirstToken();
+                    JsonGenerator gen = p.getCodec().getFactory().createGenerator(writer)){
+                gen.copyCurrentStructure(bufferParser);
+            }
+
+            return writer.toString();
         }
     }
 
