@@ -367,7 +367,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         // MatsSocket: "MatsSocket.matsPing". Need to register directly, since API method won't allow this prefix.
         // .. create it
         MatsSocketEndpointRegistration<MatsPingPongDto, MatsPingPongDto, MatsPingPongDto> matsPingReg = new MatsSocketEndpointRegistration<>(
-                "MatsSocket.matsPing", MatsPingPongDto.class, MatsPingPongDto.class, MatsPingPongDto.class,
+                MATS_SOCKET_MATS_PING, MatsPingPongDto.class, MatsPingPongDto.class, MatsPingPongDto.class,
                 (ctx, principal, ping) ->
                         ctx.forwardEssential(_endpointId_MatsPing, ping), null);
         // .. register it.
@@ -376,7 +376,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         // MatsSocket: "MatsSocket.matsSocketPing". Need to register directly, since API method won't allow this prefix.
         // .. create it
         MatsSocketEndpointRegistration<MatsPingPongDto, Void, MatsPingPongDto> matsSocketPingReg = new MatsSocketEndpointRegistration<>(
-                "MatsSocket.matsSocketPing", MatsPingPongDto.class, Void.TYPE, MatsPingPongDto.class,
+                MATS_SOCKET_MATS_SOCKET_PING, MatsPingPongDto.class, Void.TYPE, MatsPingPongDto.class,
                 (ctx, principal, ping) ->
                         ctx.resolve(new MatsPingPongDto(ping.payload, ping.number != null ? ping.number * Math.E : null)), null);
         // .. register it.

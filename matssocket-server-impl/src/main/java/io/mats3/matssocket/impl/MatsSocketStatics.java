@@ -81,6 +81,10 @@ public interface MatsSocketStatics {
 
     String THREAD_PREFIX = "MatsSocket:";
 
+    // The ping standard endpoints.
+    String MATS_SOCKET_MATS_PING = "MatsSocket.matsPing";
+    String MATS_SOCKET_MATS_SOCKET_PING = "MatsSocket.matsSocketPing";
+
     default double ms(long nanos) {
         return Math.round(nanos / 10_000d) / 1_00d;
     }

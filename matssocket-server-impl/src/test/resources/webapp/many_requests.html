@@ -82,9 +82,10 @@ the specific cell with its timing information.<br>
         let requestId = "request_" + cellNum;
         let requestCell = document.getElementById(requestId);
         requestCell.innerHTML = "Req " + cellNum;
+        let traceId = cellNum + ":" + matsSocket.randomId(3);
 
         // Fire off the MatsSocket request
-        matsSocket.request(endpoint, requestId + ":" + matsSocket.randomId(3),
+        matsSocket.request(endpoint, traceId,
             // The Request DTO
             {
                 string: "Request String:" + requestId,

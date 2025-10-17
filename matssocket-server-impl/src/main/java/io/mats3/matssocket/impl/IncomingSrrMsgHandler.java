@@ -96,7 +96,7 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
                 principal));
     }
 
-    void handlerRunnable(MatsSocketSessionAndMessageHandler session, long receivedTimestamp,
+    private void handlerRunnable(MatsSocketSessionAndMessageHandler session, long receivedTimestamp,
             long nanosStart, MatsSocketEnvelopeWithMetaDto incomingEnvelope, String authorization,
             Principal principal) {
         try {
@@ -116,7 +116,7 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
         }
     }
 
-    void handlerRunnable_MDCed(MatsSocketSessionAndMessageHandler session, long receivedTimestamp,
+    private void handlerRunnable_MDCed(MatsSocketSessionAndMessageHandler session, long receivedTimestamp,
             long nanosStart, MatsSocketEnvelopeWithMetaDto incomingEnvelope, String authorization,
             Principal principal) {
 
@@ -611,7 +611,25 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
         // Set the incoming time
         handledEnvelope[0].icts = receivedTimestamp;
 
-        int delay = (handledEnvelope[0].t == ACK) && (incomingEnvelope.t != SEND) ? 100 : 2;
+        // :: Chill a bit, in hope to coalesce multiple messages on the wire.
+        // ?: If it is an ACK to anything else than SEND, then we chill quite a bit (the resolve might "take it"
+        // instead, so that we don't need to send the ACK). Otherwise, we chill for just a short while.
+        int delay = (handledEnvelope[0].t == ACK) && (incomingEnvelope.t != SEND) ? 100 : 4;
+
+        // ?: However, if it is a RESOLVE (reply) to a REQUEST, then we chill less (make REQUESTs go faster).
+        if (handledEnvelope[0].t == RESOLVE) {
+            // "Hack" to make 'MatsSocket.matsSocketPing' go as fast as possible - since the point is to measure latency
+            // between client and server.
+            // ?: Is it an insta-RESOLVE for a 'MatsSocket.matsSocketPing'?
+            if (incomingEnvelope.eid != null && incomingEnvelope.eid.equals(MATS_SOCKET_MATS_SOCKET_PING)){
+                // -> Yes, this RESOLVE was for 'MatsSocket.matsSocketPing', so insta-send it.
+                delay = 0;
+            }
+            else {
+                // -> No, it was a RESOLVE for another MatsSocket Endpoint, so chill a short while.
+                delay = 2;
+            }
+        }
 
         // Send the message
         _matsSocketServer.getWebSocketOutgoingEnvelopes().sendEnvelope(matsSocketSessionId, handledEnvelope[0],
