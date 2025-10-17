@@ -67,8 +67,21 @@ For Development of the library itself, see [README-development.md](https://githu
 
 ## CDN
 
+You can include the MatsSocket JS client library straight from an HTML page using a CDN. This can facilitate "buildless"
+web development.
+
 **For production use, you should always use a specific version (not `latest`/default), and you should use the
 `integrity` attribute to verify the integrity of the delivered files!**
+
+**Note wrt. integrity constraint with importmaps: you must be very careful to use the exact same URL in the 'imports'
+map, as in the 'integrity' constraint map.** Only exact matches are actually checked: If you have a typo in the URL, or
+reference a different URL, in the integrity constraint, no integrity check is performed on your import, and it will
+simply pass! Make sure that it kicks in by messing with the hash: You should get an error in the Console and fail to
+load the module.
+
+There are examples of how to CDN-include with all three modes (UMD, ESM and importmaps) in the
+[test server's webapp dir](https://github.com/centiservice/matssocket/tree/main/matssocket-server-impl/src/test/resources/webapp),
+the three files `using_cdn_*.html` - and with small examples further down.
 
 ### jsDelivr
 
@@ -85,19 +98,43 @@ development, not in production! Using dynamic tags precludes the use of the `int
 
 You want to change the `latest` to a specific version, e.g. `1.0.0-rc1-2025-10-04`.
 
+In a development situation, you might want to remove the ".min" part.
+
 ### UNPKG
 
 * HTML view resides at (`latest`): [https://app.unpkg.com/matssocket/](https://app.unpkg.com/matssocket/),
-specific version, e.g. [1.0.0-rc1-2025-10-04](https://app.unpkg.com/matssocket@1.0.0-rc1-2025-10-04/)
+  specific version, e.g. [1.0.0-rc1-2025-10-04](https://app.unpkg.com/matssocket@1.0.0-rc1-2025-10-04/)
 
 The version property can also be dynamic tags like `latest` or `rc`, but only use this in experimentation and
 development, not in production! Using dynamic tags precludes the use of the `integrity` attribute.
-Note that UNPKG's tags-based URLs redirect to the specific tagged version.
+Note that UNPKG's tags-based URLs _redirects_ to the specific tagged version (as opposed to jsDelivr, which just
+directly serves the tagged version)
 
 * ESM minified module, `latest`: [https://unpkg.com/matssocket@latest/dist/MatsSocket.esm.min.js](https://unpkg.com/matssocket@latest/dist/MatsSocket.esm.min.js)
 * UMD minified module, `latest`: [https://unpkg.com/matssocket@latest/dist/MatsSocket.umd.min.js](https://unpkg.com/matssocket@latest/dist/MatsSocket.umd.min.js)
 
 You want to change the `latest` to a specific version, e.g. `1.0.0-rc1-2025-10-04`.
+
+In a development situation, you might want to remove the ".min" part.
+
+### esm.sh
+
+Esm.sh is only for modern ESM `<script type="module">` projects - no UMD! It is powered by Cloudflare. Esm.sh does not
+have an HTML view of the package.
+
+The version property can be dynamic tags like `latest` or `rc`, but only use this in experimentation and development,
+not in production!
+
+Esm.sh doesn't yet support Subresource Integrity (SRI): It uses an indirection solution, where the target file is a
+shim that again refers to a different import (open the URLs below directly in a browser and see!), and it rewrites the
+target resource, thus you cannot calculate the hash independently. Evidently this
+<a href="https://github.com/esm-dev/esm.sh/issues/1206">is worked on!</a>
+
+* 'latest': [https://esm.sh/matssocket](https://esm.sh/matssocket)
+* 'rc': [https://esm.sh/matssocket@rc](https://esm.sh/matssocket@rc)
+* Specific version: [https://esm.sh/matssocket@1.0.0-rc1-2025-10-04](https://esm.sh/matssocket@1.0.0-rc1-2025-10-04)
+* Specific file: [https://esm.sh/matssocket@rc/dist/MatsSocket.esm.js](https://esm.sh/matssocket@rc/dist/MatsSocket.esm.js),
+  but this doesn't give you the non-minified version as you might have hoped; As mentioned, esm.sh rewrites the targets!
 
 
 ### Inclusion in HTML
@@ -107,7 +144,7 @@ Exemplified with the jsDelivr CDN. You must choose the version, and find the has
 To get the integrity hash, a quick way is to first just use a wrong hash, e.g. "sha384-xyz". Both Firefox and Chrome
 will in the dev console error log show the hash it calculated and compared with (based on the prefix you used, e.g. 
 "sha384-" or "sha256-"). Remember to add the prefix! For a bit of extra paranoia, you should verify that the hashes are
-the same for jsDelivr and UNPKG.
+the same for jsDelivr and UNPKG. <i>(As mentioned above, esm.sh doesn't support SRI)</i>
 
 _(If you drop the version, or specify `latest`, you will get the latest stable version, which will change over time -
 and you cannot use the `integrity` attribute. Only for experimentation and development! You could also then drop the
