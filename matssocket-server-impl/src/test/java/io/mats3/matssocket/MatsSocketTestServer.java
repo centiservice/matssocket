@@ -158,7 +158,7 @@ public class MatsSocketTestServer {
             ClusterStoreAndForward_SQL clusterStoreAndForward = ClusterStoreAndForward_SQL.create(dataSource,
                     _matsFactory.getFactoryConfig().getNodename());
             // .. Perform DB migrations for the CSAF.
-            ClusterStoreAndForward_SQL_DbMigrations.create(Database.MS_SQL).migrateUsingFlyway(dataSource);
+            ClusterStoreAndForward_SQL_DbMigrations.create(Database.H2).migrateUsingFlyway(dataSource);
 
             // Make a Dummy Authentication plugin
             AuthenticationPlugin authenticationPlugin = DummySessionAuthenticator::new;

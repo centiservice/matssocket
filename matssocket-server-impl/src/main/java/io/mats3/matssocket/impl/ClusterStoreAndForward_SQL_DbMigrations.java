@@ -23,18 +23,22 @@ public class ClusterStoreAndForward_SQL_DbMigrations {
      */
     public enum Database {
         /**
-         * <b>Default:</b> MS SQL: NVARCHAR(MAX), VARBINARY(MAX) (NOTE: H2 also handles these).
+         * MS SQL OLD: NVARCHAR(MAX), VARBINARY(MAX) (NOTE: H2 also handles these).
+         *
+         * @see #MS_SQL_UTF8
          */
-        MS_SQL("NVARCHAR(MAX)", "VARBINARY(MAX)"),
+        MS_SQL_OLD("NVARCHAR(MAX)", "VARBINARY(MAX)"),
 
         /**
          * MS SQL 2019 and above: <b>(assumes UTF-8 collation type)</b> VARCHAR(MAX), VARBINARY(MAX) (NOTE: H2 also
          * handles these).
+         *
+         * @see #MS_SQL_OLD
          */
-        MS_SQL_2019_UTF8("VARCHAR(MAX)", "VARBINARY(MAX)"),
+        MS_SQL_UTF8("VARCHAR(MAX)", "VARBINARY(MAX)"),
 
         /**
-         * H2: VARCHAR, VARBINARY (NOTE: H2 also handles {@link #MS_SQL} and {@link #MS_SQL_2019_UTF8}).
+         * H2: VARCHAR, VARBINARY (NOTE: H2 also handles {@link #MS_SQL_OLD} and {@link #MS_SQL_UTF8}).
          */
         H2("VARCHAR", "VARBINARY"),
 
@@ -44,12 +48,22 @@ public class ClusterStoreAndForward_SQL_DbMigrations {
         POSTGRESQL("TEXT", "BYTEA"),
 
         /**
-         * Oracle: NCLOB, BLOB
+         * Oracle: NCLOB, BLOB. Using NCLOB is for mixed-charset/compatibility scenarios - newer setups are probably
+         * Unicode already, and can use {@link #ORACLE_CLOB}.
+         *
+         * @see #ORACLE_CLOB
          */
-        ORACLE("NCLOB", "BLOB"),
+        ORACLE_NCLOB("NCLOB", "BLOB"),
 
         /**
-         * MySQL / MariaDB: LONGTEXT, LONGBLOB (both 32 bits)
+         * Oracle: CLOB, BLOB. If your DB character set is already Unicode, CLOB is usually enough.
+         *
+         * @see #ORACLE_NCLOB
+         */
+        ORACLE_CLOB("CLOB", "BLOB"),
+
+        /**
+         * MySQL / MariaDB: LONGTEXT, LONGBLOB
          */
         MYSQL("LONGTEXT", "LONGBLOB");
 

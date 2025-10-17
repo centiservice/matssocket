@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sql.DataSource;
 
@@ -49,6 +50,14 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
     private final String _nodename;
     private final Clock _clock;
 
+    // Whether to use setNString(idx, string) on the VARCHAR columns (Old MS SQL annoyance).
+    // AtomicBoolean so that it can be set after construction w/o memory problems.
+    private AtomicBoolean _useSetNString = new AtomicBoolean(false);
+
+    // Whether to use getNString(idx) on the VARCHAR columns (Old MS SQL annoyance).
+    // AtomicBoolean so that it can be set after construction w/o memory problems.
+    private AtomicBoolean _useGetNString = new AtomicBoolean(false);
+
     public static ClusterStoreAndForward_SQL create(DataSource dataSource, String nodename) {
         ClusterStoreAndForward_SQL csaf = new ClusterStoreAndForward_SQL(dataSource, nodename);
         return csaf;
@@ -62,6 +71,59 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
 
     private ClusterStoreAndForward_SQL(DataSource dataSource, String nodename) {
         this(dataSource, nodename, Clock.systemDefaultZone());
+    }
+
+    /**
+     * Whether to use {@link PreparedStatement#setNString(int, String) stmt.setNString(int, String)} for the "long
+     * string" columns (envelope, message, trace_id etc), those that are defined as NVARCHAR for older MS SQL
+     * installations, refer {@link ClusterStoreAndForward_SQL_DbMigrations.Database#MS_SQL_OLD
+     * DbMigrations.Database.MS_SQL_OLD} or NCLOB for Oracle, refer
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#ORACLE_NCLOB DbMigrations.Database.ORACLE_NCLOB}: Thus,
+     * if you employ NVARCHAR/NCLOB columns for the "long string" types, you should set this to <code>true</code> (while
+     * for MS SQL having <code>sendStringParametersAsUnicode=false</code>).
+     * <p>
+     * <b>Note: On newer MS SQL installations, you should instead use _UTF8 collation types on your database, and
+     * ordinary VARCHAR(MAX) column types, and then NOT set this to <code>true</code>! Also set
+     * <code>sendStringParametersAsUnicode=false</code> in the connection string!</b>
+     * <p>
+     * Note: For MS SQL: Performance-wise, you should, judging by experience, internet lore, and Microsoft docs,
+     * <b>always</b> set 'sendStringParametersAsUnicode=false' in the connection string (no matter usage of NVARCHAR or
+     * not), and then specifically use setNString(idx, string) on any NVARCHAR columns. Otherwise, all strings will be
+     * sent as NCHAR, and you will get implicit type conversions on the server side (i.e. columns that are VARCHAR will
+     * get NVARCHAR set on them, needing conversion), which (mindblowingly) leads to missing indices, nuked sargability,
+     * and table scans, and utterly kills performance. Google it. Or check out
+     * <a href="https://chatgpt.com/share/68f22455-67fc-8009-8104-be8d051e81c0">this ChatGPT</a>.
+     * <p>
+     * Note: For MS SQL, there is no need to also set the {@link #useGetNString(boolean)} to <code>true</code>, since
+     * the JDBC driver already knows how to handle the NVARCHAR columns when getting, as it has the typing info as part
+     * of the resultset.
+     *
+     * @see #useGetNString(boolean)
+     * @param decision
+     *            whether to use {@link PreparedStatement#setNString(int, String) stmt.setNString(int, String)} for the
+     *            "long string" columns (envelope, message, trace_id etc) - default <code>false</code>.
+     */
+    public void useSetNString(boolean decision) {
+        _useSetNString.set(decision);
+    }
+
+    /**
+     * Whether to use {@link ResultSet#getNString(int)} for the "long string" columns (envelope, message, trace_id etc),
+     * those that are defined as NVARCHAR for older MS SQL installations, refer
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#MS_SQL_OLD} or NCLOB for Oracle, refer
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#ORACLE_NCLOB DbMigrations.Database.ORACLE_NCLOB} : Thus,
+     * if you employ NVARCHAR/NCLOB columns for the "long string" types, you should maybe set this to <code>true</code>.
+     * <p>
+     * <b>Note: For MS SQL, it is not necessary to set this to <code>true</code>, since the JDBC driver already knows
+     * how to handle the NVARCHAR columns when getting, as it has the typing info as part of the resultset.</b>
+     *
+     * @see #useSetNString(boolean)
+     * @param decision
+     *            whether to use {@link ResultSet#getNString(int)} for the "long string" columns (envelope, message,
+     *            trace_id etc) - default <code>false</code>.
+     */
+    public void useGetNString(boolean decision) {
+        _useGetNString.set(decision);
     }
 
     @Override
@@ -488,7 +550,12 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
                     + " SET full_envelope = ?, message_binary = ?"
                     + " WHERE session_id = ?"
                     + "   AND cmid = ?");
-            updateMsg.setString(1, envelopeWithMessage);
+            if (_useSetNString.get()) {
+                updateMsg.setNString(1, envelopeWithMessage);
+            }
+            else {
+                updateMsg.setString(1, envelopeWithMessage);
+            }
             updateMsg.setBytes(2, messageBinary);
             updateMsg.setString(3, matsSocketSessionId);
             updateMsg.setString(4, clientMessageId);
@@ -511,8 +578,9 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
             ResultSet rs = select.executeQuery();
             rs.next();
 
+            String fullEnvelope = _useGetNString.get() ? rs.getNString(2) : rs.getString(2);
             SimpleStoredInMessage msg = new SimpleStoredInMessage(matsSocketSessionId,
-                    clientMessageId, rs.getLong(1), rs.getString(2),
+                    clientMessageId, rs.getLong(1), fullEnvelope,
                     rs.getBytes(3));
             select.close();
             return msg;
@@ -555,7 +623,12 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
 
                 insert.setString(1, matsSocketSessionId);
                 insert.setString(2, serverMessageId);
-                insert.setString(3, traceId);
+                if (_useSetNString.get()) {
+                    insert.setNString(3, traceId);
+                }
+                else {
+                    insert.setString(3, traceId);
+                }
                 insert.setString(4, type.name());
 
                 insert.setString(5, clientMessageId); // May be null
@@ -564,8 +637,18 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
                 insert.setLong(7, _clock.millis());
                 insert.setInt(8, 0);
 
-                insert.setString(9, envelope);
-                insert.setString(10, messageJson); // May be null
+                if (_useSetNString.get()) {
+                    insert.setNString(9, envelope);
+                }
+                else {
+                    insert.setString(9, envelope);
+                }
+                if (_useSetNString.get()) {
+                    insert.setNString(10, messageJson); // May be null
+                }
+                else {
+                    insert.setString(10, messageJson); // May be null
+                }
                 insert.setBytes(11, messageBinary); // May be null
                 insert.execute();
 
@@ -602,12 +685,15 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
             ResultSet rs = selectMsgs.executeQuery();
             List<StoredOutMessage> list = new ArrayList<>();
             while (rs.next()) {
+                String traceId = _useGetNString.get() ? rs.getNString(2) : rs.getString(2);
+                String envelope = _useGetNString.get() ? rs.getNString(8) : rs.getString(8);
+                String messageText = _useGetNString.get() ? rs.getNString(9) : rs.getString(9);
                 MessageType type = MessageType.valueOf(rs.getString(3));
                 SimpleStoredOutMessage sm = new SimpleStoredOutMessage(matsSocketSessionId, rs.getString(1),
-                        rs.getString(2), type,
+                        traceId, type,
                         rs.getString(4), rs.getLong(5),
                         rs.getLong(6), null, rs.getInt(7),
-                        rs.getString(8), rs.getString(9), rs.getBytes(10));
+                        envelope, messageText, rs.getBytes(10));
                 list.add(sm);
             }
             return list;
@@ -695,7 +781,12 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
             insert.setString(2, serverMessageId);
             insert.setLong(3, requestTimestamp);
             insert.setString(4, replyTerminatorId);
-            insert.setString(5, correlationString);
+            if (_useSetNString.get()) {
+                insert.setNString(5, correlationString);
+            }
+            else {
+                insert.setString(5, correlationString);
+            }
             insert.setBytes(6, correlationBinary);
             insert.execute();
             insert.close();
@@ -718,8 +809,9 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
             if (rs.next()) {
                 // -> Yes, we have the row!
                 // Get the data
+                String correlationText = _useGetNString.get() ? rs.getNString(3) : rs.getString(3);
                 RequestCorrelation requestCorrelation = new SimpleRequestCorrelation(matsSocketSessionId,
-                        serverMessageId, rs.getLong(1), rs.getString(2), rs.getString(3), rs.getBytes(4));
+                        serverMessageId, rs.getLong(1), rs.getString(2), correlationText, rs.getBytes(4));
                 // Delete the Correlation
                 PreparedStatement deleteCorrelation = con.prepareStatement("DELETE FROM " + requestOutTableName(
                         matsSocketSessionId)
