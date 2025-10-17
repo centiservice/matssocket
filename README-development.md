@@ -102,7 +102,7 @@ string format.
 
 Build and test the entire project (server and clients)
 ```bash
-./gradlew distclean build
+$ ./gradlew distclean build
 ```
 
 #### Commit and tag git:
@@ -119,10 +119,23 @@ $ git push && git push --tags
 #### Publish to Maven Central Repository:
 
 ```shell
-./gradlew publishToMavenCentral
+$ ./gradlew publishToMavenCentral
 ```
 
 Afterwards, log in to [Maven Central Repository Portal](https://central.sonatype.com/publishing/deployments), find the
 newly published version.
 
 Check over it, and if everything looks good, ship it!
+
+#### Verify publication
+
+It says "Publishing" for quite a while in the Portal. Afterwards, it should say "Published". It might still take some
+time to appear in all places.
+
+Eventually, the new version should be available in:
+* [Maven Central Repository](https://central.sonatype.com/namespace/io.mats3.matssocket) - First place it appears,
+  directly after "Published" on Portal. Same style GUI as Portal.
+* [repo.maven.apache.org/maven2](https://repo.maven.apache.org/maven2/io/mats3/matssocket/) - HTML File browser. This is
+  where Maven/Gradle actually downloads artifacts from, so when they're available here, you can update your projects.
+* [MVN Repository](https://mvnrepository.com/artifact/io.mats3.matssocket) - good old MVN Repository. Often VERY slow to
+  display the new version.

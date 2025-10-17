@@ -206,6 +206,7 @@ $ ./gradlew dartBinPath   # to get the command.
 === Dart bin dir   : /home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/
     Unix:     export PATH=/home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/:$PATH
     Windows:  set PATH=/home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/;%PATH%
+
 $ # Use the relevant PATH command for your shell.
 
 $ dart --version
@@ -253,3 +254,7 @@ using your Google account. It will wait for you to authorize the application, an
 ```shell
 ~/git/matssocket/matssocket-client-dart$ dart pub publish
 ```
+
+#### Verify publication
+
+It ends up here, immediately: [https://pub.dev/packages/matssocket](https://pub.dev/packages/matssocket)

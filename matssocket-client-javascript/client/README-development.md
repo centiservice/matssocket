@@ -264,3 +264,7 @@ $ git push && git push --tags
 ```shell
 ~/git/matssocket/matssocket-client-javascript/client$ npm publish --tag rc -otp=543491
 ```
+
+#### Verify publication
+
+It ends up here, immediately: [https://www.npmjs.com/package/matssocket/](https://www.npmjs.com/package/matssocket/)
