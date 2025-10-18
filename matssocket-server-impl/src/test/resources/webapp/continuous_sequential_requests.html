@@ -2,17 +2,17 @@
 <html lang="en">
 <meta charset="UTF-8"/>
 <head>
+    <title>MatsSocket sequential requests</title>
     <style>
-        #request_table, td {
+        #request_table {
             border: 1px solid black;
             border-collapse: collapse;
             font-size: 10px;
             table-layout: fixed;
-            width: 1500px;
+            width: 800px;
         }
 
         td {
-            width: 30px;
             overflow: hidden;
         }
 
@@ -23,15 +23,17 @@
 Sends off requests one by one, immediately sending off the next when the last reply is received.<br>
 After one "screenful", timings are calculated, and we start over. The memory situation can be viewed over time in Dev
 Tools.<br>
-<i>For fun, you can open a few browsers (Chrome + Firefox) and have a few private windows of each with this same page!</i><br>
 
-<p><b>If you just started the <code>MatsSocketTestServer</code>, you should let it run for a while to let it warm up!</b><br></p>
+<p><b>If you just started the <code>MatsSocketTestServer</code>, you should let it run for a while to let it warm up!</b><br>
+<i>You can open a bunch of Chrome Private Windows and let them hammer simultaneously. You should be careful with the
+'Fastest' evaluation then. Saturate your CPU!</i></p>
 
 <p>MatsSocket Ping Endpoint: <code><b><span id="endpoint"></span></b></code>
 - <i>(change with ?mode=[<a href="?mode=mats">mats</a>|<b><a href="?mode=matsSocket">matsSocket</a></b>]
-- matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i></p>
+- matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i><br>
+Cell update: <code><b><span id="muted"></span></b></code> (change with ?muted - <a href="?mode=mats&muted">mats&muted</a> | <a href="?mode=matsSocket&muted">matsSocket&muted</a>)</p>
 
-<i id="statistics">Here will be statistics...</i>
+<span id="statistics">Here will be statistics...<br>..</span>
 
 <script type="module">
     import * as mats from './mats/client/lib/MatsSocket.js';
@@ -47,7 +49,7 @@ Tools.<br>
                 let cellNum = j * rows + i;
                 let td = tr.insertCell();
                 td.id = "request_" + cellNum;
-                td.innerHTML = "x";
+                td.innerHTML = "-";
             }
         }
         body.appendChild(table);
@@ -68,22 +70,36 @@ Tools.<br>
     const expectedFactor = useMatsPing ? Math.PI : Math.E;
     document.getElementById("endpoint").innerText = endpoint;
 
+    const muted = urlParams.get('muted') !== null;
+    document.getElementById("muted").innerText = muted ? "Muted - not showing individual requests" : "Not muted - showing individual requests";
+
     let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
         ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
     matsSocket.setCurrentAuthorization("DummyAuth:standard:-1", -1);
 
-    let sumTimeMillis = 0; // Sum of millis per message, to get average.
+    let sumRTTMillis = 0; // Sum of millis per message, to get average.
+    let lowestRTTMillis = 1000000000;
+    let highestRTTMillis = -1;
 
-    let startMillis = Date.now();
+    let startMillis = performance.now();
 
     let cells = [];
     for (let i = 0; i < total; i++) {
         cells[i] = document.getElementById("request_" + i);
     }
 
+    let fastest = -1;
+    let fastestReport;
+
+    function ms(millis) {
+        return Math.round(millis * 100) / 100;
+    }
+
     function doRequest(cellNum) {
         let requestCell = cells[cellNum];
-        requestCell.innerText = "Req!";
+        if (!muted) {
+            requestCell.innerText = "Req!";
+        }
         let traceId = cellNum + ":" + matsSocket.randomId(3);
 
         // Fire off the MatsSocket request
@@ -100,23 +116,43 @@ Tools.<br>
                 }
                 // Setting data in Table's cell
                 let timeTakenMs = event.roundTripMillis;
-                sumTimeMillis += timeTakenMs;
-                requestCell.innerText = Math.round(timeTakenMs * 100) / 100;
+                sumRTTMillis += timeTakenMs;
+                if (timeTakenMs < lowestRTTMillis) {
+                    lowestRTTMillis = timeTakenMs;
+                }
+                if (timeTakenMs > highestRTTMillis) {
+                    highestRTTMillis = timeTakenMs;
+                }
+                if (!muted) {
+                    requestCell.innerText = Math.round(timeTakenMs * 100) / 100;
+                }
 
                 let newCellNum = cellNum + 1;
                 if (newCellNum >= total) {
+                    // Update statistics
+                    let totalMillis = performance.now() - startMillis;
+                    let averagePerMessage = totalMillis / total;
+                    let averageRTT = sumRTTMillis / total;
+                    let throughputPerSecond = (total / totalMillis) * 1000;
+                    let report = "Total time: <b>" + ms(totalMillis)
+                        + "</b> ms, average per message: <b>" + ms(averagePerMessage)
+                        + "</b> ms, average RTT: <b>" + ms(averageRTT)
+                        + "</b> (low: " + ms(lowestRTTMillis) + " ms, high: " + ms(highestRTTMillis) + " ms)"
+                        + ", throughput: <b>" + ms(throughputPerSecond) + "</b> msg/sec";
+                    if (totalMillis < fastest || fastestReport === undefined) {
+                        fastest = totalMillis;
+                        fastestReport = report;
+                    }
+                    document.getElementById("statistics").innerHTML =
+                        "<b>"+total+"</b> requests: " + report +
+                        "<br><i style='padding-left: 2.4em;'>Fastest: " + fastestReport + "</i>";
+
                     // Reset counter
                     newCellNum = 0;
-                    // Update statistics
-                    let now = Date.now();
-                    let totalMillis = now - startMillis;
-                    let averagePerMessage = totalMillis / total;
-                    let throughputPerSecond = (total / totalMillis) * 1000;
-                    document.getElementById("statistics").innerHTML =
-                        "Total time for " + total + " requests: " + totalMillis
-                        + " ms, average per message: " + averagePerMessage
-                        + " ms, throughput: " + throughputPerSecond + " msg/sec";
-                    startMillis = now;
+                    sumRTTMillis = 0;
+                    lowestRTTMillis = 1000000000;
+                    highestRTTMillis = -1;
+                    startMillis = performance.now();
                 }
 
                 doRequest(newCellNum);

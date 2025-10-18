@@ -2,8 +2,9 @@
 <html lang="en">
 <meta charset="UTF-8"/>
 <head>
+    <title>MatsSocket concurrent requests</title>
     <style>
-        #request_table, td {
+        #request_table {
             border: 1px solid black;
             border-collapse: collapse;
             font-size: 8px;
@@ -12,7 +13,6 @@
         }
 
         td {
-            width: 40px;
             overflow: hidden;
         }
 
@@ -22,18 +22,25 @@
 <h1 id="title_heading">Many requests</h1>
 Sends off a couple of thousand requests in a for-loop, which then updates the respective cell when the Promise resolves.<br>
 The result is a (semi-)parallel execution of all these calls, which is visualized in the table below.<br>
-Each Request uses its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the round-trip by updating
+Each Request uses its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the
+round-trip by updating
 the specific cell with its timing information.<br>
 
-<p><b>If you just started the <code>MatsSocketTestServer</code>, then let it run some 20 times to warm up!</b></p>
+<p><b>If you just started the <code>MatsSocketTestServer</code>, then let it run some 20 times to warm up!</b><br></p>
 
-<p><b>For some reason, this works fastest in a <i>Chrome Private Window!</i></b> .. and server -Dloglevel=OFF! (-P for gradle)</p>
+<p><b>For some reason, this works fastest in a <i>Chrome Private Window!</i></b> .. and server -Dloglevel=OFF! (-P for
+gradle)<br>
+<i>You can open e.g. 6 private windows and let them hammer simultaneously. Set 'delay' to e.g. 10 then.
+"Fastest" is meaningless then. Saturate your CPU!<br>
+</p>
 
 <p>MatsSocket Ping Endpoint: <code><b><span id="endpoint"></span></b></code>
 - <i>(change with ?mode=[<a href="?mode=mats">mats</a>|<b><a href="?mode=matsSocket">matsSocket</a></b>]
-- matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i></p>
+- matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i><br>
+Delay: <code><b><span id="delay"></span></b></code> (change with ?delay={ms})<br>
+Cell update: <code><b><span id="muted"></span></b></code> (change with ?muted - <a href="?mode=mats&muted">mats&muted</a> | <a href="?mode=matsSocket&muted">matsSocket&muted</a>)</p>
 
-<i id="statistics">Here will be statistics...</i>
+<span id="statistics">Here will be statistics...<br>..</span>
 
 <script type="module">
     import * as mats from './mats/client/lib/MatsSocket.js';
@@ -60,31 +67,41 @@ the specific cell with its timing information.<br>
 
     tableCreate(rows, columns);
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode') || 'matsSocket';
+    const useMatsPing = mode === 'mats'; // Default to matsSocketPing
+    // NOTICE: We do NOT use MatsSocket.matsSocketPing, due to special handling of 'delay' param for that.
+    // Read mode in the setup-code of Test.matsSocketPing.
+    const endpoint = useMatsPing ? 'MatsSocket.matsPing' : 'Test.matsSocketPing';
+    const expectedFactor = useMatsPing ? Math.PI : Math.E;
+    document.getElementById("endpoint").innerText = endpoint;
+
+    const delay = urlParams.get('delay') || '500';
+    document.getElementById("delay").innerText = delay;
+
+    const muted = urlParams.get('muted') !== null;
+    document.getElementById("muted").innerText = muted ? "Muted - not showing individual requests" : "Not muted - showing individual requests";
+
     let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
         ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
     matsSocket.setCurrentAuthorization("DummyAuth:standard:-1", -1);
 
     function ms(millis) {
-        // :: Convert millis to a string with 2 digits after the decimal point.
         return Math.round(millis * 100) / 100;
     }
+
+    let fastest = -1;
+    let fastestReport;
 
     function doRun() {
         let totalNumMessages = rows * columns;
 
-        document.getElementById("title_heading").innerText = totalNumMessages + " requests";
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode') || 'matsSocket';
-        const useMatsPing = mode === 'mats'; // Default to matsSocketPing
-        // NOTICE: We do NOT use MatsSocket.matsSocketPing, due to special handling of 'delay' param for that.
-        // Read mode in the setup-code of Test.matsSocketPing.
-        const endpoint = useMatsPing ? 'MatsSocket.matsPing' : 'Test.matsSocketPing';
-        const expectedFactor = useMatsPing ? Math.PI : Math.E;
-        document.getElementById("endpoint").innerText = endpoint;
+        document.getElementById("title_heading").innerText = totalNumMessages + " concurrent requests";
 
         let receivedCount = 0; // Number of received messages
         let sumRTTMillis = 0; // Sum of millis per message, to get average.
+        let lowestRTTMillis = 1000000000;
+        let highestRTTMillis = -1;
 
         let startMillis = performance.now();
         let forLoopMillis;
@@ -93,14 +110,16 @@ the specific cell with its timing information.<br>
         for (let cellNum = 0; cellNum < totalNumMessages; cellNum++) {
             let requestId = "request_" + cellNum;
             let requestCell = document.getElementById(requestId);
-            requestCell.innerHTML = "Req " + cellNum;
+            if (!muted) {
+                requestCell.innerHTML = "Req " + cellNum;
+            }
             let traceId = cellNum + ":" + matsSocket.randomId(3);
 
             // Fire off the MatsSocket request
             matsSocket.request(endpoint, traceId,
                 // The Request DTO
                 {
-                    string: "Request String:" + requestId,
+                    string: "Request:" + requestId,
                     number: Math.E * cellNum
                 })
                 .then(function (event) {
@@ -111,7 +130,15 @@ the specific cell with its timing information.<br>
                     // Setting data in Table's cell
                     let timeTakenMs = event.roundTripMillis;
                     sumRTTMillis += timeTakenMs;
-                    requestCell.innerHTML = "<b>" + ms(timeTakenMs) + "</b>";
+                    if (timeTakenMs < lowestRTTMillis) {
+                        lowestRTTMillis = timeTakenMs;
+                    }
+                    if (timeTakenMs > highestRTTMillis) {
+                        highestRTTMillis = timeTakenMs;
+                    }
+                    if (!muted) {
+                        requestCell.innerHTML = "<b>" + ms(timeTakenMs) + "</b>";
+                    }
                     receivedCount++;
 
                     // ?: Is this the last reply coming in?
@@ -120,20 +147,27 @@ the specific cell with its timing information.<br>
                         let totalMillis = performance.now() - startMillis;
                         let averagePerMessage = sumRTTMillis / totalNumMessages;
                         let throughputPerSecond = (totalNumMessages / totalMillis) * 1000;
-                        document.getElementById("statistics").innerHTML =
-                            "Time to send all <b>" + totalNumMessages + "</b> requests: <b>" + ms(forLoopMillis) + "ms</b>,"
+                        let report = "Time to send all: <b>" + ms(forLoopMillis) + "ms</b>,"
                             + " Total time for all requests+replies: <b>" + ms(totalMillis)
                             + " ms</b>, average RTT per message: <b>" + ms(averagePerMessage)
+                            + "</b> (low: " + ms(lowestRTTMillis) + " ms, high: " + ms(highestRTTMillis) + " ms)"
                             + " ms</b>, throughput: <b>" + ms(throughputPerSecond) + " msg/sec</b>";
+                        if (totalMillis < fastest || fastestReport === undefined) {
+                            fastest = totalMillis;
+                            fastestReport = report;
+                        }
+                        document.getElementById("statistics").innerHTML =
+                            "<b>" + totalNumMessages + "</b> requests: " + report +
+                            "<br><i style='padding-left: 2.4em;'>Fastest: " + fastestReport + "</i>";
 
                         setTimeout(() => {
                             doRun();
-                        }, 1000);
+                        }, delay);
                     }
                 });
-            // if (cellNum % 200 === 0) {
-            //     matsSocket.flush();
-            // }
+            if (cellNum % 500 === 0) {
+                matsSocket.flush();
+            }
         }
         matsSocket.flush();
         forLoopMillis = performance.now() - startMillis;
