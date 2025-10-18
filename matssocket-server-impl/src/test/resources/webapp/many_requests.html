@@ -25,7 +25,9 @@ The result is a (semi-)parallel execution of all these calls, which is visualize
 Each Request uses its own separate callback (i.e. not targeting a common MatsSocket "Endpoint") that completes the round-trip by updating
 the specific cell with its timing information.<br>
 
-<p><b>If you just started the <code>MatsSocketTestServer</code>, then run this a few times to let it warm up!</b><br/></p>
+<p><b>If you just started the <code>MatsSocketTestServer</code>, then let it run some 20 times to warm up!</b></p>
+
+<p><b>For some reason, this works fastest in a <i>Chrome Private Window!</i></b> .. and server -Dloglevel=OFF! (-P for gradle)</p>
 
 <p>MatsSocket Ping Endpoint: <code><b><span id="endpoint"></span></b></code>
 - <i>(change with ?mode=[<a href="?mode=mats">mats</a>|<b><a href="?mode=matsSocket">matsSocket</a></b>]
@@ -47,7 +49,7 @@ the specific cell with its timing information.<br>
                 let cellNum = j * rows + i;
                 let td = tr.insertCell();
                 td.id = "request_" + cellNum;
-                td.innerHTML = "x";
+                td.innerHTML = "-";
             }
         }
         body.appendChild(table);
@@ -57,68 +59,90 @@ the specific cell with its timing information.<br>
     let columns = 50;
 
     tableCreate(rows, columns);
-    let totalNumMessages = rows * columns;
-
-    document.getElementById("title_heading").innerText = totalNumMessages + " requests";
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode') || 'matsSocket';
-    const useMatsPing = mode === 'mats'; // Default to matsSocketPing
-    const endpoint = useMatsPing ? 'MatsSocket.matsPing' : 'MatsSocket.matsSocketPing';
-    const expectedFactor = useMatsPing ? Math.PI : Math.E;
-    document.getElementById("endpoint").innerText = endpoint;
 
     let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
         ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
     matsSocket.setCurrentAuthorization("DummyAuth:standard:-1", -1);
 
-    let receivedCount = 0; // Number of received messages
-    let sumTimeMillis = 0; // Sum of millis per message, to get average.
-
-    let startMillis = Date.now();
-
-    // Fire off a request for each of the Table's cells.
-    for (let cellNum = 0; cellNum < totalNumMessages; cellNum++) {
-        let requestId = "request_" + cellNum;
-        let requestCell = document.getElementById(requestId);
-        requestCell.innerHTML = "Req " + cellNum;
-        let traceId = cellNum + ":" + matsSocket.randomId(3);
-
-        // Fire off the MatsSocket request
-        matsSocket.request(endpoint, traceId,
-            // The Request DTO
-            {
-                string: "Request String:" + requestId,
-                number: Math.E * cellNum
-            })
-            .then(function (event) {
-                // Assert that it has been through either both MatsSocket and Mats, or just MatsSocket.
-                if (event.data.number !== Math.E * cellNum * expectedFactor) {
-                    throw new Error("Wrong 'number' for TraceId ["+traceId+"].");
-                }
-                // Setting data in Table's cell
-                let timeTakenMs = event.roundTripMillis;
-                sumTimeMillis += timeTakenMs;
-                let displayMs = Math.round(timeTakenMs * 100) / 100;
-                requestCell.innerHTML = "<b>" + displayMs + "</b>";
-                receivedCount++;
-
-                // ?: Is this the last reply coming in?
-                if (receivedCount === totalNumMessages) {
-                    // -> Yes, last reply - so update the stats message at top.
-                    let totalMillis = Date.now() - startMillis;
-                    let averagePerMessage = sumTimeMillis / totalNumMessages;
-                    let throughputPerSecond = (totalNumMessages / totalMillis) * 1000;
-                    document.getElementById("statistics").innerHTML =
-                        "Total time for " + totalNumMessages + " requests: " + totalMillis
-                        + " ms, average per message: " + averagePerMessage
-                        + " ms, throughput: " + throughputPerSecond + " msg/sec";
-                }
-            });
-        if (cellNum % 200 === 0) {
-            matsSocket.flush();
-        }
+    function ms(millis) {
+        // :: Convert millis to a string with 2 digits after the decimal point.
+        return Math.round(millis * 100) / 100;
     }
+
+    function doRun() {
+        let totalNumMessages = rows * columns;
+
+        document.getElementById("title_heading").innerText = totalNumMessages + " requests";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode') || 'matsSocket';
+        const useMatsPing = mode === 'mats'; // Default to matsSocketPing
+        // NOTICE: We do NOT use MatsSocket.matsSocketPing, due to special handling of 'delay' param for that.
+        // Read mode in the setup-code of Test.matsSocketPing.
+        const endpoint = useMatsPing ? 'MatsSocket.matsPing' : 'Test.matsSocketPing';
+        const expectedFactor = useMatsPing ? Math.PI : Math.E;
+        document.getElementById("endpoint").innerText = endpoint;
+
+        let receivedCount = 0; // Number of received messages
+        let sumRTTMillis = 0; // Sum of millis per message, to get average.
+
+        let startMillis = performance.now();
+        let forLoopMillis;
+
+        // Fire off a request for each of the Table's cells.
+        for (let cellNum = 0; cellNum < totalNumMessages; cellNum++) {
+            let requestId = "request_" + cellNum;
+            let requestCell = document.getElementById(requestId);
+            requestCell.innerHTML = "Req " + cellNum;
+            let traceId = cellNum + ":" + matsSocket.randomId(3);
+
+            // Fire off the MatsSocket request
+            matsSocket.request(endpoint, traceId,
+                // The Request DTO
+                {
+                    string: "Request String:" + requestId,
+                    number: Math.E * cellNum
+                })
+                .then(function (event) {
+                    // Assert that it has been through either both MatsSocket and Mats, or just MatsSocket.
+                    if (event.data.number !== Math.E * cellNum * expectedFactor) {
+                        throw new Error("Wrong 'number' for TraceId [" + traceId + "].");
+                    }
+                    // Setting data in Table's cell
+                    let timeTakenMs = event.roundTripMillis;
+                    sumRTTMillis += timeTakenMs;
+                    requestCell.innerHTML = "<b>" + ms(timeTakenMs) + "</b>";
+                    receivedCount++;
+
+                    // ?: Is this the last reply coming in?
+                    if (receivedCount === totalNumMessages) {
+                        // -> Yes, last reply - so update the stats message at top.
+                        let totalMillis = performance.now() - startMillis;
+                        let averagePerMessage = sumRTTMillis / totalNumMessages;
+                        let throughputPerSecond = (totalNumMessages / totalMillis) * 1000;
+                        document.getElementById("statistics").innerHTML =
+                            "Time to send all <b>" + totalNumMessages + "</b> requests: <b>" + ms(forLoopMillis) + "ms</b>,"
+                            + " Total time for all requests+replies: <b>" + ms(totalMillis)
+                            + " ms</b>, average RTT per message: <b>" + ms(averagePerMessage)
+                            + " ms</b>, throughput: <b>" + ms(throughputPerSecond) + " msg/sec</b>";
+
+                        setTimeout(() => {
+                            doRun();
+                        }, 1000);
+                    }
+                });
+            // if (cellNum % 200 === 0) {
+            //     matsSocket.flush();
+            // }
+        }
+        matsSocket.flush();
+        forLoopMillis = performance.now() - startMillis;
+    }
+
+    setTimeout(() => {
+        doRun();
+    }, 1000);
+
 </script>
 
 

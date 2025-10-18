@@ -16,6 +16,7 @@ import io.mats3.matssocket.MatsSocketServer.ActiveMatsSocketSession;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto;
 import io.mats3.matssocket.MatsSocketServer.SessionEstablishedEvent;
 import io.mats3.matssocket.MatsSocketServer.SessionRemovedEvent;
+import io.mats3.matssocket.impl.IncomingSrrMsgHandler;
 
 /**
  * Sets up the test endpoints used from the integration tests (and the HTML test-pages).
@@ -28,6 +29,9 @@ public class SetupTestMatsAndMatsSocketEndpoints {
     static void setupMatsAndMatsSocketEndpoints(MatsFactory matsFactory, MatsSocketServer matsSocketServer) {
         // Add listeners
         setup_AddListeners(matsSocketServer);
+
+        // Special for 'many_requests.html'
+        setupSocket_ResolveInIncoming_SpecialForManyRequestsWebpage(matsSocketServer);
 
         // "Standard" test endpoint
         setup_StandardTestSingle(matsSocketServer, matsFactory);
@@ -148,6 +152,35 @@ public class SetupTestMatsAndMatsSocketEndpoints {
     }
 
     // ===== IncomingHandler
+
+    /**
+     * This is a special resolve-in-IncomingHandler for the test-page "many_requeusts.html". The reason for not simply
+     * using MatsSocket.matsSocketPing, is that this particular Id has a special-handling in the
+     * {@link IncomingSrrMsgHandler} where it sets the 'delay' to 0 to send the reply immediately (since it is meant for a
+     * measurement of roundtrip time). This, however, makes that endpoint not as fast for 4000 messages at a time.
+     * Thus, we make a normal endpoint acting indentical to MatsSocket.matsSocketPing - whose only difference is
+     * the name of the endpoint.
+     */
+    private static void setupSocket_ResolveInIncoming_SpecialForManyRequestsWebpage(MatsSocketServer matsSocketServer) {
+        matsSocketServer.matsSocketDirectReplyEndpoint("Test.matsSocketPing",
+                MatsPingPongDto.class, MatsPingPongDto.class,
+                (ctx, principal, ping) ->
+                        ctx.resolve(new MatsPingPongDto(ping.payload, ping.number != null ? ping.number * Math.E : null)));
+    }
+    static class MatsPingPongDto {
+        private final String payload;
+        private final Double number;
+
+        public MatsPingPongDto() {
+            this.payload = null;
+            this.number = null;
+        }
+
+        public MatsPingPongDto(String payload, Double number) {
+            this.payload = payload;
+            this.number = number;
+        }
+    }
 
     private static void setupSocket_IgnoreInIncoming(MatsSocketServer matsSocketServer) {
         matsSocketServer.matsSocketDirectReplyEndpoint("Test.ignoreInIncomingHandler",
