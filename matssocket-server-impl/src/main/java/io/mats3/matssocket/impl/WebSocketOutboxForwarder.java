@@ -186,7 +186,7 @@ class WebSocketOutboxForwarder implements MatsSocketStatics {
                         MatsSocketEnvelopeWithMetaDto reauthEnv = new MatsSocketEnvelopeWithMetaDto();
                         reauthEnv.t = REAUTH;
                         _matsSocketServer.getWebSocketOutgoingEnvelopes().sendEnvelope(matsSocketSessionId, reauthEnv,
-                                2, TimeUnit.MILLISECONDS);
+                                0, TimeUnit.MILLISECONDS);
                         /*
                          * NOTE: The not-ok return above will also have set "holdOutgoingMessages", which is evaluated
                          * at the very top of the outer 'RENOTIFY' loop.
