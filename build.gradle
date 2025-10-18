@@ -261,7 +261,7 @@ tasks.register('startMatsSocketTestServer_internal') {
         // Add classpath, from test's runtimeClasspath for both server-api and server-impl projects (precomputed above)
         cmd << "-classpath" << serverClasspath.asPath
         if (loglevel != null) {
-            println "MatsSocketTestServer: Found loglevel property, forwarding to server: -Dloglevel=$loglevel"
+            println "MatsSocketTestServer: ✓ Found loglevel property, forwarding to server: -Dloglevel=$loglevel"
             cmd << "-Dloglevel=$loglevel"
         }
         // The classname to execute, with argument which is the number of servers to start
