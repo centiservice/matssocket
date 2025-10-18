@@ -169,19 +169,6 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
         }
     }
 
-    private void scheduleRun(String matsSocketSessionId, long delay, TimeUnit timeUnit) {
-        // ?: Special handling for 0 delay (PONGs do this).
-        if (delay == 0) {
-            // -> Yes, zero delay - immediate dispatch
-            dispatchEnvelopesForSession_OnThreadpool(matsSocketSessionId);
-            return;
-        }
-        // E-> No, not zero delay - so send to timer.
-        _scheduledExecutor.schedule(new MagicRunnable(matsSocketSessionId,
-                () -> dispatchEnvelopesForSession_OnThreadpool(matsSocketSessionId)),
-                delay, timeUnit);
-    }
-
     void sendEnvelope(String matsSocketSessionId, MatsSocketEnvelopeWithMetaDto envelope, long delay,
             TimeUnit timeUnit) {
         // ConcurrentHashMap-atomically update the outstanding envelopes for the MatsSocketSessionId in question.
@@ -208,7 +195,7 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
         scheduleRun(matsSocketSessionId, delay, timeUnit);
     }
 
-    public void removeAck(String matsSocketSessionId, String cmidAck) {
+    void removeAck(String matsSocketSessionId, String cmidAck) {
         // ConcurrentHashMap-atomically update the outstanding currentACKs for the MatsSocketSessionId in question.
         _sessionIdToEnvelopes.compute(matsSocketSessionId, (key, currentEnvelopes) -> {
             if (currentEnvelopes != null) {
@@ -237,6 +224,19 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
             return currentEnvelopes;
         });
         scheduleRun(matsSocketSessionId, 25, TimeUnit.MILLISECONDS);
+    }
+
+    private void scheduleRun(String matsSocketSessionId, long delay, TimeUnit timeUnit) {
+        // ?: Special handling for 0 delay (PONGs do this).
+        if (delay == 0) {
+            // -> Yes, zero delay - immediate dispatch
+            dispatchEnvelopesForSession_OnThreadpool(matsSocketSessionId);
+            return;
+        }
+        // E-> No, not zero delay - so send to timer.
+        _scheduledExecutor.schedule(new MagicRunnable(matsSocketSessionId,
+                        () -> dispatchEnvelopesForSession_OnThreadpool(matsSocketSessionId)),
+                delay, timeUnit);
     }
 
     private void dispatchEnvelopesForSession_OnThreadpool(String matsSocketSessionId) {
@@ -310,6 +310,8 @@ public class WebSocketOutgoingEnvelopes implements MatsSocketStatics {
                     + " send the causes for these Envelopes again.");
             return;
         }
+
+        // TODO / OPTIMIZE: Replace this logic (multi-thread-per-session) with logic in WebSocketOutboxForwarder.
 
         // Dispatch sending on thread pool
         _threadPool.execute(() -> actualSendOfEnvelopes(session.get(), envelopeList));
