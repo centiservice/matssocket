@@ -386,6 +386,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
     /**
      * TODO: Consider putting this in the API. But as of 2020-05-25, I've decided to hold it off a bit.
+     * TODO: Use Java Record once we move to Java 21.
      */
     static class MatsPingPongDto {
         private final String payload;
