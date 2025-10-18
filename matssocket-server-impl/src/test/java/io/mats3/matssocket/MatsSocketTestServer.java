@@ -35,9 +35,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
 
-import io.mats3.matssocket.SetupTestMatsAndMatsSocketEndpoints.MatsDataTO;
-import io.mats3.test.MatsTestHelp;
-import io.mats3.util.FieldBasedJacksonMapper;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -62,6 +59,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.core.CoreConstants;
 import io.mats3.MatsFactory;
 import io.mats3.impl.jms.JmsMatsFactory;
@@ -70,13 +68,16 @@ import io.mats3.matssocket.MatsSocketServer.ActiveMatsSocketSession;
 import io.mats3.matssocket.MatsSocketServer.ActiveMatsSocketSessionDto;
 import io.mats3.matssocket.MatsSocketServer.LiveMatsSocketSession;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketSessionDto;
+import io.mats3.matssocket.SetupTestMatsAndMatsSocketEndpoints.MatsDataTO;
 import io.mats3.matssocket.impl.ClusterStoreAndForward_SQL;
 import io.mats3.matssocket.impl.ClusterStoreAndForward_SQL_DbMigrations;
 import io.mats3.matssocket.impl.ClusterStoreAndForward_SQL_DbMigrations.Database;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer;
 import io.mats3.serial.MatsSerializer;
 import io.mats3.serial.json.MatsSerializerJson;
+import io.mats3.test.MatsTestHelp;
 import io.mats3.test.broker.MatsTestBroker;
+import io.mats3.util.FieldBasedJacksonMapper;
 
 /**
  * A main class that fires up an ActiveMQ in-mem instances, and then two instances of a testing Servlet WebApp by
@@ -667,6 +668,12 @@ public class MatsSocketTestServer {
         // Turn off LogBack's absurd SCI
         System.setProperty(CoreConstants.DISABLE_SERVLET_CONTAINER_INITIALIZER_KEY, "true");
 
+        // Log override goes here!
+        String loglevel = System.getProperty("loglevel");
+        if (loglevel != null) {
+            ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+                    .setLevel(Level.toLevel(loglevel));
+        }
         // Create common AMQ
         MatsTestBroker matsTestBroker = MatsTestBroker.create();
         ConnectionFactory jmsConnectionFactory = matsTestBroker.getConnectionFactory();

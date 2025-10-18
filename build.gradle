@@ -242,6 +242,8 @@ tasks.register('startMatsSocketTestServer_internal') {
 
     File buildDirectory = layout.buildDirectory.get().asFile
 
+    String loglevel = project.properties.get("loglevel")
+
     doLast {
         int numberOfServers = 3
         String matsSocketTestServerClassname = sharedParamsService.get().parameters.matsSocketTestServerClassName.get()
@@ -258,6 +260,10 @@ tasks.register('startMatsSocketTestServer_internal') {
         cmd.addAll(matsSystemProps)
         // Add classpath, from test's runtimeClasspath for both server-api and server-impl projects (precomputed above)
         cmd << "-classpath" << serverClasspath.asPath
+        if (loglevel != null) {
+            println "MatsSocketTestServer: Found loglevel property, forwarding to server: -Dloglevel=$loglevel"
+            cmd << "-Dloglevel=$loglevel"
+        }
         // The classname to execute, with argument which is the number of servers to start
         cmd << matsSocketTestServerClassname << numberOfServers.toString()
 
@@ -331,6 +337,8 @@ tasks.register('matsSocketTestServer') {
         println "HTTP URLs:       " + matsSocketUris.collect { it.replace("ws://", "http://").replace("/matssocket", "") }
         println "MatsSocket URLs: ${matsSocketUris}"
         println "Logfile:         ${logFile.path}"
+        println ''
+        println ' (you may use -Ploglevel=[ALL|TRACE|*DEBUG*|INFO|WARN|ERROR|OFF] to set server loglevel)'
         println ''
         println '  #####################################################################'
         println '  ### PRESS [Enter] IN THIS TERMINAL WINDOW TO TERMINATE THE SERVER ###'
