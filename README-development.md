@@ -97,6 +97,9 @@ The project version in root's build.gradle is only referring to the version of t
 
 #### Change version number and build:
 
+See over [CHANGELOG.md](CHANGELOG.md): Update with version and notable changes.  
+"Coalesce" any RC-versions into the final release.
+
 Change version in `build.gradle` and `DefaultMatsSocketServer.java` to relevant (RC) version! Read above on the version
 string format.
 
