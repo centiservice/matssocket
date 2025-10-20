@@ -107,10 +107,11 @@ $ ./gradlew distclean build
 
 #### Commit and tag git:
 
-Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
-`Bumping Java Server version: RC-1.0.0.RC0+2025-10-16  (from 0.19.0+2022-11-11)`
+Commit the version bump (both package.json and MatsSocket.js), message shall read ala: _(Note "Candidate" in the message:
+Remove it if not!)_  
+`Java Server Release Candidate: RC-1.0.0.RC0+2025-10-16  (from 0.19.0+2022-11-11)`
 
-Tag git, and push, and push tags.
+Tag git, and push, and push tags. _(Note the "Candidate" in the message: Remove it if not!)_
 ```shell
 $ git tag -a Java_server_vRC-1.0.0.RC0+2025-10-16 -m "Java Server Release Candidate vRC-1.0.0.RC0+2025-10-16"
 $ git push && git push --tags
