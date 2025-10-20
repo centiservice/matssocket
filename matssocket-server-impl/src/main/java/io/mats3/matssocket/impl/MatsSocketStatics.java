@@ -152,9 +152,9 @@ public interface MatsSocketStatics {
         mapper.setVisibility(PropertyAccessor.ALL, Visibility.NONE);
         mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
 
-        // Drop nulls
-        // TODO: Use NON_ABSENT:  // Drop nulls and Optional.empty()
-        mapper.setSerializationInclusion(Include.NON_NULL);
+        // Drop nulls.
+        // NOTE: We will not use NON_DEFAULT here, due to JavaScript integration (0 or false would be undefined).
+        mapper.setDefaultPropertyInclusion(Include.NON_NULL);
 
         // If props are in JSON that aren't in Java DTO, do not fail.
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

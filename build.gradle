@@ -43,18 +43,18 @@ allprojects {
 // Versions for all libraries used throughout the subprojects
 ext {
     // MatsSocketServer API dependencies
-    matsVersion = '1.0.0+2025-05-17'
+    matsVersion = '1.0.1+2025-10-20'
     // MatsSocketServer Implementation dependencies
-    javaxWebsocketsVersion = '1.0'
-    jacksonVersion = '2.17.2'
-    slf4jVersion = '2.0.16'
+    javaxWebsocketsVersion = '1.1'
+    jacksonVersion = '2.20.0'
+    slf4jVersion = '2.0.17'
 
     // optional for DB setup/migration
-    flywayVersion = '9.7.0'
+    flywayVersion = '9.22.3' // Last version before Java 17 req.
 
     // For testing
-    logbackVersion = '1.5.8'
-    h2Version = '2.3.232'
+    logbackVersion = '1.5.19'
+    h2Version = '2.4.240'
     jettyVersion = '9.4.56.v20240826'
 
     // .. full path for the JMS lib
