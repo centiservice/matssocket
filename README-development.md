@@ -93,15 +93,15 @@ typically be downloaded each time the user opens the web page.)_
 
 The project version in root's build.gradle is only referring to the version of the server API and implementation.
 
-### Transcript of a successful RC publish:
+### Transcript of a successful publish:
 
 #### Change version number and build:
 
-See over [CHANGELOG.md](CHANGELOG.md): Update with version and notable changes.  
-"Coalesce" any RC-versions into the final release.
+* Change version in `build.gradle` and `DefaultMatsSocketServer.java` to relevant (RC) version! Read above on the
+  version string format.
 
-Change version in `build.gradle` and `DefaultMatsSocketServer.java` to relevant (RC) version! Read above on the version
-string format.
+* See over [CHANGELOG.md](CHANGELOG.md): Update with version and notable changes.  
+  "Coalesce" any non-release versions into the final release.
 
 Build and test the entire project (server and clients)
 ```bash
@@ -110,8 +110,7 @@ $ ./gradlew distclean build
 
 #### Commit and tag git:
 
-Commit the version bump (both package.json and MatsSocket.js), message shall read ala: _(Note "Candidate" in the message:
-Remove it if not!)_  
+Commit the version bump, message shall read ala: _(Note "Candidate" in the message: Remove it if not!)_  
 `Java Server Release Candidate: RC-1.0.0.RC0+2025-10-16  (from 0.19.0+2022-11-11)`
 
 Tag git, and push, and push tags. _(Note the "Candidate" in the message: Remove it if not!)_
