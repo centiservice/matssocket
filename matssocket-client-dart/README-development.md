@@ -234,7 +234,7 @@ $ ./gradlew dartPublishDryRun
 #### Commit and tag git:
 
 Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
-`Bumping Dart Client version, RC: 1.0.0-rc.1+2025-10-14  (from 0.19.0+2022-11-11)`
+`Dart Client Release Candidate: 1.0.0-rc.1+2025-10-14  (from 0.19.0+2022-11-11)`
 
 Tag git, and push, and push tags.
 ```shell

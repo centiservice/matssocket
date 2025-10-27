@@ -249,7 +249,7 @@ $ ./gradlew jsPublishDryRun
 #### Commit and tag git:
 
 Commit the version bump (both package.json and MatsSocket.js), message shall read ala:  
-`Bumping JavaScript Client version, RC: 1.0.0-rc0-2025-10-04  (from 0.19.0-2022-11-11)`
+`JavaScript Client Release Candidate: 1.0.0-rc0-2025-10-04  (from 0.19.0-2022-11-11)`
 
 Tag git, and push, and push tags.
 ```shell
