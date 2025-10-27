@@ -267,9 +267,19 @@ $ git push && git push --tags
 
 **Notice! Standing in the JavaScript Client directory!**
 
+For 'rc' tag:
+
 ```shell
 ~/git/matssocket/matssocket-client-javascript/client$ npm publish --tag rc -otp=543491
 ```
+
+.. OR - for 'latest' tag:
+
+```shell
+~/git/matssocket/matssocket-client-javascript/client$ npm publish -otp=543491
+```
+
+Note: If you mess up the tagging, it can be changed later with `npm dist-tag` and  `add` or `rm`.
 
 #### Verify publication
 
