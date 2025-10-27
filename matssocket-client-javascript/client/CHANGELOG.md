@@ -1,4 +1,4 @@
-## 1.0.0-rc4-2025-10-13
+## 1.0.0-2025-10-27
 
 * Improved typing, for both JS and TS.
 * Enabled linting, and removing all lints.

@@ -73,11 +73,11 @@ web development.
 **For production use, you should always use a specific version (not `latest`/default), and you should use the
 `integrity` attribute to verify the integrity of the delivered files!**
 
-**Note wrt. integrity constraint with importmaps: you must be very careful to use the exact same URL in the 'imports'
-map, as in the 'integrity' constraint map.** Only exact matches are actually checked: If you have a typo in the URL, or
-reference a different URL, in the integrity constraint, no integrity check is performed on your import, and it will
-simply pass! Make sure that it kicks in by messing with the hash: You should get an error in the Console and fail to
-load the module.
+**Note wrt. integrity constraint with `importmaps` and `modulepreload`: you must be very careful to use the exact same
+URL in the 'imports' map, as in the 'integrity' constraint map - or the preload, vs. actual import!** Only exact matches
+are actually checked: If you have a typo in the URL, or reference a different URL, in the integrity constraint, no
+integrity check is performed on your import, and it will simply pass! Make sure that it kicks in by messing with the
+hash: You should get an error in the Console and fail to load the module.
 
 There are examples of how to CDN-include with all three modes (UMD, ESM and importmaps) in the
 [test server's webapp dir](https://github.com/centiservice/matssocket/tree/main/matssocket-server-impl/src/test/resources/webapp),
@@ -152,8 +152,8 @@ and you cannot use the `integrity` attribute. Only for experimentation and devel
 
 Inclusion using UMD:
 ```html
-<script src="https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/dist/MatsSocket.umd.min.js"
-        integrity="sha384-ViD2k59N3y1xE1T/TPyjxXS17F/t2RN240XPhODF/S9b3wB/kZ+H1RLptGFjgEKF"
+<script src="https://cdn.jsdelivr.net/npm/matssocket@1.0.0-2025-10-27/dist/MatsSocket.umd.min.js"
+        integrity="sha384-+UxNRizq/ZpH48ilqcv7NHJZkt6G7XLz4lJudukoRRO3XeUqhw3/Wac/WY2iSbaa"
         crossorigin="anonymous"></script>
 
 <script>
@@ -162,15 +162,19 @@ Inclusion using UMD:
 </script>
 ```
 
-Inclusion using ESM - note the use of modulepreload to be able to use the `integrity` attribute:
+Inclusion using ESM - note the use of modulepreload to be able to use the `integrity` attribute.
+
+**Note that the URL in the `modulepreload` must match the URL in the `integrity` attribute, otherwise the import will
+just slide through without being checked.**
+
 ```html
 <link rel="modulepreload"
-      href="https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/dist/MatsSocket.esm.min.js"
-      integrity="sha384-52V9mwGR+zH7cdyNYFSZ0dHyvpGaYYcwaxkt0Pl3Gfj1WAfA9hlQg3R+LMgb3EX8"
+      href="https://cdn.jsdelivr.net/npm/matssocket@1.0.0-2025-10-27/dist/MatsSocket.esm.min.js"
+      integrity="sha384-ECJ2VSOkdXM4imJBt8wb0DroKD6HoESrVC+PG4/TiFB0bjCgl1IAJiV2HFfkMW2Z"
       crossorigin="anonymous">
 
 <script type="module">
-    import * as matssocket from "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/dist/MatsSocket.esm.min.js";
+    import * as matssocket from "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-2025-10-27/dist/MatsSocket.esm.min.js";
     // .. or use named imports: import { MatsSocket } from "....."
 
     // Either directly here, or in additional <script type="module"> blocks:
@@ -180,16 +184,20 @@ Inclusion using ESM - note the use of modulepreload to be able to use the `integ
 
 ```
 
-.. or ESM via import maps (highly recommended):
+.. or ESM via import maps (highly recommended).
+
+**Note that the URL in the `imports` map must match the URL in the `integrity` attribute, otherwise the import will
+just slide through without being checked.**
+
 ```html
 <script type="importmap">
 {
   "imports": {
-    "matssocket": "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/dist/MatsSocket.esm.min.js"
+    "matssocket": "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-2025-10-27/dist/MatsSocket.esm.min.js"
   },
   "integrity": {
-    "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/dist/MatsSocket.esm.min.js":
-      "sha384-52V9mwGR+zH7cdyNYFSZ0dHyvpGaYYcwaxkt0Pl3Gfj1WAfA9hlQg3R+LMgb3EX8"
+    "https://cdn.jsdelivr.net/npm/matssocket@1.0.0-2025-10-27/dist/MatsSocket.esm.min.js":
+      "sha384-ECJ2VSOkdXM4imJBt8wb0DroKD6HoESrVC+PG4/TiFB0bjCgl1IAJiV2HFfkMW2Z"
   }
 }
 </script>
