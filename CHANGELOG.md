@@ -2,7 +2,7 @@
 
 _(Dart and JavaScript clients have their own changelogs.)_
 
-## RC-1.0.0.RC1+2025-10-20 ++
+## 1.0.0+2025-10-27
 
 * Added `README-development.md`
 * Improved demo/example HTML pages, including options and better metrics.
