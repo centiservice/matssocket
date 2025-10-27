@@ -86,9 +86,9 @@ the three files `using_cdn_*.html` - and with small examples further down.
 ### jsDelivr
 
 * HTML view resides at (`latest`): [https://www.jsdelivr.com/package/npm/matssocket](https://www.jsdelivr.com/package/npm/matssocket),
-specific version, e.g. [1.0.0-rc1-2025-10-04](https://www.jsdelivr.com/package/npm/matssocket?version=1.0.0-rc1-2025-10-04)
+specific version, e.g. [1.0.0-2025-10-27](https://www.jsdelivr.com/package/npm/matssocket?version=1.0.0-2025-10-27)
 * CDN URL (`latest`): [https://cdn.jsdelivr.net/npm/matssocket/](https://cdn.jsdelivr.net/npm/matssocket/),
-specific version, e.g. [1.0.0-rc1-2025-10-04](https://cdn.jsdelivr.net/npm/matssocket@1.0.0-rc1-2025-10-04/)
+specific version, e.g. [1.0.0-2025-10-27](https://cdn.jsdelivr.net/npm/matssocket@1.0.0-2025-10-27/)
 
 The version property can also be dynamic tags like `latest` or `rc`, but only use this in experimentation and
 development, not in production! Using dynamic tags precludes the use of the `integrity` attribute.
@@ -96,14 +96,14 @@ development, not in production! Using dynamic tags precludes the use of the `int
 * ESM minified module, `latest`: [https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.esm.min.js](https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.esm.min.js)
 * UMD minified module, `latest`: [https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.umd.min.js](https://cdn.jsdelivr.net/npm/matssocket@latest/dist/MatsSocket.umd.min.js)
 
-You want to change the `latest` to a specific version, e.g. `1.0.0-rc1-2025-10-04`.
+You want to change the `latest` to a specific version, e.g. `1.0.0-2025-10-27`.
 
 In a development situation, you might want to remove the ".min" part.
 
 ### UNPKG
 
 * HTML view resides at (`latest`): [https://app.unpkg.com/matssocket/](https://app.unpkg.com/matssocket/),
-  specific version, e.g. [1.0.0-rc1-2025-10-04](https://app.unpkg.com/matssocket@1.0.0-rc1-2025-10-04/)
+  specific version, e.g. [1.0.0-2025-10-27](https://app.unpkg.com/matssocket@1.0.0-2025-10-27/)
 
 The version property can also be dynamic tags like `latest` or `rc`, but only use this in experimentation and
 development, not in production! Using dynamic tags precludes the use of the `integrity` attribute.
@@ -113,7 +113,7 @@ directly serves the tagged version)
 * ESM minified module, `latest`: [https://unpkg.com/matssocket@latest/dist/MatsSocket.esm.min.js](https://unpkg.com/matssocket@latest/dist/MatsSocket.esm.min.js)
 * UMD minified module, `latest`: [https://unpkg.com/matssocket@latest/dist/MatsSocket.umd.min.js](https://unpkg.com/matssocket@latest/dist/MatsSocket.umd.min.js)
 
-You want to change the `latest` to a specific version, e.g. `1.0.0-rc1-2025-10-04`.
+You want to change the `latest` to a specific version, e.g. `1.0.0-2025-10-27`.
 
 In a development situation, you might want to remove the ".min" part.
 
@@ -132,7 +132,7 @@ target resource, thus you cannot calculate the hash independently. Evidently thi
 
 * 'latest': [https://esm.sh/matssocket](https://esm.sh/matssocket)
 * 'rc': [https://esm.sh/matssocket@rc](https://esm.sh/matssocket@rc)
-* Specific version: [https://esm.sh/matssocket@1.0.0-rc1-2025-10-04](https://esm.sh/matssocket@1.0.0-rc1-2025-10-04)
+* Specific version: [https://esm.sh/matssocket@1.0.0-2025-10-27](https://esm.sh/matssocket@1.0.0-2025-10-27)
 * Specific file: [https://esm.sh/matssocket@rc/dist/MatsSocket.esm.js](https://esm.sh/matssocket@rc/dist/MatsSocket.esm.js),
   but this doesn't give you the non-minified version as you might have hoped; As mentioned, esm.sh rewrites the targets!
 
