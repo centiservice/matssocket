@@ -223,7 +223,7 @@ Dart SDK version: 3.9.4 (stable) (Tue Sep 30 12:08:50 2025 -0700) on "linux_x64"
 
 Build and test the client.
 ```shell
-$ ./gradlew -PchromePath=/snap/bin/chromium clean matssocket-client-dart:build testDart
+$ ./gradlew -PchromePath=/snap/bin/chromium clean buildDart testDart
 ```
 
 #### Check over what will be published:
