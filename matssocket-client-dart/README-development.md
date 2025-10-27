@@ -199,7 +199,7 @@ The project version in root's build.gradle is only referring to the version of t
 
 #### First add Dart to path, using `./gradlew dartBinPath`:
 ```shell
-$ ./gradlew dartBinPath   # to get the command.
+$ ./gradlew distclean dartBinPath   # to get the command.
 
 > Task :matssocket-client-dart:dartBinPath
 === Dart executable: /home/user/git/matssocket/matssocket-client-dart/dartsdk_download/dart-sdk/bin/dart
@@ -215,21 +215,24 @@ Dart SDK version: 3.9.4 (stable) (Tue Sep 30 12:08:50 2025 -0700) on "linux_x64"
 
 #### Change version number and build:
 
-Change version in `pubspec.yaml` and `MatsSocket.dart` to relevant (RC) version! Read above on the version string
-format.
+* Change version in `pubspec.yaml` and `MatsSocket.dart` to relevant (RC) version! Read above on the version string
+  format.
+
+* See over [CHANGELOG.md](CHANGELOG.md): Update with version and notable changes.  
+  "Coalesce" any non-release versions into the final release.
 
 Build and test the client.
 ```shell
-$ ./gradlew -PchromePath=/snap/bin/chromium matssocket-client-dart:build testDart
+$ ./gradlew -PchromePath=/snap/bin/chromium clean matssocket-client-dart:build testDart
 ```
 
 #### Check over what will be published:
 
-This will give an error wrt. git not being clean.
 
 ```shell
 $ ./gradlew dartPublishDryRun
 ```
+NOTICE: This will give an error wrt. git not being clean.
 
 #### Commit and tag git:
 
