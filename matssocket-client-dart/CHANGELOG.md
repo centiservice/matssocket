@@ -1,16 +1,17 @@
-## 1.0.0-rc.1+2025-10-14
+## 1.0.0+2025-10-27
 
 * Improved Dart null-safety quite a bit.
 * .. including getting tests to run again, with null-safety!
+* Added full outOfBandClose functionality (vs. JS client)
+* Added full preConnectionOperation functionality (vs. JS client)
+* Improved "client lib and version" ('clv') string sent to server.
 * Upgraded Dart to 3.9.4 (latest at the time of writing)
 * Got rid of dart:html
 * Runs on all platforms and compilers.
 * Added examples.
 * Cleaned all doc warnings.
-* Picked all lint.
-* Added full outOfBandClose functionality.
 * Corrected tab=2 spaces.
-* Improved "client lib and version" ('clv') string sent to server.
+* Picked all lint.
 * Improved READMEs.
 * Got pana-score to 150 of 160.
 

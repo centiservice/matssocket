@@ -6,7 +6,7 @@ import 'package:matssocket/matssocket.dart';
 
 final Logger _logger = Logger('mats.MatsSocket');
 
-const String CLIENT_LIB_VERSION = '1.0.0-rc.1+2025-10-14';
+const String CLIENT_LIB_VERSION = '1.0.0+2025-10-27';
 const String CLIENT_LIB_NAME_AND_VERSION = 'MatsSocket.dart,$CLIENT_LIB_VERSION';
 
 typedef SessionClosedEventListener = Function(MatsSocketCloseEvent);
