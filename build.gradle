@@ -8,11 +8,12 @@ plugins {
     id 'com.github.node-gradle.node' version '7.1.0' // For Node.js download & tasks
     id 'java-library'
     id "com.vanniktech.maven.publish" version "0.34.0" // Publish to Maven Central, over Portal Publisher API
+    id "com.github.ben-manes.versions" version "0.53.0" // Checks dependencies.
 }
 
 // Specify Gradle version, run update by './gradlew wrapper'
 wrapper {
-    gradleVersion = "8.14.3"
+    gradleVersion = "9.2.0"
     // Use "-all"-version of distribution, since IntelliJ works better then..
     setDistributionType(Wrapper.DistributionType.ALL)
 }
@@ -66,10 +67,17 @@ ext {
 }
 
 // :: Find which Java version to use for the toolchain.
-int javaVersion = 11;
+int javaVersion = 21;
 if (project.properties.containsKey('mats.build.java_version')) {
     javaVersion = Integer.parseInt((String) project.properties['mats.build.java_version'])
     println "Specified Java version for toolchain, using Java version: $javaVersion"
+}
+
+// Check dependencies: `./gradlew dependencyUpdates --refresh-dependencies --no-parallel`
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        return ['RC', 'CR', '-M', 'ALPHA'].any { bad -> it.candidate.version.toUpperCase().contains(bad) }
+    }
 }
 
 // Common config for the two Java subprojects
@@ -80,8 +88,8 @@ configure([project('matssocket-server-api'), project('matssocket-server-impl')])
     repositories { mavenCentral() }
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
 
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(javaVersion))
