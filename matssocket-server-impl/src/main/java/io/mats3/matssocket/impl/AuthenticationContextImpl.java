@@ -3,7 +3,7 @@ package io.mats3.matssocket.impl;
 import java.security.Principal;
 import java.util.EnumSet;
 
-import javax.websocket.server.HandshakeRequest;
+import jakarta.websocket.server.HandshakeRequest;
 
 import io.mats3.matssocket.AuthenticationPlugin.AuthenticationContext;
 import io.mats3.matssocket.AuthenticationPlugin.AuthenticationResult;

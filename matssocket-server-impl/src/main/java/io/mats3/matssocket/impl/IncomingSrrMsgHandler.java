@@ -8,20 +8,15 @@ import static io.mats3.matssocket.MatsSocketServer.MessageType.RESOLVE;
 import static io.mats3.matssocket.MatsSocketServer.MessageType.RETRY;
 import static io.mats3.matssocket.MatsSocketServer.MessageType.SEND;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.mats3.MatsInitiator.InitiateLambda;
 import io.mats3.MatsInitiator.MatsBackendRuntimeException;
@@ -47,6 +42,10 @@ import io.mats3.matssocket.MatsSocketServer.MessageType;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.MatsSocketEndpointRegistration;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.ReplyHandleStateDto;
 import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.util.TokenBuffer;
 
 /**
  * Incoming (Client-to-Server) Send, Request and Replies (Resolve and Reject) handler.
@@ -212,7 +211,7 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
                                 previousReplyEnvelope = _matsSocketServer
                                         .getEnvelopeObjectReader().readValue(messageFromInbox.getFullEnvelope().get());
                             }
-                            catch (JsonProcessingException ex) {
+                            catch (JacksonException ex) {
                                 throw new AssertionError("Could not deserialize."
                                         + " This should seriously not happen.", ex);
                             }
@@ -469,7 +468,7 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
                         _matsSocketServer.getClusterStoreAndForward().updateMessageInInbox(matsSocketSessionId,
                                 incomingEnvelope.cmid, envelopeJson, null);
                     }
-                    catch (JsonProcessingException e) {
+                    catch (JacksonException e) {
                         throw new AssertionError("Could not deserialize."
                                 + " This should seriously not happen.", e);
                     }
@@ -694,16 +693,13 @@ public class IncomingSrrMsgHandler implements MatsSocketStatics {
     }
 
     private <T> T deserializeIncomingMessage(TokenBuffer tokenBuffer, Class<T> clazz) {
-        try (JsonParser jstb = tokenBuffer.asParserOnFirstToken()) {
-            return _matsSocketServer.getJackson().readValue(jstb, clazz);
+        var mapper = _matsSocketServer.getJackson();
+        try (JsonParser p = tokenBuffer.asParserOnFirstToken(mapper._deserializationContext())) {
+            return mapper.readValue(p, clazz);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             // TODO: Handle parse exceptions.
             throw new AssertionError("Couldn't deserialize incoming message as " + clazz.getSimpleName(), e);
-        }
-        catch (IOException e) {
-            throw new AssertionError("Should really not happen, since we're reading from a copied" +
-                    " TokenBuffer.", e);
         }
     }
 

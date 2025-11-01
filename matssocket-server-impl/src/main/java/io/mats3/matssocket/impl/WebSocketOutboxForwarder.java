@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mats3.matssocket.AuthenticationPlugin.DebugOption;
 import io.mats3.matssocket.ClusterStoreAndForward;
 import io.mats3.matssocket.ClusterStoreAndForward.DataAccessException;
@@ -28,6 +27,8 @@ import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto.Direction;
 import io.mats3.matssocket.MatsSocketServer.MessageType;
 import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
+
+import tools.jackson.core.JacksonException;
 
 /**
  * Gets a ping from the node-specific Topic with information about new messages, and also if the client reconnects, and
@@ -250,7 +251,7 @@ class WebSocketOutboxForwarder implements MatsSocketStatics {
                             envelope = _matsSocketServer.getEnvelopeObjectReader().readValue(
                                     storedOutMessage.getEnvelope());
                         }
-                        catch (JsonProcessingException e) {
+                        catch (JacksonException e) {
                             throw new AssertionError("Could not deserialize Envelope DTO.", e);
                         }
                         // Make the "Meta" for this envelope

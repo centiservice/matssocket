@@ -3,7 +3,11 @@
 dependencies {
     // Uses the mats-lib project
     api "io.mats3:mats-api:$matsVersion"
-    api "javax.websocket:javax.websocket-api:$javaxWebsocketsVersion"
+    // We expose the "server" part of the WebSocket API (ServerContainer, ServerEndpointConfig, HandshakeRequest)
+    // in AuthenticationPlugin.
+    api "jakarta.websocket:jakarta.websocket-api:$jakartaWebsocketsVersion"
+    // We also expose the "client" part of the WebSocket API (Session and CloseReason) in MatsSocketServer.
+    api "jakarta.websocket:jakarta.websocket-client-api:$jakartaWebsocketsVersion"
 }
 
 mavenPublishing {

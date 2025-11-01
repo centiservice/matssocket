@@ -5,31 +5,34 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.slf4j.Logger;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeDto;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto;
 import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
 
-import org.slf4j.Logger;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.StreamReadConstraints;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.util.TokenBuffer;
 
 /**
  * @author Endre Stølsvik 2020-01-15 08:38 - http://stolsvik.com/, endre@stolsvik.com
@@ -109,7 +112,7 @@ public interface MatsSocketStatics {
      * @return the same list, but with the msg field set to a String if it is a String JSON.
      */
     default void ensureMsgFieldIsJsonString_ForIntrospection(
-            List<MatsSocketEnvelopeWithMetaDto> envelopes, Logger log, ObjectMapper jackson) {
+            List<MatsSocketEnvelopeWithMetaDto> envelopes, Logger log, ObjectMapper mapper) {
         for (MatsSocketEnvelopeWithMetaDto envelope : envelopes) {
             // Convert the msg field to a String if it is a DirectJson or a TokenBuffer.
             if (envelope.msg instanceof String) {
@@ -120,15 +123,15 @@ public interface MatsSocketStatics {
             }
             else if (envelope.msg instanceof TokenBuffer) {
                 StringWriter writer = new StringWriter(128);
-                try (JsonParser bufferParser = ((TokenBuffer) envelope.msg).asParserOnFirstToken();
-                        JsonGenerator gen = jackson.getFactory().createGenerator(writer)) {
-                    gen.copyCurrentStructure(bufferParser);
+                try (JsonGenerator g = mapper.createGenerator(writer)) {
+                    ((TokenBuffer) envelope.msg).serialize(g);
+                    envelope.msg = writer.toString();
                 }
-                catch (IOException e) {
+                catch (JacksonException e) {
                     log.error("Got IOException when trying to copy TokenBuffer to StringWriter - ignoring by setting" +
                             "to null, since this is only for introspection.", e);
+                    envelope.msg = null;
                 }
-                envelope.msg = writer.toString();
             }
             else if (envelope.msg != null) {
                 log.error("THIS IS AN ERROR! If the envelope.msg field is set, it should be a String, DirectJson or" +
@@ -146,26 +149,38 @@ public interface MatsSocketStatics {
          * NOTE: We DO NOT (currently) use the FieldBasedJacksonMapper, to avoid dependency on Mats3's util lib, so
          * we instead use the same-ish setup.
          */
-        ObjectMapper mapper = new ObjectMapper();
 
-        // Read and write any access modifier fields (e.g. private)
-        mapper.setVisibility(PropertyAccessor.ALL, Visibility.NONE);
-        mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+        // Much larger constraints, and make max string length effectively infinite.
+        StreamReadConstraints streamReadConstraints = StreamReadConstraints
+                .builder()
+                .maxNestingDepth(10_000) // default 1000 (from 3.0: 500)
+                .maxNumberLength(100_000) // default 1000
+                .maxStringLength(Integer.MAX_VALUE)
+                .build();
+        JsonFactory factory = JsonFactory.builder()
+                .streamReadConstraints(streamReadConstraints)
+                .build();
 
-        // Drop nulls.
+        JsonMapper.Builder builder = JsonMapper.builder(factory);
+
+        // Drop null values from JSON
         // NOTE: We will not use NON_DEFAULT here, due to JavaScript integration (0 or false would be undefined).
-        mapper.setDefaultPropertyInclusion(Include.NON_NULL);
+        builder.changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL));
+        // Read and write any access modifier fields (e.g. private)
+        builder.changeDefaultVisibility(vc -> vc.with(JsonAutoDetect.Visibility.NONE).withFieldVisibility(JsonAutoDetect.Visibility.ANY));
+        // Allow final fields to be written to.
+        builder.enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
 
         // If props are in JSON that aren't in Java DTO, do not fail.
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        // Write e.g. Dates as "1975-03-11" instead of timestamp, and instead of array-of-ints [1975, 3, 11].
-        // Uses ISO8601 with milliseconds and timezone (if present).
-        mapper.registerModule(new JavaTimeModule());
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-
-        // Handle Optional, OptionalLong, OptionalDouble
-        mapper.registerModule(new Jdk8Module());
+        // :: Dates:
+        // Write times and dates using Strings of ISO-8601.
+        builder.disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // Tack on "[Europe/Oslo]" if present in a ZoneDateTime
+        builder.enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID);
+        // Do not OVERRIDE (!!) the timezone id if it actually is present!
+        builder.disable(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
 
         /*
          * ###### NOTICE! The following part is special for the MatsSocket serialization setup! ######
@@ -178,9 +193,9 @@ public interface MatsSocketStatics {
         // 2) Upon serialization, serializes the msg field normally (i.e. an instance of Car is JSON serialized),
         // 3) .. UNLESS it is the special type DirectJsonMessage, in which case the JSON is output directly
         //
-        mapper.addMixIn(MatsSocketEnvelopeDto.class, MatsSocketEnvelopeDto_Mixin.class);
+        builder.addMixIn(MatsSocketEnvelopeDto.class, MatsSocketEnvelopeDto_Mixin.class);
 
-        return mapper;
+        return builder.build();
     }
 
     @JsonPropertyOrder({ "t", "smid", "cmid", "x", "ids", "tid", "auth" })
@@ -193,9 +208,9 @@ public interface MatsSocketStatics {
          * A {@link MatsSocketEnvelopeWithMetaDto} will be <i>Deserialized</i> (made into object) with the "msg" field
          * directly to the JSON that is present there, represented via a {@link TokenBuffer}, using this class.
          */
-        static class MessageToTokenBufferDeserializer extends JsonDeserializer<Object> {
+        static class MessageToTokenBufferDeserializer extends ValueDeserializer<Object> {
             @Override
-            public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            public Object deserialize(JsonParser p, DeserializationContext ctxt) {
                 // Been through three solutions now, trying to avoid creating intermediate JsonNode and String objects.
                 // Ref: https://chatgpt.com/share/68f12369-a860-8009-9540-a577e6b10349
                 // First solution was as such:
@@ -226,9 +241,9 @@ public interface MatsSocketStatics {
          * TokenBuffer, which happens when deserializing a message from the CSAF (see above for deserializing), and we just
          * want to serialize it again, then we just output the tokens directly.
          */
-        static class DirectJsonMessageHandlingDeserializer extends JsonSerializer<Object> {
+        static class DirectJsonMessageHandlingDeserializer extends ValueSerializer<Object> {
             @Override
-            public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            public void serialize(Object value, JsonGenerator gen, SerializationContext serializers) {
                 // ?: Is it our special magic String-wrapper that will contain direct JSON?
                 if (value instanceof DirectJson) {
                     // -> Yes, special magic String-wrapper, so dump it directly.
@@ -238,7 +253,7 @@ public interface MatsSocketStatics {
                     ((TokenBuffer) value).serialize(gen);
                 } else {
                     // -> No, not magic, so serialize it normally.
-                    gen.writeObject(value);
+                    gen.writePOJO(value);
                 }
             }
         }

@@ -21,31 +21,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 
-import javax.websocket.CloseReason;
-import javax.websocket.CloseReason.CloseCode;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpointConfig;
-import javax.websocket.server.ServerEndpointConfig.Builder;
-import javax.websocket.server.ServerEndpointConfig.Configurator;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.CloseReason.CloseCode;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Extension;
+import jakarta.websocket.HandshakeResponse;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.HandshakeRequest;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpointConfig;
+import jakarta.websocket.server.ServerEndpointConfig.Builder;
+import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.mats3.MatsEndpoint.DetachedProcessContext;
 import io.mats3.MatsEndpoint.MatsObject;
 import io.mats3.MatsEndpoint.ProcessContext;
@@ -68,6 +61,14 @@ import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeDto.DebugDto;
 import io.mats3.matssocket.MatsSocketServer.MatsSocketEnvelopeWithMetaDto.IncomingResolution;
 import io.mats3.matssocket.MatsSocketServer.SessionRemovedEvent.SessionRemovedEventType;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.type.TypeFactory;
+
 /**
  * @author Endre Stølsvik 2019-11-28 12:17 - http://stolsvik.com/, endre@stolsvik.com
  */
@@ -87,11 +88,11 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
     private static final String MATS_EP_POSTFIX_MATS_PING = "matsPing";
 
-    private static final JavaType TYPE_LIST_OF_MSG_WITH_META = TypeFactory.defaultInstance().constructType(
+    private static final JavaType TYPE_LIST_OF_MSG_WITH_META = TypeFactory.createDefaultInstance().constructType(
             new TypeReference<List<MatsSocketEnvelopeWithMetaDto>>() {
             });
 
-    private static final JavaType TYPE_LIST_OF_MSG_WITHOUT_META = TypeFactory.defaultInstance().constructType(
+    private static final JavaType TYPE_LIST_OF_MSG_WITHOUT_META = TypeFactory.createDefaultInstance().constructType(
             new TypeReference<List<MatsSocketEnvelopeDto>>() {
             });
 
@@ -1819,8 +1820,8 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         try {
             return _envelopeObjectWriter.writeValueAsString(msReplyEnvelope);
         }
-        catch (JsonProcessingException e) {
-            throw new AssertionError("Huh, couldn't serialize envelope?!");
+        catch (JacksonException e) {
+            throw new AssertionError("Huh, couldn't serialize envelope?!", e);
         }
     }
 
@@ -1828,9 +1829,9 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         try {
             return _jackson.writeValueAsString(message);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException("Could not serialize message of type [" + message.getClass().getName()
-                    + "].");
+                    + "].", e);
         }
     }
 

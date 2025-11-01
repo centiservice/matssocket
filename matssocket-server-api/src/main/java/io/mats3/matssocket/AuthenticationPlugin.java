@@ -3,14 +3,14 @@ package io.mats3.matssocket;
 import java.security.Principal;
 import java.util.EnumSet;
 
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpointConfig;
-import javax.websocket.server.ServerEndpointConfig.Configurator;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.HandshakeResponse;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.HandshakeRequest;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpointConfig;
+import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 import io.mats3.matssocket.MatsSocketServer.ActiveMatsSocketSession;
 import io.mats3.matssocket.MatsSocketServer.IncomingAuthorizationAndAdapter;

@@ -35,18 +35,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.websocket.MessageHandler.Whole;
-import javax.websocket.RemoteEndpoint.Basic;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
+import jakarta.websocket.MessageHandler.Whole;
+import jakarta.websocket.RemoteEndpoint.Basic;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.HandshakeRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import io.mats3.matssocket.AuthenticationPlugin.AuthenticationResult;
 import io.mats3.matssocket.AuthenticationPlugin.DebugOption;
 import io.mats3.matssocket.AuthenticationPlugin.SessionAuthenticator;
@@ -66,6 +63,10 @@ import io.mats3.matssocket.impl.AuthenticationContextImpl.AuthenticationResult_S
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.SessionEstablishedEventImpl;
 import io.mats3.matssocket.impl.DefaultMatsSocketServer.SessionRemovedEventImpl;
 import io.mats3.matssocket.impl.MatsSocketStatics.MatsSocketEnvelopeDto_Mixin.DirectJson;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 /**
  * Effectively the MatsSocketSession, this is the MatsSocket "onMessage" handler.
@@ -450,7 +451,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
             try {
                 envelopes = _envelopeListObjectReader.readValue(message);
             }
-            catch (IOException e) {
+            catch (JacksonException e) {
                 log.error("Could not parse WebSocket message into MatsSocket envelope(s).", e);
                 closeSessionAndWebSocketWithMatsSocketProtocolError(
                         "Could not parse message into MatsSocket envelope(s)");
@@ -1534,7 +1535,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
                     .writeValueAsString(Collections.singletonList(welcomeEnvelope));
             webSocketSendText(welcomeEnvelopeJson);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new AssertionError("Huh, couldn't serialize message?!", e);
         }
         catch (IOException e) {
@@ -1696,8 +1697,8 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
             try {
                 publishEnvelope = _matsSocketServer.getEnvelopeObjectReader().readValue(envelopeJson);
             }
-            catch (JsonProcessingException e) {
-                throw new AssertionError("Could not deserialize Envelope DTO.");
+            catch (JacksonException e) {
+                throw new AssertionError("Could not deserialize Envelope DTO.", e);
             }
             // Set the message onto the envelope, in "raw" mode (it is already json)
             publishEnvelope.msg = DirectJson.of(msg);

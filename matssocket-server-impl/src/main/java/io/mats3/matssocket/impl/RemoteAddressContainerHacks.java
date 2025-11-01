@@ -4,8 +4,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
-import javax.websocket.RemoteEndpoint.Async;
-import javax.websocket.Session;
+import jakarta.websocket.RemoteEndpoint.Async;
+import jakarta.websocket.Session;
 
 /**
  * Provides several hacks to get the Remote Address for different Servlet Containers implementing JSR 356 Java API for
@@ -57,7 +57,7 @@ public class RemoteAddressContainerHacks {
     private static String getJettyRemoteAddress(Session session) {
         try {
             InetSocketAddress jettyRemoteAddr = (InetSocketAddress) session.getUserProperties()
-                    .get("javax.websocket.endpoint.remoteAddress");
+                    .get("jakarta.websocket.endpoint.remoteAddress");
             if (jettyRemoteAddr != null) {
                 return jettyRemoteAddr.getAddress().getHostAddress();
             }

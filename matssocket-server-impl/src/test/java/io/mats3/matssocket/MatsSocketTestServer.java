@@ -21,43 +21,39 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.jms.ConnectionFactory;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.annotation.WebListener;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonValue;
+import jakarta.jms.ConnectionFactory;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.annotation.WebListener;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerContainer;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
+import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee11.webapp.Configuration;
+import org.eclipse.jetty.ee11.webapp.WebAppConfiguration;
+import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.core.CoreConstants;
@@ -78,6 +74,13 @@ import io.mats3.serial.json.MatsSerializerJson;
 import io.mats3.test.MatsTestHelp;
 import io.mats3.test.broker.MatsTestBroker;
 import io.mats3.util.FieldBasedJacksonMapper;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.type.TypeFactory;
 
 /**
  * A main class that fires up an ActiveMQ in-mem instances, and then two instances of a testing Servlet WebApp by
@@ -327,15 +330,18 @@ public class MatsSocketTestServer {
                     .getAttribute(MatsSocketServer.class.getName());
 
             // Create the Jackson ObjectMapper - using methods of the interface, not the instance's fields.
-            ObjectMapper mapper = new ObjectMapper();
-            // Write e.g. Dates as "1975-03-11" instead of timestamp, and instead of array-of-ints [1975, 3, 11].
-            // Uses ISO8601 with milliseconds and timezone (if present).
-            mapper.registerModule(new JavaTimeModule());
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-            // Handle Optional, OptionalLong, OptionalDouble
-            mapper.registerModule(new Jdk8Module());
-            // Drop nulls and Optional.empty()
-            mapper.setSerializationInclusion(Include.NON_ABSENT);
+            JsonFactory factory = JsonFactory.builder().build();
+            JsonMapper.Builder builder = JsonMapper.builder(factory);
+            // :: Dates:
+            // Write times and dates using Strings of ISO-8601.
+            builder.disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS);
+            // Tack on "[Europe/Oslo]" if present in a ZoneDateTime
+            builder.enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID);
+            // Do not OVERRIDE (!!) the timezone id if it actually is present!
+            builder.disable(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
+
+            // Drop nulls
+            builder.changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL));
             // :: handle some fields which we want/need to ignore or tailor
             // To filter, this one shows three approaches: https://stackoverflow.com/a/46391039/39334
             // To just remove them, could have used https://stackoverflow.com/a/49010463/39334
@@ -348,7 +354,7 @@ public class MatsSocketTestServer {
                 @JsonIgnore
                 abstract public ActiveMatsSocketSession getActiveMatsSocketSession();
             }
-            mapper.addMixIn(ActiveMatsSocketSession.class, AnnotatedActiveMatsSocketSession.class);
+            builder.addMixIn(ActiveMatsSocketSession.class, AnnotatedActiveMatsSocketSession.class);
 
             // Make a Jackson mixin for tailoring Principal's output to only output toString().
             // Note: Could have used @JsonSerialize with custom serializer for getPrincipal() on the above session mixin
@@ -356,11 +362,13 @@ public class MatsSocketTestServer {
                 @JsonValue
                 abstract public String toString();
             }
-            mapper.addMixIn(Principal.class, AnnotatedPrincipal.class);
+            builder.addMixIn(Principal.class, AnnotatedPrincipal.class);
+
+            ObjectMapper mapper = builder.build();
 
             // Get ObjectWriter for a List of the /interface/ ActiveMatsSocketSession, not the instance class.
             // Ref: https://stackoverflow.com/a/54594839/39334
-            ObjectWriter objectWriter = mapper.writerFor(TypeFactory.defaultInstance().constructType(
+            ObjectWriter objectWriter = mapper.writerFor(mapper.getTypeFactory().constructType(
                     new TypeReference<List<LiveMatsSocketSession>>() {
                     })).withDefaultPrettyPrinter();
 
@@ -558,15 +566,19 @@ public class MatsSocketTestServer {
                     CONTEXT_ATTRIBUTE_JAVASCRIPT_PATH);
 
             if (dir == null) {
-                resp.sendError(501, "Cannot find the path for JavaScript (path not existing)"
-                        + " - this only works when in development.");
+                String msg = "Cannot find the path for JavaScript (path not existing)"
+                        + " - this only works when in development.";
+                log.error(msg);
+                resp.sendError(501, msg);
                 return;
             }
 
             Path pathWithFile = Paths.get(dir, req.getPathInfo());
             if (!Files.exists(pathWithFile)) {
-                resp.sendError(501, "Cannot find the '" + req.getPathInfo()
-                        + "' file (file not found) - this only works when in development.");
+                String msg = "Cannot find the '" + req.getPathInfo() + "' file (file not found)" +
+                        " - this only works when in development.";
+                log.error(msg);
+                resp.sendError(404, msg);
                 return;
             }
             log.info("Path for [" + req.getPathInfo() + "]: " + pathWithFile);
@@ -603,7 +615,8 @@ public class MatsSocketTestServer {
     public static Server createServer(ConnectionFactory jmsConnectionFactory, int port) {
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
-        webAppContext.setBaseResource(Resource.newClassPathResource("webapp"));
+        ResourceFactory resourceFactory = ResourceFactory.of(webAppContext);
+        webAppContext.setBaseResource(resourceFactory.newClassLoaderResource("webapp"));
         // If any problems starting context, then let exception through so that we can exit.
         webAppContext.setThrowUnavailableOnStartupException(true);
         // Store the port number this server shall run under in the ServletContext.
@@ -612,21 +625,20 @@ public class MatsSocketTestServer {
         webAppContext.getServletContext().setAttribute(ConnectionFactory.class.getName(), jmsConnectionFactory);
 
         // Override the default configurations, stripping down and adding AnnotationConfiguration.
-        // https://www.eclipse.org/jetty/documentation/9.4.x/configuring-webapps.html
-        // Note: The default resides in WebAppContext.DEFAULT_CONFIGURATION_CLASSES
+        // Full list: jetty-ee11-webapp-12.1.2.jar!/META-INF/services/org.eclipse.jetty.ee11.webapp.Configuration
+        // .. plus: jetty-ee11-annotations-12.1.2.jar!/META-INF/services/org.eclipse.jetty.ee11.webapp.Configuration
         webAppContext.setConfigurations(new Configuration[] {
-                // new WebInfConfiguration(),
+                new WebAppConfiguration(), // Exposes the o.e.j.ee11.servlet.listener.IntrospectorCleaner class!
                 new WebXmlConfiguration(), // Evidently adds the DefaultServlet, as otherwise no read of "/webapp/"
-                // new MetaInfConfiguration(),
-                // new FragmentConfiguration(),
-                new AnnotationConfiguration() // Adds Servlet annotation processing.
+                new AnnotationConfiguration(), // Adds Servlet annotation processing.
+                new JakartaWebSocketConfiguration() // .. and add WebSocket stuff.
         });
 
         // :: Get Jetty to Scan project classes too: https://stackoverflow.com/a/26220672/39334
         // Find location for current classes
         URL classesLocation = MatsSocketTestServer.class.getProtectionDomain().getCodeSource().getLocation();
         // Set this location to be scanned.
-        webAppContext.getMetaData().setWebInfClassesDirs(Collections.singletonList(Resource.newResource(
+        webAppContext.getMetaData().setWebInfClassesResources(Collections.singletonList(resourceFactory.newResource(
                 classesLocation)));
 
         // :: Find the path to the JavaScript files (JS tests and MatsSocket.js), to provide them via Servlet.
@@ -647,16 +659,11 @@ public class MatsSocketTestServer {
         stats.setHandler(webAppContext);
         server.setHandler(stats);
 
-        // Add a Jetty Lifecycle Listener just for logging
-        // (MatsFactory and MatsSocketServer are stopped in ServletContextListener)
-        server.addLifeCycleListener(new LifeCycle.Listener() {
-            @Override
-            public void lifeCycleStopping(LifeCycle event) {
-                log.info("===== STOP! ===========================================");
-                log.info("server.lifeCycleStopping for " + port + ", event:" + event + ", WebAppContext:"
-                        + webAppContext + ", servletContext:" + webAppContext.getServletContext());
-            }
-        });
+        // NOTE: This should be picked up automatically, as it is in the classpath and referenced in services:
+        // jetty-ee11-websocket-jakarta-server-12.1.3.jar!/META-INF/services/jakarta.servlet.ServletContainerInitializer
+        // But alas.. So we register it manually here, as by:
+        // https://jetty.org/docs/jetty/12.1/programming-guide/server/websocket.html#standard-container
+        // JakartaWebSocketServletContainerInitializer.configure(webAppContext, null);
 
         // :: Graceful shutdown
         server.setStopTimeout(1000);
@@ -671,6 +678,7 @@ public class MatsSocketTestServer {
         // Log override goes here!
         String loglevel = System.getProperty("loglevel");
         if (loglevel != null) {
+            System.out.println("!!!!! OVERRIDING ROOT LOGLEVEL TO: " + loglevel);
             ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                     .setLevel(Level.toLevel(loglevel));
         }
@@ -695,7 +703,7 @@ public class MatsSocketTestServer {
                 log.info("######### Starting server [" + serverId + "] on [" + port + "]");
 
                 // Add a life cycle hook to log when the server has started
-                servers[i].addLifeCycleListener(new LifeCycle.Listener() {
+                servers[i].addEventListener(new LifeCycle.Listener() {
                     @Override
                     public void lifeCycleStarted(LifeCycle event) {
                         log.info("######### Started server " + serverId + " on port " + port);

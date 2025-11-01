@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.websocket.HandshakeResponse;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerEndpointConfig;
+import jakarta.websocket.HandshakeResponse;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.HandshakeRequest;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

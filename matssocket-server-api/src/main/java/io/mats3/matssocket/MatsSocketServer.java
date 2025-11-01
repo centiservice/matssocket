@@ -10,9 +10,9 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.websocket.CloseReason.CloseCode;
-import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.Session;
+import jakarta.websocket.CloseReason.CloseCode;
+import jakarta.websocket.CloseReason.CloseCodes;
+import jakarta.websocket.Session;
 
 import io.mats3.MatsEndpoint.DetachedProcessContext;
 import io.mats3.MatsEndpoint.MatsObject;

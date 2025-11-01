@@ -5,9 +5,7 @@ dependencies {
     api project(':matssocket-server-api')
 
     // Jackson JSON library, which is the serialization mechanism in use for MatsSockets comms
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    implementation "tools.jackson.core:jackson-databind:$jacksonVersion"
 
     // Flyway, for DB preparation and migration for 'ClusterStoreAndForward_SQL'. This is decidedly optional, and
     // users of the API should add this themselves if they want it.
@@ -29,16 +27,16 @@ dependencies {
     testImplementation "io.mats3:mats-test-broker:$matsVersion"
 
     // Need the JMS API for compilation, since we handle the JMS ConnectionFactory.
-    testCompileOnly "$jmsApiDependency"
+    testCompileOnly "jakarta.jms:jakarta.jms-api:$jakartaJmsVersion"
 
     // Base Jetty Server
     testImplementation "org.eclipse.jetty:jetty-server:$jettyVersion"
     // .. Jetty Servlets
-    testImplementation "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+    testImplementation "org.eclipse.jetty.ee11:jetty-ee11-servlet:$jettyVersion"
     // .. Jetty: To get the @WebListener etc. annotation scanning.
-    testImplementation "org.eclipse.jetty:jetty-annotations:$jettyVersion"
-    // .. Jetty: JSR-356 javax.websocket implementation for Jetty
-    testImplementation "org.eclipse.jetty.websocket:javax-websocket-server-impl:$jettyVersion"
+    testImplementation "org.eclipse.jetty.ee11:jetty-ee11-annotations:$jettyVersion"
+    // .. Jetty: JSR-356++ EE11 jakarta.websocket implementation for Jetty
+    testImplementation "org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jakarta-server:$jettyVersion"
 
     // H2 Database
     testImplementation "com.h2database:h2:$h2Version"
