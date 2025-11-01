@@ -75,7 +75,7 @@ import tools.jackson.databind.type.TypeFactory;
 public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStatics {
     private static final Logger log = LoggerFactory.getLogger(DefaultMatsSocketServer.class);
 
-    private static final String SERVER_VERSION = "1.0.0+2025-10-27";
+    private static final String SERVER_VERSION = "2.0.0+2025-11-01";
     private static final String SERVER_NAME_AND_VERSION = "Mats3 DefaultMatsSocketServer," + SERVER_VERSION;
 
     private static final String MATS_EP_PREFIX = "MatsSocket";

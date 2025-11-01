@@ -21,7 +21,7 @@ wrapper {
 // Version, common config for all projects
 allprojects {
     group = 'io.mats3.matssocket'
-    version = '1.0.0+2025-10-27'
+    version = '2.0.0+2025-11-01'
     // NOTE!! Versions are spread around 6 places:
 
     // For Java Server:

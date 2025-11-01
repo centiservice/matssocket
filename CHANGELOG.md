@@ -2,7 +2,7 @@
 
 _(Dart and JavaScript clients have their own changelogs.)_
 
-## B-2.0.0
+## 2.0.0+2025-11-01
 * New major version, due to Java 21 and Jakarta namespaces.
 * **Moved over to jakarta-namespace for all javax libraries, most notably JMS.**
 * **V2-series will require Java 21.**
