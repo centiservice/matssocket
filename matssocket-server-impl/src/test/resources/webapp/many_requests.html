@@ -31,14 +31,17 @@ the specific cell with its timing information.<br>
 <p><b>For some reason, this works fastest in a <i>Chrome Private Window!</i></b> .. and server -Dloglevel=OFF! (-P for
 gradle)<br>
 <i>You can open e.g. 6 private windows and let them hammer simultaneously. Set 'delay' to e.g. 10 then.
-"Fastest" is meaningless then. Saturate your CPU!<br>
-</p>
+"Fastest" is meaningless then. Saturate your CPU!<br></i></p>
 
 <p>MatsSocket Ping Endpoint: <code><b><span id="endpoint"></span></b></code>
 - <i>(change with ?mode=[<a href="?mode=mats">mats</a>|<b><a href="?mode=matsSocket">matsSocket</a></b>]
 - matsSocket resolves directly, while mats forwards to a Mats3 Endpoint)</i><br>
-Delay: <code><b><span id="delay"></span></b></code> (change with ?delay={ms})<br>
-Cell update: <code><b><span id="muted"></span></b></code> (change with ?muted - <a href="?mode=mats&muted">mats&muted</a> | <a href="?mode=matsSocket&muted">matsSocket&muted</a>)</p>
+
+Delay: <code><b><span id="delay"></span></b></code>
+- <i>(change with ?delay={ms})</i><br>
+
+Cell update: <code><b><span id="muted"></span></b></code>
+- <i>(change with ?muted - <a href="?mode=mats&muted">mats&muted</a> | <a href="?mode=matsSocket&muted">matsSocket&muted</a>)</i></p>
 
 <span id="statistics">Here will be statistics...<br>..</span>
 
@@ -80,7 +83,7 @@ Cell update: <code><b><span id="muted"></span></b></code> (change with ?muted - 
     document.getElementById("delay").innerText = delay;
 
     const muted = urlParams.get('muted') !== null;
-    document.getElementById("muted").innerText = muted ? "Muted - not showing individual requests" : "Not muted - showing individual requests";
+    document.getElementById("muted").innerText = muted ? "Muted - NOT showing individual requests" : "Not muted - showing individual requests";
 
     let matsSocket = new mats.MatsSocket("TestApp", "1.2.3",
         ["ws://localhost:8080/matssocket", "ws://localhost:8081/matssocket"]);
