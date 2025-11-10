@@ -4,7 +4,7 @@ _(Dart and JavaScript clients have their own changelogs.)_
 
 ## 2.0.0+2025-11-01
 * New major version, due to Java 21 and Jakarta namespaces.
-* **Moved over to jakarta-namespace for all javax libraries, most notably JMS.**
+* **Moved over to jakarta-namespace for all javax libraries, most notably JMS & WebSocket**
 * **V2-series will require Java 21.**
 * **The MatsSocket API is unchanged!**  
   _As long as you get the dependencies upgraded, your MatsSocket MatsSocketEndpoints and AuthentictionPlugin will

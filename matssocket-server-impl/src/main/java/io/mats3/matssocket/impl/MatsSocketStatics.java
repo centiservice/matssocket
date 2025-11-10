@@ -109,7 +109,6 @@ public interface MatsSocketStatics {
      *            a list of envelopes, where the message field can be a String, DirectJson, or a TokenBuffer.
      * @param log
      *            a logger, for logging the error.
-     * @return the same list, but with the msg field set to a String if it is a String JSON.
      */
     default void ensureMsgFieldIsJsonString_ForIntrospection(
             List<MatsSocketEnvelopeWithMetaDto> envelopes, Logger log, ObjectMapper mapper) {

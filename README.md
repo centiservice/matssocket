@@ -6,14 +6,20 @@ communication. It consists of a small MatsSocketServer API which is implemented 
 _JSR 356 Java API for WebSockets_ (which most Servlet Containers implement), as well as client libraries - for which
 there currently exists JavaScript and Dart/Flutter implementations.
 
+There are also README files for the [JavaScript client](matssocket-client-javascript/client/README.md) and the
+[Dart/Flutter client](matssocket-client-dart/README.md).
+
 Java server API and implementation: [Maven Repository](https://mvnrepository.com/artifact/io.mats3.matssocket)  
 JavaScript client: [npm](https://www.npmjs.com/package/matssocket)  
 Dart/Flutter client: [pub.dev](https://pub.dev/packages/matssocket)
 
-**The Java server API and implementation runs on Java 11+.**
+**Versioning:** Each client and the Java backend have their separate versioning. The clients are in v1-series. Whether a client and
+server can speak together is determined by the wire protocol, which has not changed since first release.
+Versioning for the Java server API and implementation:
+* **v2**: Java 21+, `jakarta.jms`
+* **v1**: Java 11+, `javax.jms`
 
-There are also README files for the [JavaScript client](matssocket-client-javascript/client/README.md) and the
-[Dart/Flutter client](matssocket-client-dart/README.md).
+**License:** [Apache License, Version 2.0](LICENSE)
 
 **Instant gratification after git clone**: _(You need Java 11 installed for development)_ To start the test server on
 localhost, run `./gradlew matsSocketTestServer` from project root, or run the `io.mats3.matssocket.MatsSocketTestServer`
