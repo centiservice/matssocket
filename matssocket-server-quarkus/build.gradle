@@ -1,0 +1,51 @@
+// MatsSocket Quarkus Adapter
+// Bridges Quarkus WebSockets Next to Jakarta WebSocket interfaces,
+// enabling MatsSocket to run on Quarkus without modification.
+
+dependencies {
+    // MatsSocket Server API + Impl
+    api project(':matssocket-server-api')
+    implementation project(':matssocket-server-impl')
+
+    // Quarkus WebSockets Next - what we're adapting from
+    implementation platform("io.quarkus.platform:quarkus-bom:$quarkusVersion")
+    implementation 'io.quarkus:quarkus-websockets-next'
+    implementation 'io.quarkus:quarkus-arc'
+
+    // Jakarta WebSocket Client API - contains SendResult, SendHandler etc.
+    compileOnly "jakarta.websocket:jakarta.websocket-client-api:$jakartaWebsocketsVersion"
+
+    // SLF4J
+    compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+
+    // Jandex — generates the bean discovery index that Quarkus needs
+    implementation 'io.smallrye:jandex:3.2.0'
+
+    // :: TEST
+    testImplementation 'junit:junit:4.13.2'
+}
+
+def generatedJandexDir = layout.buildDirectory.dir('generated/jandex')
+
+// Generate META-INF/jandex.idx at compile time (equivalent to jandex-maven-plugin)
+tasks.register('jandex', JavaExec) {
+    dependsOn classes
+    classpath = configurations.compileClasspath
+    mainClass = 'org.jboss.jandex.Main'
+    def outputFile = generatedJandexDir.get().file('META-INF/jandex.idx').asFile
+    outputs.file(outputFile)
+    doFirst {
+        outputFile.parentFile.mkdirs()
+    }
+    args = ['-o', outputFile.absolutePath, sourceSets.main.output.classesDirs.singleFile.absolutePath]
+}
+jar.dependsOn jandex
+jar.from(generatedJandexDir)
+
+mavenPublishing {
+    pom {
+        name = 'MatsSocket Quarkus Adapter'
+        description = 'Adapter enabling MatsSocket server to run on Quarkus WebSockets Next.' +
+                ' Bridges Quarkus WebSockets to Jakarta WebSocket interfaces used by MatsSocket.'
+    }
+}
