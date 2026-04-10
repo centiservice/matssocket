@@ -266,6 +266,59 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         }
     }
 
+    /**
+     * Jakarta WebSocket implementation of {@link MatsSocketTransportSession}, wrapping a real {@link Session}.
+     */
+    static class JakartaTransportSession implements MatsSocketTransportSession {
+        private final Session _jakartaSession;
+        private final jakarta.websocket.RemoteEndpoint.Basic _basicRemote;
+
+        JakartaTransportSession(Session jakartaSession) {
+            _jakartaSession = jakartaSession;
+            _basicRemote = jakartaSession.getBasicRemote();
+        }
+
+        @Override
+        public String getId() {
+            return _jakartaSession.getId();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return _jakartaSession.isOpen();
+        }
+
+        @Override
+        public void sendText(String text) throws IOException {
+            _basicRemote.sendText(text);
+        }
+
+        @Override
+        public void close(int closeCode, String reasonPhrase) throws IOException {
+            _jakartaSession.close(new CloseReason(() -> closeCode, reasonPhrase));
+        }
+
+        @Override
+        public void setMaxIdleTimeout(long millis) {
+            _jakartaSession.setMaxIdleTimeout(millis);
+        }
+
+        @Override
+        public void setMaxTextMessageBufferSize(int size) {
+            _jakartaSession.setMaxTextMessageBufferSize(size);
+        }
+
+        @Override
+        public void setMaxBinaryMessageBufferSize(int size) {
+            _jakartaSession.setMaxBinaryMessageBufferSize(size);
+        }
+
+        @Override
+        public Session getJakartaSessionView() {
+            return _jakartaSession;
+        }
+    }
+
     // Constructor init
     private final MatsFactory _matsFactory;
     private final String _instanceName;
