@@ -1178,12 +1178,21 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
             // :: Try to get Remote Address
             String remoteAddr = RemoteAddressContainerHacks.attemptGetRemoteAddress(session);
 
-            // :: Create the MatsSocketSession - which also is the WebSocket MessageHandler.
-            _matsSocketSessionAndMessageHandler = new MatsSocketSessionAndMessageHandler(_matsSocketServer, session,
-                    _connectionId, _handshakeRequestResponse._handshakeRequest, _sessionAuthenticator, remoteAddr);
+            // :: Wrap Session in transport abstraction
+            JakartaTransportSession transportSession = new JakartaTransportSession(session);
+
+            // :: Create the MatsSocketSession
+            _matsSocketSessionAndMessageHandler = new MatsSocketSessionAndMessageHandler(_matsSocketServer,
+                    transportSession, _connectionId, _handshakeRequestResponse._handshakeRequest,
+                    _sessionAuthenticator, remoteAddr);
 
             // :: Register it as the MessageHandler
-            session.addMessageHandler(_matsSocketSessionAndMessageHandler);
+            session.addMessageHandler(new jakarta.websocket.MessageHandler.Whole<String>() {
+                @Override
+                public void onMessage(String message) {
+                    _matsSocketSessionAndMessageHandler.onMessage(message);
+                }
+            });
         }
 
         @Override
