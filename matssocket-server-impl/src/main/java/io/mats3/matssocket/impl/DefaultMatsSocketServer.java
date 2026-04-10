@@ -1105,6 +1105,133 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         return Optional.ofNullable(registration);
     }
 
+    // ====== Transport-neutral lifecycle helpers ======
+
+    /**
+     * Sets low pre-HELLO limits on the transport session. Must be called before
+     * {@code SessionAuthenticator.onOpen(...)}.
+     */
+    void configurePreAuthSession(MatsSocketTransportSession session) {
+        // We do not (yet) handle binary messages, so limit that pretty hard.
+        session.setMaxBinaryMessageBufferSize(1024);
+        // Set low limits for the HELLO message, 20KiB should be plenty even for quite large Oauth2 bearer tokens.
+        session.setMaxTextMessageBufferSize(20 * 1024);
+        // Set low time to say HELLO after the connect. (The default clients say it immediately on "onopen".)
+        session.setMaxIdleTimeout(5000);
+    }
+
+    /**
+     * Creates a {@link MatsSocketSessionAndMessageHandler} after authentication has passed. The transport/Jakarta
+     * endpoint has already called checkOrigin, checkHandshake and sessionAuthenticator.onOpen.
+     */
+    MatsSocketSessionAndMessageHandler createSessionHandlerAfterAuth(MatsSocketTransportSession transportSession,
+            String connectionId, HandshakeRequest handshakeRequest, SessionAuthenticator sessionAuthenticator,
+            String remoteAddr) {
+        return new MatsSocketSessionAndMessageHandler(this, transportSession, connectionId, handshakeRequest,
+                sessionAuthenticator, remoteAddr);
+    }
+
+    /**
+     * Handles a transport-level error. Extracted from {@code MatsWebSocketEndpointInstance.onError()}.
+     *
+     * @return whether this was a timeout exception (needed by close handling).
+     */
+    static boolean handleTransportError(MatsSocketSessionAndMessageHandler handler,
+            MatsSocketTransportSession session, Throwable thr) {
+        try { // finally: MDC.clear()
+            if (handler != null) {
+                handler.setMDC();
+            }
+
+            // Deduce if this is a Server side timeout
+            // Note: This is modelled after Jetty. If different with other JSR 356 implementations, please expand.
+            boolean isTimeout = (thr.getCause() instanceof TimeoutException
+                    || ((thr.getMessage() != null) && thr.getMessage().toLowerCase().contains("timeout expired")));
+
+            // ?: Is it a timeout situation?
+            if (isTimeout) {
+                log.info("WebSocket @OnError: WebSocket server timed out the connection. MatsSocket SessionId: ["
+                        + (handler == null ? "no MatsSocketSession" : handler.getMatsSocketSessionId())
+                        + "], WebSocket SessionId:" + session.getId());
+            }
+            else {
+                log.warn("WebSocket @OnError, MatsSocket SessionId: ["
+                        + (handler == null ? "no MatsSocketSession" : handler.getMatsSocketSessionId())
+                        + "], WebSocket SessionId:" + session.getId(),
+                        new Exception("MatsSocketServer's webSocket.onError(..) handler", thr));
+            }
+            return isTimeout;
+        }
+        finally {
+            MDC.clear();
+        }
+    }
+
+    /**
+     * Handles a transport-level close. Extracted from {@code MatsWebSocketEndpointInstance.onClose()}. Decides whether
+     * to close the MatsSocket session or just deregister it based on the close code.
+     */
+    static void handleTransportClose(MatsSocketSessionAndMessageHandler handler, MatsSocketTransportSession session,
+            String connectionId, int closeCode, String reason, boolean isTimeout) {
+        try { // finally: MDC.clear()
+            if (handler != null) {
+                handler.setMDC();
+            }
+            log.info("WebSocket @OnClose, code:[" + MatsSocketCloseCodes.getCloseCode(closeCode)
+                    + "] (timeout:[" + isTimeout + "]), reason:[" + reason
+                    + "], MatsSocket SessionId: [" + (handler == null
+                            ? "no MatsSocketSession" : handler.getMatsSocketSessionId())
+                    + "], ConnectionId:" + connectionId);
+
+            // ?: Have we gotten MatsSocketSession yet?
+            if (handler != null) {
+                // -> Yes, so either close session, or just deregister us from local and CSAF
+                boolean goingAwayFromClientSide = (MatsSocketCloseCodes.GOING_AWAY.getCode() == closeCode)
+                        && (!isTimeout);
+                // ?: Did the client or Server want to actually Close Session?
+                if ((MatsSocketCloseCodes.UNEXPECTED_CONDITION.getCode() == closeCode)
+                        || (MatsSocketCloseCodes.MATS_SOCKET_PROTOCOL_ERROR.getCode() == closeCode)
+                        || (MatsSocketCloseCodes.VIOLATED_POLICY.getCode() == closeCode)
+                        || (MatsSocketCloseCodes.CLOSE_SESSION.getCode() == closeCode)
+                        || (MatsSocketCloseCodes.SESSION_LOST.getCode() == closeCode)
+                        || goingAwayFromClientSide) {
+                    log.info("Explicitly Closed MatsSocketSession due to CloseCode ["
+                            + MatsSocketCloseCodes.getCloseCode(closeCode)
+                            + "] (timeout:[" + isTimeout + "]), actually closing (terminating) it.");
+                    handler.closeSession(closeCode, reason);
+                }
+                else {
+                    log.info("Got a non-closing CloseCode [" + MatsSocketCloseCodes.getCloseCode(closeCode)
+                            + "] (timeout:[" + isTimeout
+                            + "]), assuming that Client might want to reconnect - deregistering"
+                            + " MatsSocketSession from CSAF.");
+                    handler.deregisterSession(closeCode, reason);
+                }
+            }
+        }
+        finally {
+            MDC.clear();
+        }
+    }
+
+    /**
+     * Closes a WebSocket transport session with reason truncation to fit WebSocket close frame limits.
+     */
+    static void closeTransportSession(MatsSocketTransportSession session, int closeCode, String reasonPhrase) {
+        log.info("Closing WebSocket SessionId [" + session.getId() + "]: code: [" + closeCode
+                + "], reason:[" + reasonPhrase + "]");
+        try {
+            while (reasonPhrase != null && reasonPhrase.getBytes(StandardCharsets.UTF_8).length > 123) {
+                reasonPhrase = reasonPhrase.substring(0, reasonPhrase.length() - 1);
+            }
+            session.close(closeCode, reasonPhrase);
+        }
+        catch (IOException e) {
+            log.warn("Got Exception when trying to close WebSocket SessionId [" + session.getId()
+                    + "], ignoring.", e);
+        }
+    }
+
     /**
      * Shall be one instance per socket (i.e. from the docs: "..there will be precisely one endpoint instance per active
      * client connection"), thus there will be 1:1 correlation between this instance and the single Session object for
@@ -1143,46 +1270,42 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
             // Notice: On a particular server, the session.getId() is already unique. On Jetty: integer sequence.
             _connectionId = session.getId() + "_" + rnd(6);
 
+            // :: Wrap Session in transport abstraction
+            JakartaTransportSession transportSession = new JakartaTransportSession(session);
+
             // ?: If we are going down, then immediately close it.
             if (_matsSocketServer._stopped) {
-                closeWebSocket(session, MatsSocketCloseCodes.SERVICE_RESTART,
+                closeTransportSession(transportSession, MatsSocketCloseCodes.SERVICE_RESTART.getCode(),
                         "This server is going down, perform a (re)connect to another instance.");
                 return;
             }
 
-            // We do not (yet) handle binary messages, so limit that pretty hard.
-            session.setMaxBinaryMessageBufferSize(1024);
-            // Set low limits for the HELLO message, 20KiB should be plenty even for quite large Oauth2 bearer tokens.
-            session.setMaxTextMessageBufferSize(20 * 1024);
-            // Set low time to say HELLO after the connect. (The default clients say it immediately on "onopen".)
-            session.setMaxIdleTimeout(5000);
+            // :: Set low pre-HELLO limits
+            _matsSocketServer.configurePreAuthSession(transportSession);
 
             try {
                 boolean ok = _sessionAuthenticator.onOpen(session, (ServerEndpointConfig) config);
                 log.info("webSocket.onOpen(..): Asked SessionAuthenticator.onOpen(..), returned: "
                         + (ok ? "OK" : "NOT OK!"));
                 if (!ok) {
-                    closeWebSocket(session, MatsSocketCloseCodes.VIOLATED_POLICY, "SessionAuthenticator did not want"
-                            + " this session to proceed");
+                    closeTransportSession(transportSession, MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
+                            "SessionAuthenticator did not want this session to proceed");
                     return;
                 }
             }
             catch (Throwable t) {
                 log.error("webSocket.onOpen(..): Got throwable when invoking SessionAuthenticator.onOpen(..)."
                         + " Closing WebSocket.", t);
-                closeWebSocket(session, MatsSocketCloseCodes.VIOLATED_POLICY, "SessionAuthenticator did not want this"
-                        + " session to proceed");
+                closeTransportSession(transportSession, MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
+                        "SessionAuthenticator did not want this session to proceed");
                 return;
             }
 
             // :: Try to get Remote Address
             String remoteAddr = RemoteAddressContainerHacks.attemptGetRemoteAddress(session);
 
-            // :: Wrap Session in transport abstraction
-            JakartaTransportSession transportSession = new JakartaTransportSession(session);
-
             // :: Create the MatsSocketSession
-            _matsSocketSessionAndMessageHandler = new MatsSocketSessionAndMessageHandler(_matsSocketServer,
+            _matsSocketSessionAndMessageHandler = _matsSocketServer.createSessionHandlerAfterAuth(
                     transportSession, _connectionId, _handshakeRequestResponse._handshakeRequest,
                     _sessionAuthenticator, remoteAddr);
 
@@ -1197,113 +1320,19 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
         @Override
         public void onError(Session session, Throwable thr) {
-            try { // finally: MDC.clear()
-                if (_matsSocketSessionAndMessageHandler != null) {
-                    _matsSocketSessionAndMessageHandler.setMDC();
-                }
-
-                // Deduce if this is a Server side timeout
-                // Note: This is modelled after Jetty. If different with other JSR 356 implementations, please expand.
-                _isTimeoutException = (thr.getCause() instanceof TimeoutException
-                        || ((thr.getMessage() != null) && thr.getMessage().toLowerCase().contains("timeout expired")));
-
-                // ?: Is it a timeout situation?
-                if (_isTimeoutException) {
-                    // -> Yes, timeout. This is handled, and does not constitute a "close session", client might
-                    // just have lost connection and want's to reconnect soon. Just log info.
-                    log.info("WebSocket @OnError: WebSocket server timed out the connection. MatsSocket SessionId: ["
-                            + (_matsSocketSessionAndMessageHandler == null
-                                    ? "no MatsSocketSession"
-                                    : _matsSocketSessionAndMessageHandler.getMatsSocketSessionId())
-                            + "], WebSocket SessionId:" + session.getId() + ", this:" + id(this));
-                }
-                else {
-                    // -> No, not timeout. So this is some kind of unexpected situation, typically raised from the
-                    // MastSocket implementation on MessageHandler. Log warn. This will close the session.
-                    log.warn("WebSocket @OnError, MatsSocket SessionId: ["
-                            + (_matsSocketSessionAndMessageHandler == null
-                                    ? "no MatsSocketSession"
-                                    : _matsSocketSessionAndMessageHandler.getMatsSocketSessionId())
-                            + "], WebSocket SessionId:" + session.getId() + ", this:" + id(this),
-                            new Exception("MatsSocketServer's webSocket.onError(..) handler", thr));
-                }
-            }
-            finally {
-                MDC.clear();
-            }
+            _isTimeoutException = handleTransportError(_matsSocketSessionAndMessageHandler,
+                    new JakartaTransportSession(session), thr);
         }
 
         @Override
         public void onClose(Session session, CloseReason closeReason) {
-            try { // finally: MDC.clear()
-                if (_matsSocketSessionAndMessageHandler != null) {
-                    _matsSocketSessionAndMessageHandler.setMDC();
-                }
-                log.info("WebSocket @OnClose, code:[" + MatsSocketCloseCodes.getCloseCode(closeReason.getCloseCode()
-                        .getCode()) + "] (timeout:[" + _isTimeoutException + "]), reason:[" + closeReason
-                                .getReasonPhrase()
-                        + "], MatsSocket SessionId: [" + (_matsSocketSessionAndMessageHandler == null
-                                ? "no MatsSocketSession"
-                                : _matsSocketSessionAndMessageHandler.getMatsSocketSessionId())
-                        + "], ConnectionId:" + _connectionId + ", this:" + id(this));
-
-                // ?: Have we gotten MatsSocketSession yet?
-                // (Just in case "onOpen" has not been invoked yet. Can it happen?!).
-                if (_matsSocketSessionAndMessageHandler != null) {
-                    // -> Yes, so either close session, or just deregister us from local and CSAF
-                    // Is this a GOING_AWAY that is NOT from the server side? (Jetty gives this on timeout)
-                    boolean goingAwayFromClientSide = (MatsSocketCloseCodes.GOING_AWAY.getCode() == closeReason
-                            .getCloseCode().getCode()) && (!_isTimeoutException);
-                    // ?: Did the client or Server want to actually Close Session?
-                    // NOTE: Need to check by the 'code' integers, since no real enum (CloseCode is an interface).
-                    if ((MatsSocketCloseCodes.UNEXPECTED_CONDITION.getCode() == closeReason.getCloseCode().getCode())
-                            || (MatsSocketCloseCodes.MATS_SOCKET_PROTOCOL_ERROR.getCode() == closeReason.getCloseCode()
-                                    .getCode())
-                            || (MatsSocketCloseCodes.VIOLATED_POLICY.getCode() == closeReason.getCloseCode().getCode())
-                            || (MatsSocketCloseCodes.CLOSE_SESSION.getCode() == closeReason.getCloseCode().getCode())
-                            || (MatsSocketCloseCodes.SESSION_LOST.getCode() == closeReason.getCloseCode().getCode())
-                            || goingAwayFromClientSide) {
-                        // -> Yes, this was a one of the actual-close CloseCodes, or a "GOING AWAY" that was NOT
-                        // initiated from server side, which means that we should actually close this session
-                        log.info("Explicitly Closed MatsSocketSession due to CloseCode ["
-                                + MatsSocketCloseCodes.getCloseCode(closeReason.getCloseCode().getCode())
-                                + "] (timeout:[" + _isTimeoutException + "]), actually closing (terminating) it.");
-                        // Close MatsSocketSession
-                        _matsSocketSessionAndMessageHandler.closeSession(closeReason.getCloseCode().getCode(),
-                                closeReason.getReasonPhrase());
-                    }
-                    else {
-                        // -> No, this was a broken connection, or something else like an explicit disconnect w/o close
-                        log.info("Got a non-closing CloseCode [" + MatsSocketCloseCodes.getCloseCode(closeReason
-                                .getCloseCode().getCode()) + "] (timeout:[" + _isTimeoutException
-                                + "]), assuming that Client might want to reconnect - deregistering"
-                                + " MatsSocketSession from CSAF.");
-                        // Deregister MatsSocketSession
-                        _matsSocketSessionAndMessageHandler.deregisterSession(closeReason.getCloseCode().getCode(),
-                                closeReason.getReasonPhrase());
-                    }
-                }
-            }
-            finally {
-                MDC.clear();
-            }
+            handleTransportClose(_matsSocketSessionAndMessageHandler, new JakartaTransportSession(session),
+                    _connectionId, closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(),
+                    _isTimeoutException);
         }
     }
 
-    static void closeWebSocket(Session webSocketSession, CloseCode closeCode, String reasonPhrase) {
-        log.info("Closing WebSocket SessionId [" + webSocketSession.getId() + "]: code: [" + closeCode
-                + "(" + closeCode.getCode() + ")], reason:[" + reasonPhrase + "]");
-        try {
-            while (reasonPhrase != null && reasonPhrase.getBytes(StandardCharsets.UTF_8).length > 123) {
-                reasonPhrase = reasonPhrase.substring(0, reasonPhrase.length() - 1);
-            }
-            webSocketSession.close(new CloseReason(closeCode, reasonPhrase));
-        }
-        catch (IOException e) {
-            log.warn("Got Exception when trying to close WebSocket SessionId [" + webSocketSession.getId()
-                    + "], ignoring.", e);
-        }
-    }
+    // Note: Old closeWebSocket(Session, CloseCode, String) removed - replaced by closeTransportSession(...).
 
     /**
      * Registrations of MatsSocketEndpoint - these are the definitions of which targets a MatsSocket client can send

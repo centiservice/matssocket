@@ -1050,7 +1050,7 @@ class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsS
         closeSession(closeCode.getCode(), reason);
 
         // :: Close the actual WebSocket
-        DefaultMatsSocketServer.closeWebSocket(_transportSession.getJakartaSessionView(), closeCode, reason);
+        DefaultMatsSocketServer.closeTransportSession(_transportSession, closeCode.getCode(), reason);
     }
 
     /**
@@ -1093,7 +1093,7 @@ class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsS
         deregisterSession(closeCode.getCode(), reason);
 
         // Close WebSocket
-        DefaultMatsSocketServer.closeWebSocket(_transportSession.getJakartaSessionView(), closeCode, reason);
+        DefaultMatsSocketServer.closeTransportSession(_transportSession, closeCode.getCode(), reason);
     }
 
     private void commonDeregisterAndClose(MatsSocketSessionState state, Integer closeCode, String reason) {
