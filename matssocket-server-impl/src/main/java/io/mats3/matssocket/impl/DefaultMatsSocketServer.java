@@ -1111,7 +1111,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      * Sets low pre-HELLO limits on the transport session. Must be called before
      * {@code SessionAuthenticator.onOpen(...)}.
      */
-    void configurePreAuthSession(MatsSocketTransportSession session) {
+    public void configurePreAuthSession(MatsSocketTransportSession session) {
         // We do not (yet) handle binary messages, so limit that pretty hard.
         session.setMaxBinaryMessageBufferSize(1024);
         // Set low limits for the HELLO message, 20KiB should be plenty even for quite large Oauth2 bearer tokens.
@@ -1124,7 +1124,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      * Creates a {@link MatsSocketSessionAndMessageHandler} after authentication has passed. The transport/Jakarta
      * endpoint has already called checkOrigin, checkHandshake and sessionAuthenticator.onOpen.
      */
-    MatsSocketSessionAndMessageHandler createSessionHandlerAfterAuth(MatsSocketTransportSession transportSession,
+    public MatsSocketSessionAndMessageHandler createSessionHandlerAfterAuth(MatsSocketTransportSession transportSession,
             String connectionId, HandshakeRequest handshakeRequest, SessionAuthenticator sessionAuthenticator,
             String remoteAddr) {
         return new MatsSocketSessionAndMessageHandler(this, transportSession, connectionId, handshakeRequest,
@@ -1136,7 +1136,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      *
      * @return whether this was a timeout exception (needed by close handling).
      */
-    static boolean handleTransportError(MatsSocketSessionAndMessageHandler handler,
+    public static boolean handleTransportError(MatsSocketSessionAndMessageHandler handler,
             MatsSocketTransportSession session, Throwable thr) {
         try { // finally: MDC.clear()
             if (handler != null) {
@@ -1171,7 +1171,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      * Handles a transport-level close. Extracted from {@code MatsWebSocketEndpointInstance.onClose()}. Decides whether
      * to close the MatsSocket session or just deregister it based on the close code.
      */
-    static void handleTransportClose(MatsSocketSessionAndMessageHandler handler, MatsSocketTransportSession session,
+    public static void handleTransportClose(MatsSocketSessionAndMessageHandler handler, MatsSocketTransportSession session,
             String connectionId, int closeCode, String reason, boolean isTimeout) {
         try { // finally: MDC.clear()
             if (handler != null) {
@@ -1217,7 +1217,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
     /**
      * Closes a WebSocket transport session with reason truncation to fit WebSocket close frame limits.
      */
-    static void closeTransportSession(MatsSocketTransportSession session, int closeCode, String reasonPhrase) {
+    public static void closeTransportSession(MatsSocketTransportSession session, int closeCode, String reasonPhrase) {
         log.info("Closing WebSocket SessionId [" + session.getId() + "]: code: [" + closeCode
                 + "], reason:[" + reasonPhrase + "]");
         try {

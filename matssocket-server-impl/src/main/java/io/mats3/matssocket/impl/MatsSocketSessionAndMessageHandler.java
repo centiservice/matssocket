@@ -71,7 +71,7 @@ import tools.jackson.databind.ObjectWriter;
  *
  * @author Endre Stølsvik 2019-11-28 12:17 - http://stolsvik.com/, endre@stolsvik.com
  */
-class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsSocketSession {
+public class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsSocketSession {
     private static final Logger log = LoggerFactory.getLogger(MatsSocketSessionAndMessageHandler.class);
 
     // ===== Set in constructor
@@ -415,7 +415,7 @@ class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsS
         _matsSocketServer.invokeMessageEventListeners(this, envelopes);
     }
 
-    void onMessage(String message) {
+    public void onMessage(String message) {
         // Record start of handling
         long receivedTimestamp = System.currentTimeMillis();
         long nanosStart = System.nanoTime();

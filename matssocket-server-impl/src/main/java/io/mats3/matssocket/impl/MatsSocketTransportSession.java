@@ -13,7 +13,7 @@ import jakarta.websocket.Session;
  *
  * @author Thor Egil Kolltveit 2026-04-10 - thoregil@kolltveit.org
  */
-interface MatsSocketTransportSession {
+public interface MatsSocketTransportSession {
 
     /** @return unique id for this WebSocket connection. */
     String getId();

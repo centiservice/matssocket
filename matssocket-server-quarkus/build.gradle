@@ -1,0 +1,30 @@
+// MatsSocket Server Quarkus Adapter
+// Bridges Quarkus WebSockets Next into MatsSocket using the internal MatsSocketTransportSession abstraction.
+// Auth shims are provided for the existing Jakarta-based AuthenticationPlugin API.
+
+apply plugin: 'java-library'
+
+repositories { mavenCentral() }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    // The MatsSocket server implementation (for MatsSocketTransportSession, DefaultMatsSocketServer, etc.)
+    api project(':matssocket-server-impl')
+
+    // Jakarta WebSocket API - needed for auth shims (HandshakeRequest, Session, ServerEndpointConfig)
+    compileOnly "jakarta.websocket:jakarta.websocket-api:$jakartaWebsocketsVersion"
+
+    // Quarkus WebSockets Next - what we're adapting from. compileOnly since consumers bring their own Quarkus.
+    compileOnly 'io.quarkus:quarkus-websockets-next:3.16.3'
+
+    // SLF4J for logging
+    compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+}
