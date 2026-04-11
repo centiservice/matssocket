@@ -58,6 +58,9 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
     // AtomicBoolean so that it can be set after construction w/o memory problems.
     private AtomicBoolean _useGetNString = new AtomicBoolean(false);
 
+    // Whether to use "SELECT ... LIMIT n" (PostgreSQL, MySQL, H2) instead of "SELECT TOP n ..." (MS SQL).
+    private AtomicBoolean _useLimitInsteadOfTop = new AtomicBoolean(false);
+
     public static ClusterStoreAndForward_SQL create(DataSource dataSource, String nodename) {
         ClusterStoreAndForward_SQL csaf = new ClusterStoreAndForward_SQL(dataSource, nodename);
         return csaf;
@@ -124,6 +127,51 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
      */
     public void useGetNString(boolean decision) {
         _useGetNString.set(decision);
+    }
+
+    /**
+     * Convenience method that configures runtime SQL dialect based on the
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database Database} enum - the same enum used for schema
+     * migrations. This ensures that schema setup and runtime SQL stay in sync.
+     * <p>
+     * Currently sets {@link #useLimitInsteadOfTop(boolean)} to <code>true</code> for
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#POSTGRESQL POSTGRESQL},
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#MYSQL MYSQL} and
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#H2 H2}.
+     * <p>
+     * <b>Note: Oracle is not currently supported at the runtime SQL level</b> (Oracle uses
+     * {@code FETCH FIRST n ROWS ONLY}, not {@code LIMIT}). The Oracle enum values only configure schema types.
+     *
+     * @param database
+     *            the database type, as used for {@link ClusterStoreAndForward_SQL_DbMigrations}.
+     */
+    public void setDatabase(ClusterStoreAndForward_SQL_DbMigrations.Database database) {
+        switch (database) {
+            case POSTGRESQL:
+            case MYSQL:
+            case H2:
+                useLimitInsteadOfTop(true);
+                break;
+            default:
+                useLimitInsteadOfTop(false);
+        }
+    }
+
+    /**
+     * Whether to use {@code "SELECT ... LIMIT n"} instead of {@code "SELECT TOP n ..."} (MS SQL) syntax for
+     * row-limiting queries. Set this to <code>true</code> for databases that use LIMIT syntax, e.g.
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#POSTGRESQL PostgreSQL},
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#MYSQL MySQL} and
+     * {@link ClusterStoreAndForward_SQL_DbMigrations.Database#H2 H2}.
+     * <p>
+     * Consider using {@link #setDatabase(ClusterStoreAndForward_SQL_DbMigrations.Database)} instead, which configures
+     * this automatically based on the database type.
+     *
+     * @param decision
+     *            whether to use LIMIT instead of TOP syntax - default <code>false</code>.
+     */
+    public void useLimitInsteadOfTop(boolean decision) {
+        _useLimitInsteadOfTop.set(decision);
     }
 
     @Override
@@ -672,15 +720,19 @@ public class ClusterStoreAndForward_SQL implements ClusterStoreAndForward {
             throws DataAccessException {
         return withConnectionReturn(con -> {
             // The old MS JDBC Driver 'jtds' don't handle parameter insertion for 'TOP' statement.
-            PreparedStatement selectMsgs = con.prepareStatement("SELECT TOP " + maxNumberOfMessages
-                    + " smid, trace_id, type,"
+            String columns = " smid, trace_id, type,"
                     + " cmid, request_timestamp,"
                     + " stored_timestamp, delivery_count,"
-                    + " envelope, message_text, message_binary"
-                    + "  FROM " + outboxTableName(matsSocketSessionId)
+                    + " envelope, message_text, message_binary";
+            String fromWhere = "  FROM " + outboxTableName(matsSocketSessionId)
                     + " WHERE session_id = ?"
                     + "   AND attempt_timestamp IS NULL"
-                    + "   AND delivery_count <> " + DLQ_DELIVERY_COUNT_MARKER);
+                    + "   AND delivery_count <> " + DLQ_DELIVERY_COUNT_MARKER;
+            // ?: Are we using PostgreSQL LIMIT syntax?
+            String sql = _useLimitInsteadOfTop.get()
+                    ? "SELECT" + columns + fromWhere + " LIMIT " + maxNumberOfMessages
+                    : "SELECT TOP " + maxNumberOfMessages + columns + fromWhere;
+            PreparedStatement selectMsgs = con.prepareStatement(sql);
             selectMsgs.setString(1, matsSocketSessionId);
             ResultSet rs = selectMsgs.executeQuery();
             List<StoredOutMessage> list = new ArrayList<>();
