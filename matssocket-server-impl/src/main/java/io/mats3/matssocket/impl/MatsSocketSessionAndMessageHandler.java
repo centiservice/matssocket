@@ -35,8 +35,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jakarta.websocket.MessageHandler.Whole;
-import jakarta.websocket.RemoteEndpoint.Basic;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.HandshakeRequest;
 
@@ -73,20 +71,20 @@ import tools.jackson.databind.ObjectWriter;
  *
  * @author Endre Stølsvik 2019-11-28 12:17 - http://stolsvik.com/, endre@stolsvik.com
  */
-class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketStatics, LiveMatsSocketSession {
+class MatsSocketSessionAndMessageHandler
+        implements MatsSocketStatics, LiveMatsSocketSession, MatsSocketTransportHandler {
     private static final Logger log = LoggerFactory.getLogger(MatsSocketSessionAndMessageHandler.class);
 
     // ===== Set in constructor
 
     // :: From params
     private final DefaultMatsSocketServer _matsSocketServer;
-    private final Session _webSocketSession;
+    private final MatsSocketTransportSession _transportSession;
     private final String _connectionId;
     // SYNC upon accessing any methods: itself.
     private final SessionAuthenticator _sessionAuthenticator;
 
     // :: Derived in constructor
-    private final Basic _webSocketBasicRemote;
     private final AuthenticationContextImpl _authenticationContext;
     private final ObjectReader _envelopeObjectReader;
     private final ObjectWriter _envelopeObjectWriter;
@@ -147,18 +145,17 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
     // SYNC upon adding when processing messages, and when reading from introspection: itself.
     private final List<MatsSocketEnvelopeWithMetaDto> _matsSocketEnvelopeWithMetaDtos = new ArrayList<>();
 
-    MatsSocketSessionAndMessageHandler(DefaultMatsSocketServer matsSocketServer, Session webSocketSession,
-            String connectionId, HandshakeRequest handshakeRequest, SessionAuthenticator sessionAuthenticator,
-            String remoteAddr) {
+    MatsSocketSessionAndMessageHandler(DefaultMatsSocketServer matsSocketServer,
+            MatsSocketTransportSession transportSession, String connectionId, HandshakeRequest handshakeRequest,
+            SessionAuthenticator sessionAuthenticator, String remoteAddr) {
         _matsSocketServer = matsSocketServer;
-        _webSocketSession = webSocketSession;
+        _transportSession = transportSession;
         _connectionId = connectionId;
         _sessionAuthenticator = sessionAuthenticator;
         // Might be resolved upon onOpen if we have a hack for doing it for this container.
         _remoteAddr = remoteAddr;
 
         // Derived
-        _webSocketBasicRemote = _webSocketSession.getBasicRemote();
         _authenticationContext = new AuthenticationContextImpl(handshakeRequest, this);
         _envelopeObjectReader = _matsSocketServer.getEnvelopeObjectReader();
         _envelopeObjectWriter = _matsSocketServer.getEnvelopeObjectWriter();
@@ -278,7 +275,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
 
     @Override
     public Session getWebSocketSession() {
-        return _webSocketSession;
+        return _transportSession.getJakartaSessionView();
     }
 
     @Override
@@ -328,7 +325,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
                         + " - probably async close, ignoring. Message:\n" + text);
                 return;
             }
-            _webSocketBasicRemote.sendText(text);
+            _transportSession.sendText(text);
         }
     }
 
@@ -355,9 +352,9 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
 
     boolean isWebSocketSessionOpen() {
         // Volatile, so read it out once
-        Session webSocketSession = _webSocketSession;
+        MatsSocketTransportSession transportSession = _transportSession;
         // .. then access it twice.
-        return webSocketSession != null && webSocketSession.isOpen();
+        return transportSession != null && transportSession.isOpen();
     }
 
     /**
@@ -373,7 +370,8 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
     private boolean _askedClientForReauth = false;
     private int _numberOfInformationBearingIncomingWhileWaitingForReauth = 0;
 
-    void setMDC() {
+    @Override
+    public void setMDC() {
         if (_matsSocketSessionId != null) {
             MDC.put(MDC_SESSION_ID, _matsSocketSessionId);
         }
@@ -1018,7 +1016,8 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
      * <li>FINALLY: Notifies SessionRemovedEventListeners</li>
      * </ul>
      */
-    void closeSession(Integer closeCode, String reason) {
+    @Override
+    public void closeSession(Integer closeCode, String reason) {
         // ?: Are we already DEREGISTERD or CLOSED?
         if (!_state.isHandlesMessages()) {
             // Already deregistered or closed.
@@ -1055,14 +1054,15 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
         closeSession(closeCode.getCode(), reason);
 
         // :: Close the actual WebSocket
-        DefaultMatsSocketServer.closeWebSocket(_webSocketSession, closeCode, reason);
+        DefaultMatsSocketServer.closeTransportSession(_transportSession, closeCode.getCode(), reason);
     }
 
     /**
      * Deregisters session: Same as {@link #closeSession(Integer, String)}, only where it says "close", it now says
      * "deregisters".
      */
-    void deregisterSession(Integer closeCode, String reason) {
+    @Override
+    public void deregisterSession(Integer closeCode, String reason) {
         // ?: Are we already DEREGISTERD or CLOSED?
         if (!_state.isHandlesMessages()) {
             // Already deregistered or closed.
@@ -1098,7 +1098,7 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
         deregisterSession(closeCode.getCode(), reason);
 
         // Close WebSocket
-        DefaultMatsSocketServer.closeWebSocket(_webSocketSession, closeCode, reason);
+        DefaultMatsSocketServer.closeTransportSession(_transportSession, closeCode.getCode(), reason);
     }
 
     private void commonDeregisterAndClose(MatsSocketSessionState state, Integer closeCode, String reason) {
@@ -1504,9 +1504,9 @@ class MatsSocketSessionAndMessageHandler implements Whole<String>, MatsSocketSta
         // ----- We're now a live MatsSocketSession!
 
         // Increase timeout to "prod timeout", now that client has said HELLO
-        _webSocketSession.setMaxIdleTimeout(75_000);
+        _transportSession.setMaxIdleTimeout(75_000);
         // Set high limit for text, as we don't want to be held back on the protocol side of things.
-        _webSocketSession.setMaxTextMessageBufferSize(50 * 1024 * 1024);
+        _transportSession.setMaxTextMessageBufferSize(50 * 1024 * 1024);
 
         // :: Record incoming Envelope
         recordEnvelopes(Collections.singletonList(envelope), clientMessageReceivedTimestamp, Direction.C2S);
