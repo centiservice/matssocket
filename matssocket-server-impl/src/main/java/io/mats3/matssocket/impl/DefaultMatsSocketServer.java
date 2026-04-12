@@ -1141,8 +1141,8 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
     }
 
     /**
-     * Creates a {@link MatsSocketSessionAndMessageHandler} after authentication has passed. The transport/Jakarta
-     * endpoint has already called checkOrigin, checkHandshake and sessionAuthenticator.onOpen.
+     * Creates a {@link MatsSocketTransportHandler} after authentication has passed. The transport/Jakarta endpoint has
+     * already called checkOrigin, checkHandshake and sessionAuthenticator.onOpen.
      */
     public MatsSocketTransportHandler createSessionHandlerAfterAuth(MatsSocketTransportSession transportSession,
             String connectionId, HandshakeRequest handshakeRequest, SessionAuthenticator sessionAuthenticator,
@@ -1266,6 +1266,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
         // Will be set when onOpen is invoked
         private String _connectionId;
+        private JakartaTransportSession _transportSession;
         private MatsSocketTransportHandler _matsSocketSessionAndMessageHandler;
 
         public MatsWebSocketEndpointInstance(DefaultMatsSocketServer matsSocketServer,
@@ -1291,24 +1292,24 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
             _connectionId = session.getId() + "_" + rnd(6);
 
             // :: Wrap Session in transport abstraction
-            JakartaTransportSession transportSession = new JakartaTransportSession(session);
+            _transportSession = new JakartaTransportSession(session);
 
             // ?: If we are going down, then immediately close it.
             if (_matsSocketServer._stopped) {
-                closeTransportSession(transportSession, MatsSocketCloseCodes.SERVICE_RESTART.getCode(),
+                closeTransportSession(_transportSession, MatsSocketCloseCodes.SERVICE_RESTART.getCode(),
                         "This server is going down, perform a (re)connect to another instance.");
                 return;
             }
 
             // :: Set low pre-HELLO limits
-            _matsSocketServer.configurePreAuthSession(transportSession);
+            _matsSocketServer.configurePreAuthSession(_transportSession);
 
             try {
                 boolean ok = _sessionAuthenticator.onOpen(session, (ServerEndpointConfig) config);
                 log.info("webSocket.onOpen(..): Asked SessionAuthenticator.onOpen(..), returned: "
                         + (ok ? "OK" : "NOT OK!"));
                 if (!ok) {
-                    closeTransportSession(transportSession, MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
+                    closeTransportSession(_transportSession, MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
                             "SessionAuthenticator did not want this session to proceed");
                     return;
                 }
@@ -1316,7 +1317,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
             catch (Throwable t) {
                 log.error("webSocket.onOpen(..): Got throwable when invoking SessionAuthenticator.onOpen(..)."
                         + " Closing WebSocket.", t);
-                closeTransportSession(transportSession, MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
+                closeTransportSession(_transportSession, MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
                         "SessionAuthenticator did not want this session to proceed");
                 return;
             }
@@ -1326,7 +1327,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
             // :: Create the MatsSocketSession
             _matsSocketSessionAndMessageHandler = _matsSocketServer.createSessionHandlerAfterAuth(
-                    transportSession, _connectionId, _handshakeRequestResponse._handshakeRequest,
+                    _transportSession, _connectionId, _handshakeRequestResponse._handshakeRequest,
                     _sessionAuthenticator, remoteAddr);
 
             // :: Register it as the MessageHandler
@@ -1341,18 +1342,20 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
         @Override
         public void onError(Session session, Throwable thr) {
             _isTimeoutException = handleTransportError(_matsSocketSessionAndMessageHandler,
-                    new JakartaTransportSession(session), thr);
+                    getOrCreateTransportSession(session), thr);
         }
 
         @Override
         public void onClose(Session session, CloseReason closeReason) {
-            handleTransportClose(_matsSocketSessionAndMessageHandler, new JakartaTransportSession(session),
+            handleTransportClose(_matsSocketSessionAndMessageHandler, getOrCreateTransportSession(session),
                     _connectionId, closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(),
                     _isTimeoutException);
         }
-    }
 
-    // Note: Old closeWebSocket(Session, CloseCode, String) removed - replaced by closeTransportSession(...).
+        private JakartaTransportSession getOrCreateTransportSession(Session session) {
+            return _transportSession != null ? _transportSession : new JakartaTransportSession(session);
+        }
+    }
 
     /**
      * Registrations of MatsSocketEndpoint - these are the definitions of which targets a MatsSocket client can send

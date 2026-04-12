@@ -71,7 +71,8 @@ import tools.jackson.databind.ObjectWriter;
  *
  * @author Endre Stølsvik 2019-11-28 12:17 - http://stolsvik.com/, endre@stolsvik.com
  */
-class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsSocketSession, MatsSocketTransportHandler {
+class MatsSocketSessionAndMessageHandler
+        implements MatsSocketStatics, LiveMatsSocketSession, MatsSocketTransportHandler {
     private static final Logger log = LoggerFactory.getLogger(MatsSocketSessionAndMessageHandler.class);
 
     // ===== Set in constructor

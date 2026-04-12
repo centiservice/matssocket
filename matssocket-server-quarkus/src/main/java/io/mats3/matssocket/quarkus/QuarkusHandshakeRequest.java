@@ -17,14 +17,14 @@ import jakarta.websocket.server.HandshakeRequest;
  *
  * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
-public class QuarkusHandshakeRequest implements HandshakeRequest {
+class QuarkusHandshakeRequest implements HandshakeRequest {
 
     private final Map<String, List<String>> _headers;
     private final Map<String, List<String>> _parameterMap;
     private final URI _requestUri;
     private final String _queryString;
 
-    public QuarkusHandshakeRequest(io.quarkus.websockets.next.HandshakeRequest quarkusHandshake) {
+    QuarkusHandshakeRequest(io.quarkus.websockets.next.HandshakeRequest quarkusHandshake) {
         _headers = quarkusHandshake != null ? new HashMap<>(quarkusHandshake.headers()) : new HashMap<>();
         _parameterMap = new HashMap<>();
         _queryString = quarkusHandshake != null ? quarkusHandshake.query() : null;
@@ -44,16 +44,10 @@ public class QuarkusHandshakeRequest implements HandshakeRequest {
                 String host = quarkusHandshake.host();
                 int port = quarkusHandshake.port();
                 String path = quarkusHandshake.path();
-                String authority = host;
-                if ((scheme.equals("ws") || scheme.equals("http")) && port != 80 && port > 0) {
-                    authority = host + ":" + port;
-                }
-                else if ((scheme.equals("wss") || scheme.equals("https")) && port != 443 && port > 0) {
-                    authority = host + ":" + port;
-                }
-                String fullPath = _queryString != null && !_queryString.isEmpty()
-                        ? path + "?" + _queryString : path;
-                _requestUri = new URI(scheme + "://" + authority + fullPath);
+                int uriPort = isDefaultPort(scheme, port) ? -1 : port;
+                URI baseUri = new URI(scheme, null, host, uriPort, path, null, null);
+                _requestUri = _queryString != null && !_queryString.isEmpty()
+                        ? new URI(baseUri.toASCIIString() + "?" + _queryString) : baseUri;
             }
             catch (Exception e) {
                 throw new RuntimeException("Failed to construct request URI", e);
@@ -71,6 +65,12 @@ public class QuarkusHandshakeRequest implements HandshakeRequest {
         catch (Exception e) {
             return value;
         }
+    }
+
+    private static boolean isDefaultPort(String scheme, int port) {
+        return port <= 0
+                || (("ws".equals(scheme) || "http".equals(scheme)) && port == 80)
+                || (("wss".equals(scheme) || "https".equals(scheme)) && port == 443);
     }
 
     @Override

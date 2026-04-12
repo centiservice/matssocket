@@ -13,7 +13,7 @@ import io.quarkus.websockets.next.WebSocketConnection;
  *
  * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
-public class QuarkusTransportSession implements MatsSocketTransportSession {
+class QuarkusTransportSession implements MatsSocketTransportSession {
 
     private final WebSocketConnection _connection;
     private final QuarkusSessionShim _sessionShim;

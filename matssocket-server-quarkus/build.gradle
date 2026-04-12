@@ -3,14 +3,14 @@
 // Auth shims are provided for the existing Jakarta-based AuthenticationPlugin API.
 
 dependencies {
-    // The MatsSocket server implementation (for MatsSocketTransportSession, DefaultMatsSocketServer, etc.)
-    api project(':matssocket-server-impl')
+    api project(':matssocket-server-api')
+    implementation project(':matssocket-server-impl')
 
     // Jakarta WebSocket API - needed for auth shims (HandshakeRequest, Session, ServerEndpointConfig)
     compileOnly "jakarta.websocket:jakarta.websocket-api:$jakartaWebsocketsVersion"
 
     // Quarkus WebSockets Next - what we're adapting from. compileOnly since consumers bring their own Quarkus.
-    compileOnly 'io.quarkus:quarkus-websockets-next:3.16.3'
+    compileOnly "io.quarkus:quarkus-websockets-next:$quarkusVersion"
 
     // SLF4J for logging
     compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
@@ -18,7 +18,7 @@ dependencies {
     // :: TEST
     testImplementation 'junit:junit:4.13.2'
     testImplementation "jakarta.websocket:jakarta.websocket-api:$jakartaWebsocketsVersion"
-    testImplementation 'io.quarkus:quarkus-websockets-next:3.16.3'
+    testImplementation "io.quarkus:quarkus-websockets-next:$quarkusVersion"
     testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
     testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 }

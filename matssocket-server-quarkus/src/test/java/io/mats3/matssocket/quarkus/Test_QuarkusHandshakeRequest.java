@@ -78,6 +78,21 @@ public class Test_QuarkusHandshakeRequest {
     }
 
     @Test
+    public void requestUri_encodedQuery_shouldNotDoubleEncode() {
+        StubQuarkusHandshakeRequest stub = new StubQuarkusHandshakeRequest();
+        stub._scheme = "wss";
+        stub._host = "app.finansen.no";
+        stub._port = 443;
+        stub._path = "/matssocket";
+        stub._query = "returnUrl=https%3A%2F%2Fexample.com%2Fdone%3Fa%3D1";
+
+        QuarkusHandshakeRequest request = new QuarkusHandshakeRequest(stub);
+
+        Assert.assertEquals("wss://app.finansen.no/matssocket?returnUrl=https%3A%2F%2Fexample.com%2Fdone%3Fa%3D1",
+                request.getRequestURI().toASCIIString());
+    }
+
+    @Test
     public void userPrincipalAndHttpSession_shouldBeNull() {
         StubQuarkusHandshakeRequest stub = new StubQuarkusHandshakeRequest();
         stub._scheme = "ws";

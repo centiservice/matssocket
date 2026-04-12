@@ -16,7 +16,7 @@ import jakarta.websocket.HandshakeResponse;
  *
  * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
-public class QuarkusHandshakeResponse implements HandshakeResponse {
+class QuarkusHandshakeResponse implements HandshakeResponse {
     private static final Logger log = LoggerFactory.getLogger(QuarkusHandshakeResponse.class);
 
     private final Map<String, List<String>> _headers = new HashMap<>();

@@ -16,7 +16,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  *
  * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
-public class QuarkusServerEndpointConfigShim implements ServerEndpointConfig {
+class QuarkusServerEndpointConfigShim implements ServerEndpointConfig {
 
     private final String _path;
     private final Map<String, Object> _userProperties = new ConcurrentHashMap<>();
