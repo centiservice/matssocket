@@ -17,6 +17,8 @@ import io.mats3.matssocket.impl.DefaultMatsSocketServer;
  *         matsFactory, csaf, authPlugin, "/matssocket");
  * // Wire up your @WebSocket endpoint to delegate to setup.transport()
  * }</pre>
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 public class MatsSocketQuarkusFactory {
 
@@ -47,7 +49,11 @@ public class MatsSocketQuarkusFactory {
     }
 
     /**
-     * Setup result containing the MatsSocketServer and the Quarkus transport bridge.
+     * Result of creating a MatsSocket server with Quarkus transport.
+     *
+     * @param server the {@link MatsSocketServer} instance.
+     * @param transport the Quarkus transport bridge - wire this into your {@code @WebSocket} endpoint.
+     * @param websocketPath the WebSocket path this server is bound to.
      */
     public record MatsSocketQuarkusSetup(
             MatsSocketServer server,

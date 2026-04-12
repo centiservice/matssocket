@@ -14,6 +14,13 @@ dependencies {
 
     // SLF4J for logging
     compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+
+    // :: TEST
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation "jakarta.websocket:jakarta.websocket-api:$jakartaWebsocketsVersion"
+    testImplementation 'io.quarkus:quarkus-websockets-next:3.16.3'
+    testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+    testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
 mavenPublishing {

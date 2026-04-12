@@ -10,6 +10,8 @@ import io.quarkus.websockets.next.WebSocketConnection;
 /**
  * Quarkus WebSockets Next implementation of {@link MatsSocketTransportSession}. Wraps a {@link WebSocketConnection}
  * for use by MatsSocket core's session/message handling.
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 public class QuarkusTransportSession implements MatsSocketTransportSession {
 

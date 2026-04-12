@@ -13,6 +13,8 @@ import jakarta.websocket.HandshakeResponse;
  * Jakarta {@link HandshakeResponse} auth-edge shim. <b>Lossy:</b> Quarkus WebSockets Next cannot mutate HTTP response
  * headers after the WebSocket upgrade. If an {@link io.mats3.matssocket.AuthenticationPlugin.SessionAuthenticator}
  * sets headers during {@code checkHandshake(...)}, a warning is logged since those headers will not be delivered.
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 public class QuarkusHandshakeResponse implements HandshakeResponse {
     private static final Logger log = LoggerFactory.getLogger(QuarkusHandshakeResponse.class);

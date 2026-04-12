@@ -310,7 +310,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
         @Override
         public void close(int closeCode, String reasonPhrase) throws IOException {
-            _jakartaSession.close(new CloseReason(() -> closeCode, reasonPhrase));
+            _jakartaSession.close(new CloseReason(MatsSocketCloseCodes.getCloseCode(closeCode), reasonPhrase));
         }
 
         @Override

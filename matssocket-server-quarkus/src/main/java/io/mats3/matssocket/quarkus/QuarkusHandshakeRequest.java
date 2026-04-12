@@ -14,6 +14,8 @@ import jakarta.websocket.server.HandshakeRequest;
  * Jakarta {@link HandshakeRequest} auth-edge shim wrapping Quarkus WebSockets Next handshake info. Exists because
  * {@link io.mats3.matssocket.AuthenticationPlugin.SessionAuthenticator#checkHandshake} and
  * {@link io.mats3.matssocket.AuthenticationPlugin.AuthenticationContext#getHandshakeRequest} expect Jakarta types.
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 public class QuarkusHandshakeRequest implements HandshakeRequest {
 

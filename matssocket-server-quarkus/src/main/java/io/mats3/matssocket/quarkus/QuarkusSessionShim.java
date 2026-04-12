@@ -11,13 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Extension;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.RemoteEndpoint;
-import jakarta.websocket.SendHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 
@@ -29,6 +27,8 @@ import jakarta.websocket.WebSocketContainer;
  *     <li>{@link io.mats3.matssocket.MatsSocketServer.LiveMatsSocketSession#getWebSocketSession()}</li>
  * </ul>
  * Implements harmless getters/setters. Unsupported operations throw {@link UnsupportedOperationException}.
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 class QuarkusSessionShim implements Session {
 
@@ -88,7 +88,7 @@ class QuarkusSessionShim implements Session {
         return _basicRemote;
     }
 
-    // -- Timeout/buffer setters delegating to transport session --
+    // :: Timeout/buffer setters delegating to transport session
 
     @Override
     public long getMaxIdleTimeout() {
@@ -192,7 +192,7 @@ class QuarkusSessionShim implements Session {
         throw new UnsupportedOperationException("getAsyncRemote() not supported in Quarkus transport shim");
     }
 
-    // ---- Minimal BasicRemote shim, backed by QuarkusTransportSession.sendText(...) ----
+    // :: Minimal BasicRemote shim, backed by QuarkusTransportSession.sendText(...)
 
     private static class BasicRemoteShim implements RemoteEndpoint.Basic {
         private final QuarkusTransportSession _transport;

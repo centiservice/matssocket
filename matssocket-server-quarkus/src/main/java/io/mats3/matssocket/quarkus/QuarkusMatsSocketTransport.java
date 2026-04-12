@@ -21,6 +21,8 @@ import io.quarkus.websockets.next.WebSocketConnection;
  * <p>
  * Auth shims are created for each connection to satisfy the Jakarta-typed
  * {@link io.mats3.matssocket.AuthenticationPlugin} API.
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 public class QuarkusMatsSocketTransport {
     private static final Logger log = LoggerFactory.getLogger(QuarkusMatsSocketTransport.class);
@@ -73,7 +75,7 @@ public class QuarkusMatsSocketTransport {
         // 1. checkOrigin
         String origin = getOriginHeader(handshakeRequest);
         boolean originOk = sessionAuthenticator.checkOrigin(origin);
-        log.info("checkOrigin(" + origin + "). SessionAuthenticator returned: " + (originOk ? "OK" : "NOT OK!"));
+        log.info("checkOrigin({}). SessionAuthenticator returned: {}", origin, originOk ? "OK" : "NOT OK!");
         if (!originOk) {
             DefaultMatsSocketServer.closeTransportSession(transportSession,
                     MatsSocketCloseCodes.VIOLATED_POLICY.getCode(), "Origin check failed");
@@ -83,7 +85,7 @@ public class QuarkusMatsSocketTransport {
         // 2. checkHandshake
         boolean handshakeOk = sessionAuthenticator.checkHandshake(serverEndpointConfig, handshakeRequest,
                 handshakeResponse);
-        log.info("checkHandshake(). SessionAuthenticator returned: " + (handshakeOk ? "OK" : "NOT OK!"));
+        log.info("checkHandshake(). SessionAuthenticator returned: {}", handshakeOk ? "OK" : "NOT OK!");
         handshakeResponse.warnIfHeadersWereSet();
         if (!handshakeOk) {
             DefaultMatsSocketServer.closeTransportSession(transportSession,
@@ -95,7 +97,7 @@ public class QuarkusMatsSocketTransport {
         try {
             boolean openOk = sessionAuthenticator.onOpen(transportSession.getJakartaSessionView(),
                     serverEndpointConfig);
-            log.info("onOpen(). SessionAuthenticator returned: " + (openOk ? "OK" : "NOT OK!"));
+            log.info("onOpen(). SessionAuthenticator returned: {}", openOk ? "OK" : "NOT OK!");
             if (!openOk) {
                 DefaultMatsSocketServer.closeTransportSession(transportSession,
                         MatsSocketCloseCodes.VIOLATED_POLICY.getCode(),
@@ -120,7 +122,7 @@ public class QuarkusMatsSocketTransport {
 
         _sessions.put(connection.id(), new SessionData(transportSession, handler, connectionId));
 
-        log.info("MatsSocket connection established: connectionId=" + connectionId);
+        log.info("MatsSocket connection established: connectionId={}", connectionId);
     }
 
     /**
@@ -143,7 +145,8 @@ public class QuarkusMatsSocketTransport {
         SessionData sessionData = _sessions.remove(connection.id());
         if (sessionData != null) {
             int code = closeReason != null ? closeReason.getCode() : 1000;
-            String reason = closeReason != null ? closeReason.getMessage() : "Connection closed";
+            String message = closeReason != null ? closeReason.getMessage() : null;
+            String reason = message != null ? message : "Connection closed";
             DefaultMatsSocketServer.handleTransportClose(sessionData._handler, sessionData._transportSession,
                     sessionData._connectionId, code, reason, sessionData._isTimeoutException);
         }
@@ -167,7 +170,7 @@ public class QuarkusMatsSocketTransport {
         return _sessions.size();
     }
 
-    // ---- Internals ----
+    // :: Internals
 
     private static String getOriginHeader(QuarkusHandshakeRequest handshakeRequest) {
         List<String> origins = getHeaderValuesIgnoreCase(handshakeRequest.getHeaders(), "Origin");

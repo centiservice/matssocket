@@ -13,6 +13,8 @@ import jakarta.websocket.server.ServerEndpointConfig;
 /**
  * Jakarta {@link ServerEndpointConfig} auth-edge shim for Quarkus. Provides path, subprotocols and user properties
  * to {@link io.mats3.matssocket.AuthenticationPlugin.SessionAuthenticator#checkHandshake} and {@code onOpen}.
+ *
+ * @author Thor Egil Kolltveit 2026-04-12 - thoregil@kolltveit.org
  */
 public class QuarkusServerEndpointConfigShim implements ServerEndpointConfig {
 
