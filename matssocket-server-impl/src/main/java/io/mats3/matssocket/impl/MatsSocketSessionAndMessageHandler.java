@@ -71,7 +71,7 @@ import tools.jackson.databind.ObjectWriter;
  *
  * @author Endre Stølsvik 2019-11-28 12:17 - http://stolsvik.com/, endre@stolsvik.com
  */
-public class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsSocketSession {
+class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, LiveMatsSocketSession, MatsSocketTransportHandler {
     private static final Logger log = LoggerFactory.getLogger(MatsSocketSessionAndMessageHandler.class);
 
     // ===== Set in constructor
@@ -369,7 +369,8 @@ public class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, Li
     private boolean _askedClientForReauth = false;
     private int _numberOfInformationBearingIncomingWhileWaitingForReauth = 0;
 
-    void setMDC() {
+    @Override
+    public void setMDC() {
         if (_matsSocketSessionId != null) {
             MDC.put(MDC_SESSION_ID, _matsSocketSessionId);
         }
@@ -415,6 +416,7 @@ public class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, Li
         _matsSocketServer.invokeMessageEventListeners(this, envelopes);
     }
 
+    @Override
     public void onMessage(String message) {
         // Record start of handling
         long receivedTimestamp = System.currentTimeMillis();
@@ -1013,7 +1015,8 @@ public class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, Li
      * <li>FINALLY: Notifies SessionRemovedEventListeners</li>
      * </ul>
      */
-    void closeSession(Integer closeCode, String reason) {
+    @Override
+    public void closeSession(Integer closeCode, String reason) {
         // ?: Are we already DEREGISTERD or CLOSED?
         if (!_state.isHandlesMessages()) {
             // Already deregistered or closed.
@@ -1057,7 +1060,8 @@ public class MatsSocketSessionAndMessageHandler implements MatsSocketStatics, Li
      * Deregisters session: Same as {@link #closeSession(Integer, String)}, only where it says "close", it now says
      * "deregisters".
      */
-    void deregisterSession(Integer closeCode, String reason) {
+    @Override
+    public void deregisterSession(Integer closeCode, String reason) {
         // ?: Are we already DEREGISTERD or CLOSED?
         if (!_state.isHandlesMessages()) {
             // Already deregistered or closed.

@@ -135,6 +135,21 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
     }
 
     /**
+     * Create a {@link DefaultMatsSocketServer} without Jakarta WebSocket endpoint registration. Intended for
+     * alternative transports (e.g. Quarkus WebSockets Next) that handle their own WebSocket lifecycle and call
+     * {@link #configurePreAuthSession}, {@link #createSessionHandlerAfterAuth}, {@link #handleTransportError}
+     * and {@link #handleTransportClose} directly.
+     */
+    public static DefaultMatsSocketServer createForExternalTransport(
+            MatsFactory matsFactory,
+            ClusterStoreAndForward clusterStoreAndForward,
+            AuthenticationPlugin authenticationPlugin,
+            String instanceName) {
+        clusterStoreAndForward.boot();
+        return new DefaultMatsSocketServer(matsFactory, clusterStoreAndForward, instanceName, authenticationPlugin);
+    }
+
+    /**
      * Create a MatsSocketServer, piecing together necessary bits.
      *
      * @param serverContainer
@@ -458,6 +473,11 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
     }
 
     private volatile boolean _stopped = false;
+
+    /** @return whether this server has been stopped (for external transport guards). */
+    public boolean isStopped() {
+        return _stopped;
+    }
 
     String getMyNodename() {
         return _matsFactory.getFactoryConfig().getNodename();
@@ -1124,7 +1144,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      * Creates a {@link MatsSocketSessionAndMessageHandler} after authentication has passed. The transport/Jakarta
      * endpoint has already called checkOrigin, checkHandshake and sessionAuthenticator.onOpen.
      */
-    public MatsSocketSessionAndMessageHandler createSessionHandlerAfterAuth(MatsSocketTransportSession transportSession,
+    public MatsSocketTransportHandler createSessionHandlerAfterAuth(MatsSocketTransportSession transportSession,
             String connectionId, HandshakeRequest handshakeRequest, SessionAuthenticator sessionAuthenticator,
             String remoteAddr) {
         return new MatsSocketSessionAndMessageHandler(this, transportSession, connectionId, handshakeRequest,
@@ -1136,7 +1156,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      *
      * @return whether this was a timeout exception (needed by close handling).
      */
-    public static boolean handleTransportError(MatsSocketSessionAndMessageHandler handler,
+    public static boolean handleTransportError(MatsSocketTransportHandler handler,
             MatsSocketTransportSession session, Throwable thr) {
         try { // finally: MDC.clear()
             if (handler != null) {
@@ -1171,7 +1191,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
      * Handles a transport-level close. Extracted from {@code MatsWebSocketEndpointInstance.onClose()}. Decides whether
      * to close the MatsSocket session or just deregister it based on the close code.
      */
-    public static void handleTransportClose(MatsSocketSessionAndMessageHandler handler, MatsSocketTransportSession session,
+    public static void handleTransportClose(MatsSocketTransportHandler handler, MatsSocketTransportSession session,
             String connectionId, int closeCode, String reason, boolean isTimeout) {
         try { // finally: MDC.clear()
             if (handler != null) {
@@ -1246,7 +1266,7 @@ public class DefaultMatsSocketServer implements MatsSocketServer, MatsSocketStat
 
         // Will be set when onOpen is invoked
         private String _connectionId;
-        private MatsSocketSessionAndMessageHandler _matsSocketSessionAndMessageHandler;
+        private MatsSocketTransportHandler _matsSocketSessionAndMessageHandler;
 
         public MatsWebSocketEndpointInstance(DefaultMatsSocketServer matsSocketServer,
                 SessionAuthenticator sessionAuthenticator,

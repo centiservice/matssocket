@@ -79,8 +79,8 @@ tasks.named("dependencyUpdates").configure {
     }
 }
 
-// Common config for the two Java subprojects
-configure([project('matssocket-server-api'), project('matssocket-server-impl')]) {
+// Common config for the Java server subprojects
+configure([project('matssocket-server-api'), project('matssocket-server-impl'), project('matssocket-server-quarkus')]) {
     apply plugin: 'java-library'
     apply plugin: "com.vanniktech.maven.publish"
 
